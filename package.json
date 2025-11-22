@@ -1,32 +1,8 @@
 {
-  "name": "lift",
-  "version": "1.0.0",
-  "description": "Lift - Study smarter. Prepare faster.",
-  "main": "index.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "formidable": "^3.5.4",
-    "fs": "^0.0.1-security",
-    "jszip": "^3.10.1",
-    "mammoth": "^1.11.0",
-    "next": "^15.5.6",
-    "openai": "^6.5.0",
-    "pdf-parse": "^2.4.3",
-    "pdfjs": "^2.5.4",
-    "pdfjs-dist": "^5.4.296",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "unzipper": "^0.12.3",
-    "xml2js": "^0.6.2"
-  },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.14",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.14"
+    "@prisma/client": "^7.0.0",
+    "@prisma/internals": "^7.0.0",
+    "@types/node": "^24.10.1",
+    "prisma": "^7.0.0"
   }
 }

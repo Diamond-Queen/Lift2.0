@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Temporary compatibility: include URL in schema so migrate dev can run.
+  // In Prisma 7 this is normally configured via prisma.config.ts, but
+  // some CLI flows may still read URL from schema. This will be removed
+  // once migrate runs successfully and we confirm config handling.
+  url = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  schoolId      String?
+  role          String    @default("user")
+  createdAt     DateTime  @default(now())
+
+  accounts      Account[]
+  sessions      Session[]
+  school        School?   @relation(fields: [schoolId], references: [id])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user               User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String  @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model School {
+  id         String       @id @default(cuid())
+  name       String
+  plan       String?
+  createdAt  DateTime     @default(now())
+  codes      SchoolCode[]
+  users      User[]
+  subscriptions Subscription[]
+}
+
+model SchoolCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  schoolId  String
+  redeemed  Boolean  @default(false)
+  redeemedBy String?
+  createdAt DateTime @default(now())
+
+  school    School   @relation(fields: [schoolId], references: [id])
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  stripeCustomerId String?
+  status           String?
+  plan             String?
+  schoolId         String?
+  createdAt        DateTime @default(now())
+
+  school    School?  @relation(fields: [schoolId], references: [id])
+}
