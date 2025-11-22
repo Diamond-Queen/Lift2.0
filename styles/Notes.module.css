@@ -40,6 +40,22 @@
   margin-bottom: 1.5rem; /* Increased margin for better spacing */
 }
 
+.secondaryButton {
+  background: #fff;
+  color: #6a5af9;
+  border: 2px solid #e6e6ff;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.15s, transform 0.12s;
+}
+
+.secondaryButton:hover {
+  background: #f5f5ff;
+  transform: translateY(-1px);
+}
+
 /* FIX 2: Hidden file input */
 .hiddenFileInput {
   width: 0.1px;
@@ -120,6 +136,34 @@
 .resultCard p {
   margin-bottom: 0.75rem;
   line-height: 1.6;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.summaryText {
+  flex: 1;
+  margin: 0;
+  color: #111;
+  line-height: 1.45;
+}
+
+.copyButton {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+}
+
+.copyButton:hover {
+  background: #fafafa;
 }
 
 .resultTitle {

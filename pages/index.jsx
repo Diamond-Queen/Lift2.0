@@ -68,6 +68,9 @@ export default function Home() {
                 <Link href="/career" className={`${styles.btn} ${styles.accent}`}>
                   Lift Career
                 </Link>
+                <Link href="/login" className={`${styles.btn} ${styles.ghost}`}>
+                  Login
+                </Link>
             </nav>
           </div>
 

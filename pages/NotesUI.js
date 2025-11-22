@@ -131,6 +131,37 @@ export default function NotesUI() {
     }
   };
 
+  const clearInput = () => {
+    setInput("");
+    setSummaries([]);
+    setFlashcards([]);
+    setError("");
+  };
+
+  const sampleNotes = `Key topics:\n- Photosynthesis overview\n- Light-dependent reactions\n- Calvin cycle steps\n\nImportant formulas:\n- Rate = k[A]^n\n\nStudy tips:\n- Make flashcards for definitions\n- Summarize each section in one sentence`;
+
+  const useSample = () => {
+    setInput(sampleNotes);
+    // give a tiny visual affordance
+    setTimeout(() => {
+      // focus the textarea if present
+      const ta = document.querySelector("textarea");
+      if (ta) ta.focus();
+    }, 50);
+  };
+
+  const copySummary = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // small non-blocking feedback
+      setError("Summary copied to clipboard");
+      setTimeout(() => setError(""), 1500);
+    } catch (err) {
+      setError("Failed to copy. Use Ctrl+C to copy manually.");
+      setTimeout(() => setError(""), 2500);
+    }
+  };
+
   const toggleFlashcard = (index) => {
     setFlashcards((prev) =>
       prev.map((card, i) => (i === index ? { ...card, flipped: !card.flipped } : card))
@@ -149,9 +180,9 @@ export default function NotesUI() {
         onChange={(e) => setInput(e.target.value)}
       />
 
-      {/*  ADDED: File Input and Generate Button Row */}
+      {/*  ADDED: File Input and Generate/Clear/Sample Button Row */}
       <div className={styles.fileGenerateRow}>
-        <label htmlFor="file-upload" className={styles.fileButton}>
+        <label htmlFor="file-upload" className={styles.fileButton} tabIndex={0} role="button">
           Upload File (.pdf, .pptx)
         </label>
         <input
@@ -166,20 +197,59 @@ export default function NotesUI() {
           className={`${styles.generateButton} ${loading ? styles.loading : ""}`}
           onClick={handleGenerate}
           disabled={loading}
+          aria-label="Generate summaries and flashcards"
         >
           {loading ? "Generating…" : "Generate"}
+        </button>
+
+        <button
+          className={styles.secondaryButton}
+          onClick={clearInput}
+          aria-label="Clear notes and results"
+          title="Clear"
+        >
+          Clear
+        </button>
+
+        <button
+          className={styles.secondaryButton}
+          onClick={useSample}
+          aria-label="Use sample notes"
+          title="Use sample notes"
+        >
+          Sample
         </button>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
       {/* Results rendering remains the same */}
-      {summaries.length > 0 && (
+      {summaries.length > 0 ? (
         <div className={styles.resultCard}>
           <h2 className={styles.resultTitle}>Summaries</h2>
           {summaries.map((sum, i) => (
-            <p key={i}>{sum}</p>
+            <div key={i} className={styles.summaryRow}>
+              <p className={styles.summaryText}>{sum}</p>
+              <button
+                className={styles.copyButton}
+                onClick={() => copySummary(sum)}
+                aria-label={`Copy summary ${i + 1}`}
+              >
+                Copy
+              </button>
+            </div>
           ))}
+        </div>
+      ) : (
+        // Friendly empty state helper when there are no summaries yet
+        <div className={styles.resultCard}>
+          <h2 className={styles.resultTitle}>Need a hand?</h2>
+          <p style={{ marginBottom: "0.75rem" }}>
+            Paste your lecture notes, textbook excerpts, or upload a PDF/PPTX to generate concise summaries and quick flashcards.
+          </p>
+          <p style={{ color: "#555", fontSize: "0.95rem" }}>
+            Tip: Try the <strong>Sample</strong> button to see how Lift extracts summaries.
+          </p>
         </div>
       )}
 

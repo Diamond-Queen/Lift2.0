@@ -1,0 +1,56 @@
+import { useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import styles from "../styles/Notes.module.css";
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!email || !password) return setError("Email and password are required.");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) return setError(data.error || "Login failed.");
+
+      localStorage.setItem("lift_user", JSON.stringify(data.user));
+      router.push("/account");
+    } catch (err) {
+      setError("Network error. Please try again.");
+    }
+  };
+
+  return (
+    <div className={styles.container}>
+      <h1 className={styles.pageTitle}>Sign in</h1>
+      <form onSubmit={handleSubmit} style={{ maxWidth: 640 }}>
+        <label>
+          Email
+          <input value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label>
+          Password
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className={styles.generateButton} type="submit">Sign in</button>
+          <Link href="/signup" className={styles.secondaryButton}>Create account</Link>
+        </div>
+
+        {error && <div className={styles.error}>{error}</div>}
+      </form>
+    </div>
+  );
+}
