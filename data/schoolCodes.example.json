@@ -1,0 +1,12 @@
+[
+  {
+    "code": "ABC123",
+    "schoolId": 1,
+    "notes": "Example code for University A"
+  },
+  {
+    "code": "XYZ789",
+    "schoolId": 2,
+    "notes": "Example code for College B"
+  }
+]

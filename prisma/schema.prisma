@@ -1,14 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  // Force the generated client to use the binary engine in this environment.
+  engineType = "binary"
 }
 
 datasource db {
   provider = "postgresql"
-  // Temporary compatibility: include URL in schema so migrate dev can run.
-  // In Prisma 7 this is normally configured via prisma.config.ts, but
-  // some CLI flows may still read URL from schema. This will be removed
-  // once migrate runs successfully and we confirm config handling.
-  url = env("DATABASE_URL")
 }
 
 model User {
@@ -19,12 +16,22 @@ model User {
   image         String?
   password      String?
   schoolId      String?
+  // Account lockout and customization
+  failedLoginAttempts Int     @default(0)
+  lockedUntil         DateTime?
+  // A free-form template users can save for resume/cover formatting
+  formatTemplate      String?
+  // Arbitrary user preferences (JSON) for future customization
+  preferences         Json?
+  // Track whether user completed onboarding (school code or subscription)
+  onboarded           Boolean   @default(false)
   role          String    @default("user")
   createdAt     DateTime  @default(now())
 
   accounts      Account[]
   sessions      Session[]
   school        School?   @relation(fields: [schoolId], references: [id])
+  subscriptions Subscription[] @relation(name: "UserSubscriptions")
 }
 
 model Account {
@@ -85,12 +92,15 @@ model SchoolCode {
 }
 
 model Subscription {
-  id               String   @id @default(cuid())
-  stripeCustomerId String?
+  id               String    @id @default(cuid())
+  stripeCustomerId String?   @unique
   status           String?
   plan             String?
   schoolId         String?
-  createdAt        DateTime @default(now())
+  userId           String?
+  trialEndsAt      DateTime?
+  createdAt        DateTime  @default(now())
 
   school    School?  @relation(fields: [schoolId], references: [id])
+  user      User?    @relation(name: "UserSubscriptions", fields: [userId], references: [id])
 }

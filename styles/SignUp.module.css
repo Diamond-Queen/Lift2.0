@@ -1,0 +1,139 @@
+/* This file styles the signup page specifically.
+   It builds upon the global styles defined in globals.css,
+   ensuring a cohesive look while addressing unique layout needs.
+*/
+
+.signupContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  /* Use global body gradient; keep transparent here */
+  background: transparent;
+}
+
+.signupCard {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  border-radius: 14px;
+  backdrop-filter: blur(6px) saturate(120%);
+  box-shadow: var(--glass-shadow); /* Uses global shadow */
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.06), rgba(255,255,255,0.02)), var(--card-bg);
+  border: 1px solid var(--card-border); /* Uses global border */
+  transition: background 300ms var(--easing), box-shadow 300ms var(--easing), transform 200ms var(--easing);
+}
+
+/* Form Elements */
+.formGroup {
+  margin-bottom: 1.25rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1rem;
+  transition: border-color 0.18s var(--easing);
+}
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.15);
+}
+
+/* Button Styles
+  All buttons share base styles defined globally, with specific variations here.
+*/
+
+
+.submitButton {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb),1) 0%, rgba(184,143,47,0.95) 100%);
+  color: var(--accent-contrast);
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.1rem;
+  /*transition: transform 0.18s var(--easing), box-shadow 0.18s var(--easing); */
+  will-change: transform, box-shadow;
+}
+.submitButton:hover {
+  transform: translateY(-3px);
+  will-change: transform; 
+  box-shadow: 0 12px 36px rgba(var(--accent-rgb),0.12);
+}
+
+/* Link Styles */
+.loginLink {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s var(--easing);
+}
+.loginLink:hover {
+  color: var(--accent-contrast);
+}
+
+/* Error Message */
+.errorMessage {
+  color: crimson;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, rgba(255,230,230,0.95), rgba(255,240,240,0.9));
+  border: 1px solid rgba(220,20,60,0.15);
+  border-radius: 8px;
+}
+
+/* Page title (match global heading tone) */
+.pageTitle {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* Study Mode Active State - Overrides theme */
+.studyModeActive {
+  background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a2e 100%) !important;
+  min-height: 100vh;
+}
+
+.studyModeActive .pageTitle {
+  color: #a78bfa !important;
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+.studyModeActive .signupCard {
+  background: rgba(30, 30, 50, 0.7) !important;
+  border-color: rgba(167, 139, 250, 0.3) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .signupCard { padding: 1.5rem; max-width: 92vw; }
+  .pageTitle { font-size: 1.35rem; }
+}
+@media (max-width: 400px) {
+  .signupCard { padding: 1.25rem; }
+  .submitButton { font-size: 1rem; }
+}

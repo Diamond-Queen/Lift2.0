@@ -261,16 +261,70 @@
   .printBtn { display: none; }
 }
 
+/* =================== Study Mode Active State - Overrides theme =================== */
+.studyModeActive {
+  background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a2e 100%) !important;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.studyModeActive .pageTitle {
+  color: #a78bfa;
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+.studyModeActive .input,
+.studyModeActive .textarea,
+.studyModeActive .select {
+  background: rgba(30, 30, 50, 0.8);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #e0e0ff;
+}
+
+.studyModeActive .resultCard,
+.studyModeActive .printableResume,
+.studyModeActive .printableCover {
+  background: rgba(30, 30, 50, 0.7);
+  border-color: rgba(167, 139, 250, 0.3);
+  backdrop-filter: blur(10px);
+  color: #e0e0ff;
+}
+
 /* =================== Print Media =================== */
 @media print {
-    .container * { visibility: hidden; }
-  .printableResume * { visibility: visible; }
-  .printableCover * {visibility: visible; }
-  .printableResume * { visibility: visible; }
-  .printableCover * { visibility: visible; }
-  .printableResume * { visibility: visible; }
-  .printableCover * { visibility: visible; }
-  .printableResume { position: absolute; top: 0; left: 0; width: 100%; }
-  .printableCover { position: absolute; top: 0; left: 0; width: 100%; }
-  .printBtn { display: none; }
+  /* Hide everything except printable content */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the printable resume/cover and their children */
+  .printableResume,
+  .printableResume *,
+  .printableCover,
+  .printableCover * {
+    visibility: visible;
+  }
+  
+  /* Position printable content at page origin */
+  .printableResume,
+  .printableCover {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 1rem;
+  }
+  
+  /* Hide buttons and interactive elements */
+  .printBtn,
+  .btnAction,
+  .input,
+  .textarea,
+  .select,
+  .pageTitle {
+    display: none !important;
+  }
 }

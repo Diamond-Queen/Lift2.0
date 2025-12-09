@@ -1,0 +1,113 @@
+const prisma = require('../../../lib/prisma');
+const { getServerSession } = require('next-auth/next');
+const { pool, findUserByEmail } = require('../../../lib/db');
+const logger = require('../../../lib/logger');
+
+// IMPORTANT: This is a placeholder for Stripe integration
+// DO NOT store or log actual payment card data
+// In production, use Stripe.js to tokenize cards on the client
+// and only send the token to your server
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
+
+  const { authOptions } = await import('../auth/[...nextauth]');
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const { name, email, plan, priceMonthly } = req.body || {};
+  
+  // Basic validation
+  if (!name || !email || !plan || !priceMonthly) {
+    return res.status(400).json({ ok: false, error: 'Name, email, plan, and price are required' });
+  }
+
+  // Validate plan and price
+  const validPlans = {
+    career: 9,
+    full: 10
+  };
+  
+  if (!validPlans[plan] || validPlans[plan] !== priceMonthly) {
+    return res.status(400).json({ ok: false, error: 'Invalid plan or pricing' });
+  }
+
+  try {
+    // STRIPE INTEGRATION REQUIRED HERE:
+    // This endpoint currently marks users as onboarded without payment processing
+    // Before production deployment:
+    // 
+    // 1. Install Stripe: npm install stripe
+    // 2. Add STRIPE_SECRET_KEY to .env
+    // 3. Use Stripe Elements on client to tokenize card (never send raw card data to server)
+    // 4. Receive payment method token from client
+    // 5. Create Stripe customer with email
+    // 6. Attach payment method to customer
+    // 7. Create subscription with trial_period_days: 3
+    // 8. Store Stripe customer ID and subscription ID in database
+    // 9. Set up webhook to handle subscription.updated events (cancel/charge after trial)
+    //
+    // Example production code:
+    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // const customer = await stripe.customers.create({ email, name });
+    // const subscription = await stripe.subscriptions.create({
+    //   customer: customer.id,
+    //   items: [{ price: 'price_xxxxx' }], // Your price ID
+    //   trial_period_days: 3,
+    //   payment_behavior: 'default_incomplete',
+    //   expand: ['latest_invoice.payment_intent'],
+    // });
+    
+    const user = prisma 
+      ? await prisma.user.findUnique({ where: { email: session.user.email } })
+      : await findUserByEmail(session.user.email);
+
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+    // Mark user as onboarded and store plan inside preferences for enforcement
+    if (prisma) {
+      // Merge subscription plan into preferences JSON
+      const current = user.preferences || {};
+      const nextPreferences = { ...current, subscriptionPlan: plan, subscriptionPrice: priceMonthly };
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { onboarded: true, preferences: nextPreferences },
+      });
+      // Store subscription info matching current Prisma schema
+      await prisma.subscription.create({
+        data: {
+          status: 'trialing',
+          plan: plan, // 'career' or 'full'
+          // stripeCustomerId: customer.id, // Add when Stripe integrated
+          // schoolId: user.schoolId || null, // if tied to a school program
+        },
+      });
+    } else {
+      // Merge subscription plan into preferences JSON (pg fallback)
+      const current = user.preferences || {};
+      const nextPreferences = { ...current, subscriptionPlan: plan, subscriptionPrice: priceMonthly };
+      await pool.query('UPDATE "User" SET onboarded = true, preferences = $2 WHERE id = $1', [user.id, nextPreferences]);
+      // Store subscription in database (matching current table columns)
+      await pool.query(
+        `INSERT INTO "Subscription" (id, status, plan, "createdAt") VALUES (gen_random_uuid(), $1, $2, NOW())`,
+        ['trialing', plan]
+      );
+    }
+
+    logger.info('subscription_trial_started', { userId: user.id, email: user.email, trialEnd: trialEnd.toISOString() });
+    
+    return res.json({ 
+      ok: true, 
+      data: { 
+        message: 'Free trial started successfully',
+        trialEnds: trialEnd.toISOString(),
+        note: 'Payment processing not yet integrated - Stripe setup required for production'
+      } 
+    });
+  } catch (err) {
+    logger.error('subscription_create_error', { message: err.message });
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+}

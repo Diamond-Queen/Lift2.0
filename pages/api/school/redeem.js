@@ -1,20 +1,75 @@
-import fs from "fs";
-import path from "path";
+const prisma = require('../../../lib/prisma');
+const { getServerSession } = require('next-auth/next');
+const { pool, findUserByEmail } = require('../../../lib/db');
+const logger = require('../../../lib/logger');
 
-export default function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
+
+  const { authOptions } = await import('../auth/[...nextauth]');
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
   const { code } = req.body || {};
-  if (!code) return res.status(400).json({ error: "Missing code" });
+  if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
 
-  const file = path.join(process.cwd(), "data", "schoolCodes.json");
   try {
-    const raw = fs.readFileSync(file, "utf8");
-    const list = JSON.parse(raw || "[]");
-    const found = list.find((s) => s.code.toLowerCase() === code.toLowerCase());
-    if (!found) return res.status(404).json({ error: "Code not found" });
-    return res.status(200).json({ ok: true, school: found });
+    if (prisma) {
+      const schoolCode = await prisma.schoolCode.findUnique({ where: { code } });
+      if (!schoolCode) return res.status(404).json({ ok: false, error: 'Code not found' });
+
+      const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+      if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+      const result = await prisma.$transaction(async (tx) => {
+        // Check if this user already redeemed this specific code
+        const existingUser = await tx.user.findUnique({ where: { id: user.id } });
+        if (existingUser.schoolId === schoolCode.schoolId) {
+          return { ok: false, reason: 'already_member' };
+        }
+        // Multiple students can use the same code - don't mark as redeemed
+        await tx.user.update({ where: { id: user.id }, data: { schoolId: schoolCode.schoolId, onboarded: true } });
+        const school = await tx.school.findUnique({ where: { id: schoolCode.schoolId } });
+        return { ok: true, school };
+      });
+
+      if (!result.ok) return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
+      return res.json({ ok: true, data: { school: result.school } });
+    } else {
+      // pg fallback using conditional update inside a transaction
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const { rows: codeRows } = await client.query('SELECT * FROM "SchoolCode" WHERE code = $1 LIMIT 1', [code]);
+        const sc = codeRows[0];
+        if (!sc) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ ok: false, error: 'Code not found' });
+        }
+        const user = await findUserByEmail(session.user.email);
+        if (!user) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ ok: false, error: 'User not found' });
+        }
+        // Check if this user already has this school
+        if (user.schoolId === sc.schoolId) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
+        }
+        // Multiple students can use the same code - just assign school to user
+        await client.query('UPDATE "User" SET "schoolId" = $1, onboarded = true WHERE id = $2', [sc.schoolId, user.id]);
+        const { rows: schoolRows } = await client.query('SELECT id, name, "createdAt" FROM "School" WHERE id = $1', [sc.schoolId]);
+        await client.query('COMMIT');
+        return res.json({ ok: true, data: { school: schoolRows[0] } });
+      } catch (e) {
+        try { await client.query('ROLLBACK'); } catch(_){}
+        throw e;
+      } finally {
+        client.release();
+      }
+    }
   } catch (err) {
-    return res.status(500).json({ error: "Server error" });
+    logger.error('redeem_error', { message: err.message });
+    return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

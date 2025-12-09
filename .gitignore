@@ -11,3 +11,82 @@ node_modules
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+# Dependencies
+node_modules/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+.env.local
+.envrc
+.npmrc
+
+# Provider project directories containing tokens
+.vercel/
+
+# Private keys / certs
+*.pem
+*.key
+*.crt
+*.p12
+*.keystore
+.ssh/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Build output
+.next/
+dist/
+.out/
+
+# OS / Editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Prisma local artifacts
+prisma/*.db
+
+# Coverage / reports
+coverage/
+*.lcov
+
+# Misc
+.tmp/
+
+# Local-only scripts and data (keep examples committed)
+scripts/local/
+scripts/*.local.js
+data/*.local.json
+# Ignore real codes file; commit example instead
+data/schoolCodes.json
+
+# Additional common ignores and sensitive/local artifacts
+# Direnv (local env variable management)
+.direnv/
+# ESLint cache
+.eslintcache
+# pnpm debug logs
+pnpm-debug.log*
+# Turbo repo cache (if used)
+.turbo/
+# NYC coverage output (istanbul)
+.nyc_output/
+# SQLite and journal files
+*.sqlite
+*.sqlite-journal
+*.db-journal
+# TypeScript incremental build info (harmless if present)
+*.tsbuildinfo
+# Editor/extension local history
+.history/
+# Generic cache folders
+.cache/
+# Temporary local test files
+tmp_test_*

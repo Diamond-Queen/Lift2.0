@@ -1,4 +1,4 @@
 [
-  { "code": "SCHOOL-ALPHA-2025", "name": "Alpha High School", "plan": "premium" },
-  { "code": "SCHOOL-BETA-2025", "name": "Beta Academy", "plan": "standard" }
+  { "code": "DEMO2025", "schoolName": "Demo High School", "plan": "full" },
+  { "code": "TEST2025", "schoolName": "Test Academy", "plan": "full" }
 ]

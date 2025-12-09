@@ -22,7 +22,8 @@
   border-radius: 14px;
   backdrop-filter: blur(6px) saturate(120%);
   box-shadow: var(--glass-shadow); /* Uses global shadow */
-  background: var(--card-bg); /* Uses global background gradient */
+  /* subtle layered background using global card background with an accent wash */
+  background: linear-gradient(180deg, rgba(var(--accent-rgb),0.06), rgba(255,255,255,0.02)), var(--card-bg);
   border: 1px solid var(--card-border); /* Uses global border */
   transition: all 300ms var(--easing); /* Uses global transition */
 }
@@ -42,27 +43,37 @@
   box-shadow: 0 8px 30px rgba(2,6,23,0.5); /* Specific shadow for contrast */
 }
 
+.heroContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+  justify-items: center; /* center children horizontally */
+}
 /* Title and Flourish */
 .titleWrap { display: inline-block; position: relative; }
 .titleFlourish {
-  height: 8px;
+  height: 6px;
   width: 100%;
-  background: linear-gradient(90deg, var(--accent), rgba(212,175,55,0.05));
+  background: linear-gradient(90deg, var(--accent), rgba(212,175,55,0.08));
   position: absolute;
-  bottom: 0;
+  bottom: -4px;
   left: 0;
   border-radius: 9999px;
-  opacity: 0.5;
-  filter: blur(2px);
-  transform: translateY(4px);
+  opacity: 0.6;
+  filter: blur(3px);
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 3.25rem;
+  font-weight: 400; /* cursive script weight */
   margin-bottom: 0.25rem;
-  color: var(--text-color); /* Use global text color */
-  text-shadow: 0 0 10px rgba(0,0,0,0.4);
+  color: var(--text-color);
+  font-family: var(--font-script);
+  letter-spacing: 0.2px; /* reduce to feel less boxy */
+  line-height: 1.15; /* increase to avoid cut-off and add flow */
+  /* softer glow rather than heavy clip gradient */
+  text-shadow: 0 2px 10px rgba(0,0,0,0.45);
 }
 
 .subtitle {
@@ -95,28 +106,33 @@
 }
 
 .primary {
-  background: rgba(255, 217, 0, 0.45);
-  backdrop-filter: blur(12px) saturate(130%);
-  padding: 1.5rem;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: var(--glass-shadow);
-  border-radius: 12px;
-  transition: all 300ms var(--easing);
+  /* Primary action styling – use accent gradient and elevated feel */
+  background: linear-gradient(90deg, rgba(var(--accent-rgb),1) 0%, rgba(184,143,47,0.95) 100%);
+  color: var(--accent-contrast);
+  padding: 0.85rem 1.25rem;
+  border: none;
+  box-shadow: 0 12px 36px rgba(var(--accent-rgb),0.12);
+  border-radius: 10px;
+  transition: transform 220ms var(--easing), box-shadow 220ms var(--easing);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .accent {
-  background: rgba(255, 217, 0, 0.45);
-  backdrop-filter: blur(12px) saturate(130%);
-  padding: 1.5rem;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: var(--glass-shadow);
-  border-radius: 12px;
-  transition: all 300ms var(--easing);
+  /* Secondary action – lighter accent outline */
+  background: rgba(var(--accent-rgb),0.08);
+  color: var(--text-color);
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(var(--accent-rgb),0.12);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+  border-radius: 10px;
+  transition: transform 180ms var(--easing), background 180ms var(--easing);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
 }
+
+.primary:hover { transform: translateY(-3px); box-shadow: 0 24px 60px rgba(var(--accent-rgb),0.16); }
+.accent:hover { transform: translateY(-2px); background: rgba(var(--accent-rgb),0.12); }
 
 /* Toggle Row Styling */
 .toggleRow {
@@ -219,3 +235,15 @@ input:checked + .slider:before {
   /* Apply full width to buttons via the global .btn class */
   .actions :global(.btn) { width: 100%; }
 }
+
+/* Ghost variant for login button to make it match other buttons but subtle */
+.ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb),0.12);
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  transition: transform 160ms var(--easing), background 160ms var(--easing);
+  font-weight: 700;
+}
+.ghost:hover { background: rgba(var(--accent-rgb),0.06); transform: translateY(-2px); }

@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-
-// Initialize OpenAI client using the environment variable
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { generateCompletion } = require('../../lib/ai');
+const logger = require('../../lib/logger');
 
 export default async function handler(req, res) {
   if (req.method !== "POST")
@@ -10,34 +8,43 @@ export default async function handler(req, res) {
   try {
     const { notes } = req.body;
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
+    if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
 
-    // --- Summarize notes ---
-    const summaryResp = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: `Summarize clearly:\n\n${notes}` }],
+    // --- Generate summary and flashcards in parallel with resilient adapter (max 120 seconds) ---
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Generation timeout - try shorter notes')), 120000)
+    );
+
+    const summaryPromise = generateCompletion({
+      prompt: `Summarize the following notes clearly and concisely:\n\n${notes}`,
+      temperature: 0.5,
+      maxTokens: 1500,
+      type: 'text',
+      context: { type: 'summary', notes }
     });
 
-    const summary = summaryResp.choices[0].message.content;
-
-    // --- Generate 12 flashcards ---
-    const flashcardsResp = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `Create exactly 12 flashcards from the following text. Respond ONLY with valid JSON in this format:
+    const flashcardsPromise = generateCompletion({
+      prompt: `Create exactly 12 flashcards from the following text. Respond ONLY with valid JSON in this format:
 [
   {"question":"...","answer":"..."},
   ...
 ]
 Text:
-${notes}`
-        },
-      ],
+${notes}`,
+      temperature: 0.3,
+      maxTokens: 1200,
+      type: 'json',
+      context: { type: 'flashcards', notes }
     });
 
+    const [summaryResp, flashcardsResp] = await Promise.race([
+      Promise.all([summaryPromise, flashcardsPromise]),
+      timeout
+    ]);
+
+    const summary = summaryResp.content;
     let flashcards = [];
-    const rawContent = flashcardsResp.choices[0].message.content;
+    const rawContent = flashcardsResp.content;
     
     try {
       // FIX 1: Robust JSON parsing using regex to extract only the JSON block
@@ -48,7 +55,7 @@ ${notes}`
       
       if (!Array.isArray(flashcards)) flashcards = [];
     } catch (parseError) {
-      console.error("JSON Parse Error:", parseError.message);
+      logger.error('notes_json_parse_error', { message: parseError.message });
       // Fallback: if parsing failed, return an empty array for flashcards
       flashcards = [];
     }
@@ -60,10 +67,9 @@ ${notes}`
     // it's better to process it into an array of paragraphs for display.
     const summaries = summary.split('\n\n').filter(p => p.trim() !== '');
 
-    res.status(200).json({ summaries: summaries, flashcards });
+    res.status(200).json({ summaries, flashcards });
   } catch (err) {
-    console.error(err);
-    // Return a 500 status with an error message
-    res.status(500).json({ error: err.message || "An unexpected error occurred in the API." });
+    logger.error('notes_handler_error', { message: err.message });
+    res.status(500).json({ ok: false, error: err.message || "An unexpected error occurred." });
   }
 }

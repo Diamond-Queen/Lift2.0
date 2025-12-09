@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 // REMOVED: pdfjs-dist top-level import (handled dynamically)
 
@@ -14,8 +14,73 @@ export default function NotesUI() {
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [studyMode, setStudyMode] = useState(false);
+  const [studyMusic, setStudyMusic] = useState('none');
+  const [musicLoaded, setMusicLoaded] = useState(false);
+  const audioRef = useRef(null);
 
-  //  ✅ PPTX Processor (Uses JSZip)
+  // Fetch user preferences on mount and set up polling to reflect changes
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const res = await fetch('/api/user/preferences');
+        if (res.ok) {
+          const data = await res.json();
+          const prefs = data?.data?.preferences || {};
+          if (typeof prefs.studyMode === 'boolean') setStudyMode(prefs.studyMode);
+          if (typeof prefs.studyMusic === 'string') setStudyMusic(prefs.studyMusic);
+        }
+      } catch (err) {
+        console.error('Failed to fetch preferences:', err);
+      }
+    };
+    
+    // Fetch immediately
+    fetchPreferences();
+    
+    // Poll every 2 seconds to check for preference changes
+    const interval = setInterval(fetchPreferences, 2000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle study music - set loaded flag when music is selected
+  useEffect(() => {
+    if (studyMusic !== 'none' && studyMode) {
+      setMusicLoaded(true);
+    } else {
+      setMusicLoaded(false);
+    }
+  }, [studyMusic, studyMode]);
+
+  // Enter/exit fullscreen based on studyMode from preferences
+  useEffect(() => {
+    // Reflect study mode globally for CSS overrides
+    document.documentElement.dataset.study = studyMode ? 'on' : 'off';
+
+    if (studyMode) {
+      // Enter fullscreen
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+      }
+    } else {
+      // Exit fullscreen
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  }, [studyMode]);
+
+  //  PPTX Processor (Uses JSZip)
   const extractTextFromPptx = async (fileBuffer) => {
     const zip = await JSZip.loadAsync(fileBuffer);
     let text = "";
@@ -33,10 +98,10 @@ export default function NotesUI() {
     return text.trim();
   };
 
-  //  ✅ PDF Processor (Uses dynamic pdfjs-dist import)
+  //  PDF Processor (Uses dynamic pdfjs-dist import)
   const extractTextFromPdf = async (file) => {
     // 1. Dynamic Import: Safe because it runs only after user interaction
-    const pdfjsLib = await import("pdfjs-dist/build/pdf");
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
     
     // 2. Set Worker Source: Required for pdfjs-dist to work
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
@@ -58,7 +123,7 @@ export default function NotesUI() {
     return text.trim();
   };
 
-  //  ✅ Handle file uploads
+  //  Handle file uploads
   const handleFileChange = async (e) => {
     setError("");
     const file = e.target.files?.[0];
@@ -168,9 +233,28 @@ export default function NotesUI() {
     );
   };
 
+  const musicUrls = {
+    lofi: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
+    classical: 'https://cdn.pixabay.com/audio/2022/03/10/audio_4621b1a4d4.mp3',
+    ambient: 'https://cdn.pixabay.com/audio/2022/03/15/audio_c610232532.mp3',
+    rain: 'https://cdn.pixabay.com/audio/2022/03/12/audio_4a3bf2e471.mp3'
+  };
+
   return (
-    <div className={styles.container}>
-      <h1 className={styles.pageTitle}>Lift Notes</h1>
+    <>
+      {/* Music Player - Hidden audio element */}
+      {studyMode && studyMusic !== 'none' && (
+        <audio
+          ref={audioRef}
+          src={musicUrls[studyMusic]}
+          autoPlay
+          loop
+          style={{ display: 'none' }}
+        />
+      )}
+
+      <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>
+        <h1 className={styles.pageTitle}>Lift Notes</h1>
 
       <textarea
         className={styles.textarea}
@@ -275,5 +359,6 @@ export default function NotesUI() {
         </div>
       )}
     </div>
+    </>
   );
 }

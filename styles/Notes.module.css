@@ -17,20 +17,22 @@
 /* Textarea */
 .textarea {
   width: 100%;
-  border: 2px solid #ddd;
+  border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 1rem;
   font-size: 1rem;
   margin-bottom: 1rem;
   resize: vertical;
-  background: #f9f9f9;
-  transition: border 0.2s, box-shadow 0.2s;
+  background: var(--card-bg);
+  color: var(--text-color);
+  transition: border 0.2s, box-shadow 0.2s, transform 160ms var(--easing);
 }
 
 .textarea:focus {
-  border-color: #6a5af9;
-  box-shadow: 0 4px 12px rgba(106,90,249,0.3);
+  border-color: rgba(var(--accent-rgb),0.9);
+  box-shadow: 0 6px 18px rgba(var(--accent-rgb),0.08);
   outline: none;
+  transform: translateY(-2px);
 }
 
 /* FIX 2: File + Generate row structure */
@@ -73,39 +75,39 @@
   display: flex; /* For centering the text */
   justify-content: center;
   align-items: center;
-  background: #fff;
-  border: 2px solid #6a5af9;
-  color: #6a5af9;
+  background: transparent;
+  border: 1px solid rgba(var(--accent-rgb),0.18);
+  color: var(--text-color);
   border-radius: 8px;
   padding: 0.7rem 1.2rem;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all 0.18s var(--easing);
   text-align: center; /* Ensures text is centered */
 }
 
 .fileButton:hover {
-  background: #6a5af9;
-  color: #fff;
+  background: rgba(var(--accent-rgb),0.08);
+  color: var(--accent-contrast);
 }
 
 /* Generate button */
 .generateButton {
   flex: 1;
-  background: #6a5af9;
-  color: #fff;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb),1) 0%, rgba(184,143,47,0.95) 100%);
+  color: var(--accent-contrast);
   border: none;
   padding: 0.7rem 1.2rem;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 700;
-  transition: transform 0.2s, box-shadow 0.2s;
+  font-weight: 800;
+  transition: transform 0.18s var(--easing), box-shadow 0.18s var(--easing);
   /* Ensure it has a minimum width if needed, but flex handles it here */
 }
 
 .generateButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(106,90,249,0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(var(--accent-rgb),0.12);
 }
 
 .loading {
@@ -118,8 +120,8 @@
   color: crimson;
   margin-bottom: 1.5rem; /* Increased margin for better spacing */
   padding: 0.75rem;
-  background: #ffebeb;
-  border: 1px solid crimson;
+  background: linear-gradient(180deg, rgba(255,230,230,0.95), rgba(255,240,240,0.9));
+  border: 1px solid rgba(220,20,60,0.15);
   border-radius: 8px;
 }
 
@@ -128,9 +130,10 @@
   margin-top: 1.5rem;
   padding: 1.5rem;
   border-radius: 12px;
-  background: #f5f5f5;
-  color: #111;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  background: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: var(--glass-shadow);
+  border: 1px solid var(--card-border);
 }
 
 .resultCard p {
@@ -148,7 +151,7 @@
 .summaryText {
   flex: 1;
   margin: 0;
-  color: #111;
+  color: var(--text-color);
   line-height: 1.45;
 }
 
@@ -247,4 +250,74 @@
 
 .flipped .back {
   transform: rotateY(0deg);
+}
+
+/* Study Mode Toggle Button - Cute design */
+.studyModeToggle {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.studyModeToggle:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.studyModeToggle:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Study Mode Active State - Overrides theme */
+.studyModeActive {
+  background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a2e 100%) !important;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.studyModeActive .pageTitle {
+  color: #a78bfa;
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+.studyModeActive .textarea {
+  background: rgba(30, 30, 50, 0.8);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #e0e0ff;
+}
+
+.studyModeActive .resultCard {
+  background: rgba(30, 30, 50, 0.7);
+  border-color: rgba(167, 139, 250, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.studyModeActive .resultTitle {
+  color: #c4b5fd;
+}
+
+.studyModeActive .summaryText {
+  color: #e0e0ff;
+}
+
+/* Music Player */
+.musicPlayer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
 }

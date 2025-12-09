@@ -1,19 +1,18 @@
-import { defineConfig } from '@prisma/internals';
-
-export default defineConfig({
-  // Primary datasource (used by Prisma 7+)
+// Export a simple config object. Some CLI flows parse this directly.
+export default {
+  // Primary datasource (used by Prisma CLI)
   datasource: {
     db: {
       provider: 'postgresql',
-      url: process.env.DATABASE_URL!,
+      url: process.env.DATABASE_URL,
     },
   },
 
-  // Keep plural form as a fallback for any CLI expectations
+  // Legacy plural key as a fallback
   datasources: {
     db: {
       provider: 'postgresql',
-      url: process.env.DATABASE_URL!,
+      url: process.env.DATABASE_URL,
     },
   },
-});
+};

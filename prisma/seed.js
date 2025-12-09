@@ -2,7 +2,9 @@ const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
+// Pass an explicit empty config object to avoid issues when the generated
+// Prisma client expects an options argument in some runtime builds.
+const prisma = new PrismaClient({});
 
 async function main() {
   const file = path.join(process.cwd(), 'data', 'schoolCodes.json');
