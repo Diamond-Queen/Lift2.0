@@ -60,14 +60,18 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      // Rename a class
-      const { classId, name } = req.body || {};
+      // Rename a class and update color
+      const { classId, name, color } = req.body || {};
       if (!classId) return res.status(400).json({ error: 'classId required' });
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return res.status(400).json({ error: 'Class name is required' });
       }
 
       const trimmedName = name.trim();
+      const updateData = { name: trimmedName };
+      if (color && typeof color === 'string') {
+        updateData.color = color;
+      }
 
       try {
         if (prisma) {
@@ -76,19 +80,21 @@ export default async function handler(req, res) {
 
           const updatedClass = await prisma.class.update({
             where: { id: classId },
-            data: { name: trimmedName }
+            data: updateData
           });
-          logger.info('class_renamed', { userId, classId, newName: trimmedName });
+          logger.info('class_renamed', { userId, classId, newName: trimmedName, color });
           return res.json({ ok: true, data: updatedClass });
         } else {
           const { rows: classRows } = await pool.query('SELECT "userId" FROM "Class" WHERE id = $1', [classId]);
           if (!classRows[0] || classRows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
 
+          const colorClause = color ? ', color = $2' : '';
+          const params = color ? [trimmedName, color, classId] : [trimmedName, classId];
           const updated = await pool.query(
-            'UPDATE "Class" SET name = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING *',
-            [trimmedName, classId]
+            `UPDATE "Class" SET name = $1${colorClause}, "updatedAt" = NOW() WHERE id = $${colorClause ? '3' : '2'} RETURNING *`,
+            params
           );
-          logger.info('class_renamed', { userId, classId, newName: trimmedName });
+          logger.info('class_renamed', { userId, classId, newName: trimmedName, color });
           return res.json({ ok: true, data: updated.rows[0] });
         }
       } catch (e) {
