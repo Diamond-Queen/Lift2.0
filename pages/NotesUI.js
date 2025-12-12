@@ -234,10 +234,27 @@ export default function NotesUI() {
   useEffect(() => {
     if (studyMusic !== 'none' && studyMode && audioRef.current) {
       const audioElement = audioRef.current;
-      audioElement.onerror = () => {
-        console.error('[Audio] Failed to load music:', studyMusic);
-        setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+      let usedFallback = false;
+      
+      const handleError = () => {
+        if (!usedFallback) {
+          console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
+          usedFallback = true;
+          audioElement.src = musicUrls[studyMusic].fallback;
+          audioElement.load();
+          audioElement.play().catch((err) => {
+            console.error('[Audio] Fallback also failed:', err.message);
+            setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+          });
+        } else {
+          console.error('[Audio] Both primary and fallback failed:', studyMusic);
+          setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+        }
       };
+      
+      audioElement.onerror = handleError;
+      audioElement.onabort = handleError;
+      
       audioElement.play().catch((err) => {
         console.warn('[Audio] Play failed:', err.message);
         setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
@@ -246,6 +263,7 @@ export default function NotesUI() {
     } else if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.onerror = null;
+      audioRef.current.onabort = null;
       setMusicLoaded(false);
     }
   }, [studyMusic, studyMode]);
@@ -391,16 +409,28 @@ export default function NotesUI() {
   };
 
   const musicUrls = {
-    lofi: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
-    classical: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    ambient: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    rain: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    lofi: {
+      primary: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+    },
+    classical: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+    },
+    ambient: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    },
+    rain: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    }
   };
 
   return (
     <>
       {studyMode && studyMusic !== 'none' && (
-        <audio ref={audioRef} src={musicUrls[studyMusic]} autoPlay loop style={{ display: 'none' }} />
+        <audio ref={audioRef} src={musicUrls[studyMusic]?.primary} autoPlay loop style={{ display: 'none' }} />
       )}
 
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>

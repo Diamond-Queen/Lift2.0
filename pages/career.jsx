@@ -190,10 +190,27 @@ export default function Career() {
     if (studyMusic !== 'none' && studyMode) {
       const audioElement = document.querySelector('audio');
       if (audioElement) {
-        audioElement.onerror = () => {
-          console.error('[Audio] Failed to load music:', studyMusic);
-          setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+        let usedFallback = false;
+        
+        const handleError = () => {
+          if (!usedFallback) {
+            console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
+            usedFallback = true;
+            audioElement.src = musicUrls[studyMusic].fallback;
+            audioElement.load();
+            audioElement.play().catch((err) => {
+              console.error('[Audio] Fallback also failed:', err.message);
+              setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+            });
+          } else {
+            console.error('[Audio] Both primary and fallback failed:', studyMusic);
+            setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+          }
         };
+        
+        audioElement.onerror = handleError;
+        audioElement.onabort = handleError;
+        
         audioElement.play().catch((err) => {
           console.warn('[Audio] Play failed:', err.message);
           setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
@@ -205,6 +222,7 @@ export default function Career() {
       if (audioElement) {
         audioElement.pause();
         audioElement.onerror = null;
+        audioElement.onabort = null;
       }
       setMusicLoaded(false);
     }
@@ -466,10 +484,22 @@ export default function Career() {
   };
 
   const musicUrls = {
-    lofi: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
-    classical: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    ambient: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    rain: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    lofi: {
+      primary: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+    },
+    classical: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+    },
+    ambient: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    },
+    rain: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    }
   };
 
   return (
@@ -477,7 +507,7 @@ export default function Career() {
       {/* Music Player - Hidden audio element */}
       {studyMode && studyMusic !== 'none' && (
         <audio
-          src={musicUrls[studyMusic]}
+          src={musicUrls[studyMusic]?.primary}
           autoPlay
           loop
           style={{ display: 'none' }}
