@@ -59,6 +59,46 @@ export default async function handler(req, res) {
       }
     }
 
+    if (req.method === 'PUT') {
+      // Rename a class
+      const { classId, name } = req.body || {};
+      if (!classId) return res.status(400).json({ error: 'classId required' });
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Class name is required' });
+      }
+
+      const trimmedName = name.trim();
+
+      try {
+        if (prisma) {
+          const cls = await prisma.class.findUnique({ where: { id: classId }, select: { userId: true } });
+          if (!cls || cls.userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+
+          const updatedClass = await prisma.class.update({
+            where: { id: classId },
+            data: { name: trimmedName }
+          });
+          logger.info('class_renamed', { userId, classId, newName: trimmedName });
+          return res.json({ ok: true, data: updatedClass });
+        } else {
+          const { rows: classRows } = await pool.query('SELECT "userId" FROM "Class" WHERE id = $1', [classId]);
+          if (!classRows[0] || classRows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+
+          const updated = await pool.query(
+            'UPDATE "Class" SET name = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING *',
+            [trimmedName, classId]
+          );
+          logger.info('class_renamed', { userId, classId, newName: trimmedName });
+          return res.json({ ok: true, data: updated.rows[0] });
+        }
+      } catch (e) {
+        if (e.code === 'P2002') {
+          return res.status(409).json({ error: 'Class name already exists' });
+        }
+        throw e;
+      }
+    }
+
     if (req.method === 'DELETE') {
       // Delete a class
       const { classId } = req.body || {};
