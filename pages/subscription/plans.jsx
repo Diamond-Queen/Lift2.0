@@ -27,6 +27,7 @@ export default function SubscriptionPlans() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const devMode = String(process.env.NEXT_PUBLIC_STRIPE_DEV_MODE || "").toLowerCase() === 'true';
 
   const handleSelectPlan = async (plan) => {
     setSelectedPlan(plan);
@@ -65,6 +66,19 @@ export default function SubscriptionPlans() {
         <p style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--text-muted)' }}>
           Start with a 3-day free trial. Cancel anytime.
         </p>
+
+        {devMode && (
+          <div role="note" style={{
+            margin: '0 0 1rem 0',
+            padding: '0.75rem 1rem',
+            borderRadius: '8px',
+            background: 'rgba(234,179,8,0.12)',
+            border: '1px solid rgba(234,179,8,0.35)',
+            color: 'var(--text-color)'
+          }}>
+            Simulated checkout is enabled (dev mode). No real payment is processed.
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
           {/* Career Only Plan */}
