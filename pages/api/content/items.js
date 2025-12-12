@@ -2,8 +2,30 @@ const prisma = require('../../../lib/prisma');
 const { pool, findUserByEmail } = require('../../../lib/db');
 const { getServerSession } = require('next-auth/next');
 const logger = require('../../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  trackUserRateLimit,
+  auditLog,
+} = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
+
+  const ip = extractClientIp(req);
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('content_items_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+    return res.status(400).json({ error: 'Request rejected', reason: validation.reason });
+  }
+  const ipLimit = trackIpRateLimit(ip, '/api/content/items');
+  if (!ipLimit.allowed) {
+    auditLog('content_items_rate_limited_ip', null, { ip });
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
+
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ error: 'Unauthorized' });
@@ -14,6 +36,11 @@ export default async function handler(req, res) {
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   const userId = user.id;
+  const userLimit = trackUserRateLimit(userId, '/api/content/items');
+  if (!userLimit.allowed) {
+    auditLog('content_items_rate_limited_user', userId, { ip });
+    return res.status(429).json({ error: 'Too many requests for this user.' });
+  }
 
   try {
     if (req.method === 'GET') {

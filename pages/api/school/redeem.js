@@ -2,13 +2,40 @@ const prisma = require('../../../lib/prisma');
 const { getServerSession } = require('next-auth/next');
 const { pool, findUserByEmail } = require('../../../lib/db');
 const logger = require('../../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  trackUserRateLimit,
+  auditLog,
+} = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
+  const ip = extractClientIp(req);
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('school_redeem_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+  }
+  const ipLimit = trackIpRateLimit(ip, '/api/school/redeem');
+  if (!ipLimit.allowed) {
+    auditLog('school_redeem_rate_limited_ip', null, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  const userLimit = trackUserRateLimit(session.user.id || session.user.email, '/api/school/redeem');
+  if (!userLimit.allowed) {
+    auditLog('school_redeem_rate_limited_user', session.user.id || session.user.email, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
+  }
 
   const { code } = req.body || {};
   if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });

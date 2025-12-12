@@ -2,6 +2,14 @@ const prisma = require('../../../lib/prisma');
 const { getServerSession } = require('next-auth/next');
 const { pool, findUserByEmail } = require('../../../lib/db');
 const logger = require('../../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  trackUserRateLimit,
+  auditLog,
+} = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
 
 // IMPORTANT: This is a placeholder for Stripe integration
 // DO NOT store or log actual payment card data
@@ -9,7 +17,20 @@ const logger = require('../../../lib/logger');
 // and only send the token to your server
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
+
+  const ip = extractClientIp(req);
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('subscription_create_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+  }
+  const ipLimit = trackIpRateLimit(ip, '/api/subscription/create');
+  if (!ipLimit.allowed) {
+    auditLog('subscription_create_rate_limited_ip', null, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  }
 
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
@@ -64,6 +85,12 @@ export default async function handler(req, res) {
 
     if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
 
+    const userLimit = trackUserRateLimit(user.id || session.user.id || session.user.email, '/api/subscription/create');
+    if (!userLimit.allowed) {
+      auditLog('subscription_create_rate_limited_user', user.id || session.user.id || session.user.email, { ip });
+      return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
+    }
+
     const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
     // Mark user as onboarded and store plan inside preferences for enforcement
@@ -97,6 +124,7 @@ export default async function handler(req, res) {
     }
 
     logger.info('subscription_trial_started', { userId: user.id, email: user.email, trialEnd: trialEnd.toISOString() });
+    auditLog('subscription_trial_started', user.id, { plan, priceMonthly, trialEnd: trialEnd.toISOString(), ip });
     
     return res.json({ 
       ok: true, 
@@ -108,6 +136,7 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     logger.error('subscription_create_error', { message: err.message });
+    auditLog('subscription_create_error', null, { message: err.message }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

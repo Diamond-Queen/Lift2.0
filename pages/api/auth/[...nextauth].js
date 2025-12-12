@@ -4,26 +4,16 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prisma from '../../../lib/prisma';
 import { findUserByEmail, updateUser } from '../../../lib/db';
 import argon2 from 'argon2';
-import { setSecureHeaders } from '../../../lib/security';
+import {
+  setSecureHeaders,
+  trackIpRateLimit,
+  trackFailedLogin,
+  resetFailedLogin,
+  validateRequest,
+  auditLog,
+} from '../../../lib/security';
 import logger from '../../../lib/logger';
 import { extractClientIp } from '../../../lib/ip';
-
-// Simple per-IP rate limiter for sign-in attempts (in-memory).
-const LOGIN_WINDOW_MS = 60 * 1000; // 1 minute
-const LOGIN_MAX = 6;
-const loginMap = new Map();
-
-function loginRateLimit(ip) {
-  const now = Date.now();
-  const entry = loginMap.get(ip) || { count: 0, reset: now + LOGIN_WINDOW_MS };
-  if (now > entry.reset) {
-    entry.count = 0;
-    entry.reset = now + LOGIN_WINDOW_MS;
-  }
-  entry.count += 1;
-  loginMap.set(ip, entry);
-  return { allowed: entry.count <= LOGIN_MAX, remaining: Math.max(0, LOGIN_MAX - entry.count), reset: entry.reset };
-}
 
 const usePrisma = !!prisma;
 
@@ -42,8 +32,16 @@ export const authOptions = {
         try { if (req?.res) setSecureHeaders(req.res); } catch (e) {}
 
         const ip = extractClientIp(req);
-        const rl = loginRateLimit(ip);
-        if (!rl.allowed) throw new Error('Too many login attempts. Try again later.');
+        const validation = validateRequest(req);
+        if (!validation.valid) {
+          auditLog('auth_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+          throw new Error('Request rejected.');
+        }
+        const rl = trackIpRateLimit(ip, '/api/auth/[...nextauth]');
+        if (!rl.allowed) {
+          auditLog('auth_rate_limited_ip', null, { ip });
+          throw new Error('Too many login attempts. Try again later.');
+        }
 
         if (!credentials?.email || !credentials?.password) return null;
         const normalized = String(credentials.email).trim().toLowerCase();
@@ -56,6 +54,11 @@ export const authOptions = {
         }
         const valid = await argon2.verify(user.password, credentials.password);
         if (!valid) {
+          const failed = trackFailedLogin(normalized, ip);
+          if (!failed.allowed) {
+            auditLog('auth_account_locked', user.id, { email: normalized, ip, lockUntil: failed.lockUntil }, 'warning');
+            throw new Error('Account locked due to repeated failures. Try again later.');
+          }
           // increment failed attempts and possibly lock the account
           try {
             const attempts = (user.failedLoginAttempts || 0) + 1;
@@ -73,6 +76,7 @@ export const authOptions = {
           } catch (e) {
             logger.error('failed_login_attempt_update', { message: e.message });
           }
+          auditLog('auth_failed', user.id, { email: normalized, ip });
           return null;
         }
         // Successful login: reset counters if necessary
@@ -83,8 +87,11 @@ export const authOptions = {
             } else {
               await updateUser(user.id, { failedLoginAttempts: 0, lockedUntil: null });
             }
+            resetFailedLogin(normalized);
           } catch (e) { logger.error('failed_reset_lockout', { message: e.message }); }
         }
+        resetFailedLogin(normalized);
+        auditLog('auth_success', user.id, { email: normalized, ip });
         // NextAuth expects an object; avoid returning password
         const { password, ...safe } = user;
         return safe;

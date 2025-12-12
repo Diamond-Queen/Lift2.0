@@ -1,9 +1,29 @@
 const { generateCompletion } = require('../../lib/ai');
 const logger = require('../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  auditLog,
+} = require('../../lib/security');
+const { extractClientIp } = require('../../lib/ip');
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
+
+  const ip = extractClientIp(req);
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('career_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+  }
+  const rl = trackIpRateLimit(ip, '/api/career');
+  if (!rl.allowed) {
+    auditLog('career_rate_limited', null, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  }
 
   const {
     type,

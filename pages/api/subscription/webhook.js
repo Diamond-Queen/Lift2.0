@@ -2,6 +2,7 @@ const stripe = require('../../../lib/stripe');
 const prisma = require('../../../lib/prisma');
 const logger = require('../../../lib/logger');
 const { buffer } = require('micro');
+const { setSecureHeaders, auditLog } = require('../../../lib/security');
 
 // Disable body parsing, need raw body for webhook verification
 export const config = {
@@ -11,6 +12,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (!stripe) {
@@ -23,6 +25,7 @@ export default async function handler(req, res) {
 
   if (!webhookSecret) {
     logger.error('webhook_secret_missing');
+    auditLog('webhook_secret_missing', null, {}, 'critical');
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
 
@@ -33,6 +36,7 @@ export default async function handler(req, res) {
     event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
   } catch (err) {
     logger.error('webhook_verification_failed', { message: err.message });
+    auditLog('webhook_verification_failed', null, { message: err.message }, 'warning');
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
@@ -76,6 +80,7 @@ export default async function handler(req, res) {
     res.json({ received: true });
   } catch (err) {
     logger.error('webhook_handler_error', { type: event.type, message: err.message, stack: err.stack });
+    auditLog('webhook_handler_error', null, { type: event.type, message: err.message }, 'error');
     res.status(500).json({ error: 'Webhook handler failed' });
   }
 }

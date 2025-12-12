@@ -2,35 +2,31 @@ const prisma = require('../../../lib/prisma');
 const db = require('../../../lib/db');
 const argon2 = require('argon2');
 const { Prisma } = require('@prisma/client');
-const { setSecureHeaders } = require('../../../lib/security');
+const {
+  setSecureHeaders,
+  trackIpRateLimit,
+  validateRequest,
+  auditLog,
+} = require('../../../lib/security');
 const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
-
-// Simple in-memory rate limiter per IP (not perfect for distributed systems,
-// but useful for local dev). For production, use Redis or an external store.
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 5; // max requests per IP per window
-const rateMap = new Map();
-
-function rateLimit(ip) {
-  const now = Date.now();
-  const entry = rateMap.get(ip) || { count: 0, reset: now + RATE_LIMIT_WINDOW_MS };
-  if (now > entry.reset) {
-    entry.count = 0;
-    entry.reset = now + RATE_LIMIT_WINDOW_MS;
-  }
-  entry.count += 1;
-  rateMap.set(ip, entry);
-  return { allowed: entry.count <= RATE_LIMIT_MAX, remaining: Math.max(0, RATE_LIMIT_MAX - entry.count), reset: entry.reset };
-}
 
 export default async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
   const ip = extractClientIp(req);
-  const rl = rateLimit(ip);
-  if (!rl.allowed) return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('register_request_rejected', null, { reason: validation.reason, ip }, 'warning');
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+  }
+
+  const rl = trackIpRateLimit(ip, '/api/auth/register');
+  if (!rl.allowed) {
+    auditLog('register_rate_limited', null, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  }
 
   const { name, email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ ok: false, error: 'Email and password are required' });
@@ -50,12 +46,14 @@ export default async function handler(req, res) {
       ? await prisma.user.create({ data: { name: name ? String(name).slice(0,120) : null, email: normalizedEmail, password: hash } })
       : await db.createUser({ name: name ? String(name).slice(0,120) : null, email: normalizedEmail, password: hash });
     const { password: _p, ...safe } = user;
+    auditLog('register_success', safe.id, { email: normalizedEmail });
     return res.status(201).json({ ok: true, data: { user: safe } });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       return res.status(400).json({ ok: false, error: 'Email already in use' });
     }
     logger.error('register_error', { message: err.message });
+    auditLog('register_error', null, { message: err.message, email: normalizedEmail }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

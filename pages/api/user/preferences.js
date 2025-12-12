@@ -2,13 +2,39 @@ const prisma = require('../../../lib/prisma');
 const { getServerSession } = require('next-auth/next');
 const { pool } = require('../../../lib/db');
 const logger = require('../../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  trackUserRateLimit,
+  auditLog,
+} = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
+  const ip = extractClientIp(req);
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('preferences_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+    return res.status(400).json({ error: 'Request rejected', reason: validation.reason });
+  }
+  const ipLimit = trackIpRateLimit(ip, '/api/user/preferences');
+  if (!ipLimit.allowed) {
+    auditLog('preferences_rate_limited_ip', null, { ip });
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
+
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.id) return res.status(401).json({ error: 'Unauthorized' });
 
   const userId = session.user.id;
+  const userLimit = trackUserRateLimit(userId, '/api/user/preferences');
+  if (!userLimit.allowed) {
+    auditLog('preferences_rate_limited_user', userId, { ip });
+    return res.status(429).json({ error: 'Too many requests for this user.' });
+  }
 
   try {
     if (req.method === 'GET') {
@@ -78,6 +104,7 @@ export default async function handler(req, res) {
     res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   } catch (err) {
     logger.error('preferences_error', { message: err.message });
+    auditLog('preferences_error', userId, { message: err.message }, 'error');
     res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

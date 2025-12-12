@@ -1,11 +1,31 @@
 const { generateCompletion } = require('../../lib/ai');
 const logger = require('../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  auditLog,
+} = require('../../lib/security');
+const { extractClientIp } = require('../../lib/ip');
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
 
   try {
+    const ip = extractClientIp(req);
+    const validation = validateRequest(req);
+    if (!validation.valid) {
+      auditLog('notes_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+      return res.status(400).json({ error: 'Request rejected', reason: validation.reason });
+    }
+    const rl = trackIpRateLimit(ip, '/api/notes');
+    if (!rl.allowed) {
+      auditLog('notes_rate_limited', null, { ip });
+      return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    }
+
     const { notes } = req.body;
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
@@ -70,6 +90,7 @@ ${notes}`,
     res.status(200).json({ summaries, flashcards });
   } catch (err) {
     logger.error('notes_handler_error', { message: err.message });
+    auditLog('notes_handler_error', null, { message: err.message }, 'error');
     res.status(500).json({ ok: false, error: err.message || "An unexpected error occurred." });
   }
 }

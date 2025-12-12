@@ -1,11 +1,32 @@
 const stripe = require('../../../lib/stripe');
 const prisma = require('../../../lib/prisma');
-const { pool } = require('../../../lib/db');
+const { pool, findUserByEmail } = require('../../../lib/db');
 const { getServerSession } = require('next-auth/next');
 const logger = require('../../../lib/logger');
+const {
+  setSecureHeaders,
+  validateRequest,
+  trackIpRateLimit,
+  trackUserRateLimit,
+  auditLog,
+} = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
 
 export default async function handler(req, res) {
+  setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
+
+  const ip = extractClientIp(req);
+  const validation = validateRequest(req);
+  if (!validation.valid) {
+    auditLog('checkout_request_blocked', null, { ip, reason: validation.reason }, 'warning');
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+  }
+  const ipLimit = trackIpRateLimit(ip, '/api/subscription/checkout');
+  if (!ipLimit.allowed) {
+    auditLog('checkout_rate_limited_ip', null, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  }
 
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
@@ -28,12 +49,20 @@ export default async function handler(req, res) {
   const planConfig = validPlans[plan];
 
   try {
-    const user = await prisma.user.findUnique({ 
-      where: { email: session.user.email },
-      select: { id: true, email: true, name: true }
-    });
+    const user = prisma
+      ? await prisma.user.findUnique({ 
+          where: { email: session.user.email },
+          select: { id: true, email: true, name: true }
+        })
+      : await findUserByEmail(session.user.email);
 
     if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    const userLimit = trackUserRateLimit(user.id || session.user.id || session.user.email, '/api/subscription/checkout');
+    if (!userLimit.allowed) {
+      auditLog('checkout_rate_limited_user', user.id || session.user.id || session.user.email, { ip });
+      return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
+    }
 
     // Check if user already has an active subscription
     const existingSub = prisma ? await prisma.subscription.findFirst({
@@ -47,8 +76,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'You already have an active subscription' });
     }
 
-    // Development mode: simulate checkout and activate trial immediately
-    if (devMode) {
+    // If missing price IDs but in dev, or explicitly in dev: simulate checkout
+    if (devMode || !planConfig.price) {
+      if (!devMode && !planConfig.price) {
+        // Not in dev and no price configured — block
+        return res.status(503).json({ ok: false, error: 'Plan price not configured on server' });
+      }
       const trialEnds = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       try {
         if (prisma) {
@@ -76,7 +109,7 @@ export default async function handler(req, res) {
             [user.id, plan, 'trialing', trialEnds]
           );
           await pool.query(
-            'UPDATE "User" SET onboarded = TRUE, preferences = COALESCE(preferences, '{}'::jsonb) || $2::jsonb WHERE id = $1',
+            `UPDATE "User" SET onboarded = TRUE, preferences = COALESCE(preferences, '{}'::jsonb) || $2::jsonb WHERE id = $1`,
             [user.id, JSON.stringify({ subscriptionPlan: plan })]
           );
         }
@@ -144,6 +177,7 @@ export default async function handler(req, res) {
       sessionId: checkoutSession.id, 
       plan 
     });
+    auditLog('checkout_session_created', user.id, { plan, sessionId: checkoutSession.id, ip });
 
     return res.json({ 
       ok: true, 
@@ -154,6 +188,7 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     logger.error('checkout_creation_error', { message: err.message, stack: err.stack });
+    auditLog('checkout_creation_error', null, { message: err.message }, 'error');
     return res.status(500).json({ ok: false, error: 'Failed to create checkout session' });
   }
 }
