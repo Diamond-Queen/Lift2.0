@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../styles/SignUp.module.css';
 import { useEffect, useState, useRef } from 'react';
+import { musicUrls } from '../lib/musicUrls';
 
 export default function Dashboard() {
   const { status } = useSession();
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [studyMode, setStudyMode] = useState(false);
   const [studyMusic, setStudyMusic] = useState('none');
+  const [error, setError] = useState("");
   const audioRef = useRef(null);
 
   // Fetch user preferences for study mode and music
@@ -36,9 +38,42 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Enter/exit fullscreen based on studyMode and toggle global CSS override
+  // Enter/exit fullscreen based on studyMode and handle music playback
   useEffect(() => {
     document.documentElement.dataset.study = studyMode ? 'on' : 'off';
+
+    // Handle audio playback with fallback support
+    if (studyMode && studyMusic !== 'none' && audioRef.current) {
+      let usedFallback = false;
+      
+      const handleError = () => {
+        if (!usedFallback) {
+          console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
+          usedFallback = true;
+          audioRef.current.src = musicUrls[studyMusic].fallback;
+          audioRef.current.load();
+          audioRef.current.play().catch((err) => {
+            console.error('[Audio] Fallback also failed:', err.message);
+            setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+          });
+        } else {
+          console.error('[Audio] Both primary and fallback failed:', studyMusic);
+          setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+        }
+      };
+      
+      audioRef.current.onerror = handleError;
+      audioRef.current.onabort = handleError;
+      
+      audioRef.current.play().catch((err) => {
+        console.warn('[Audio] Play failed:', err.message);
+        setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+      });
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onerror = null;
+      audioRef.current.onabort = null;
+    }
 
     if (studyMode) {
       const elem = document.documentElement;
@@ -58,7 +93,7 @@ export default function Dashboard() {
         document.msExitFullscreen();
       }
     }
-  }, [studyMode]);
+  }, [studyMode, studyMusic]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -109,10 +144,22 @@ export default function Dashboard() {
   }
 
   const musicUrls = {
-    lofi: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
-    classical: 'https://cdn.pixabay.com/audio/2022/03/10/audio_4621b1a4d4.mp3',
-    ambient: 'https://cdn.pixabay.com/audio/2022/03/15/audio_c610232532.mp3',
-    rain: 'https://cdn.pixabay.com/audio/2022/03/12/audio_4a3bf2e471.mp3'
+    lofi: {
+      primary: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
+    },
+    classical: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+    },
+    ambient: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    },
+    rain: {
+      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    }
   };
 
   return (
@@ -121,7 +168,7 @@ export default function Dashboard() {
       {studyMode && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
-          src={musicUrls[studyMusic]}
+          src={musicUrls[studyMusic]?.primary}
           autoPlay
           loop
           style={{ display: 'none' }}

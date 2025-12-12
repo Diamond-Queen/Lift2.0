@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import styles from "../styles/Notes.module.css";
+import { musicUrls } from "../lib/musicUrls";
 
 export default function NotesUI() {
   // Core state

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import styles from "../styles/Career.module.css";
+import { musicUrls } from "../lib/musicUrls";
 
 export default function Career() {
   const { status } = useSession();
