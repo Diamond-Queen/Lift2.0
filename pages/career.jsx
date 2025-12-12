@@ -188,8 +188,24 @@ export default function Career() {
   // Handle study music
   useEffect(() => {
     if (studyMusic !== 'none' && studyMode) {
+      const audioElement = document.querySelector('audio');
+      if (audioElement) {
+        audioElement.onerror = () => {
+          console.error('[Audio] Failed to load music:', studyMusic);
+          setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+        };
+        audioElement.play().catch((err) => {
+          console.warn('[Audio] Play failed:', err.message);
+          setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+        });
+      }
       setMusicLoaded(true);
     } else {
+      const audioElement = document.querySelector('audio');
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.onerror = null;
+      }
       setMusicLoaded(false);
     }
   }, [studyMusic, studyMode]);
@@ -451,9 +467,9 @@ export default function Career() {
 
   const musicUrls = {
     lofi: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
-    classical: 'https://cdn.pixabay.com/audio/2022/03/10/audio_4621b1a4d4.mp3',
-    ambient: 'https://cdn.pixabay.com/audio/2022/03/15/audio_c610232532.mp3',
-    rain: 'https://cdn.pixabay.com/audio/2022/03/12/audio_4a3bf2e471.mp3'
+    classical: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    ambient: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    rain: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
   };
 
   return (
