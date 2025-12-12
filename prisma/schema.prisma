@@ -32,6 +32,8 @@ model User {
   sessions      Session[]
   school        School?   @relation(fields: [schoolId], references: [id])
   subscriptions Subscription[] @relation(name: "UserSubscriptions")
+  classes       Class[]
+  contentItems  ContentItem[]
 }
 
 model Account {
@@ -103,4 +105,37 @@ model Subscription {
 
   school    School?  @relation(fields: [schoolId], references: [id])
   user      User?    @relation(name: "UserSubscriptions", fields: [userId], references: [id])
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // e.g., "Biology 101", "English Lit"
+  color     String   @default("#d4af37") // for UI tagging
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentItems  ContentItem[] @relation(name: "ClassContent")
+
+  @@unique([userId, name])
+}
+
+model ContentItem {
+  id            String   @id @default(cuid())
+  userId        String
+  classId       String?
+  type          String   // "note", "resume", "cover_letter"
+  title         String
+  originalInput String   // the raw input user provided
+  summaries     Json?    // { "summary": "...", "flashcards": [...] }
+  metadata      Json?    // resume/cover details like name, email, etc.
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class Class? @relation(name: "ClassContent", fields: [classId], references: [id], onDelete: SetNull)
+
+  @@index([userId, classId])
+  @@index([userId, type])
 }

@@ -1,0 +1,87 @@
+const prisma = require('../../../lib/prisma');
+const { pool, findUserByEmail } = require('../../../lib/db');
+const { getServerSession } = require('next-auth/next');
+const logger = require('../../../lib/logger');
+
+export default async function handler(req, res) {
+  const { authOptions } = await import('../auth/[...nextauth]');
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user?.email) return res.status(401).json({ error: 'Unauthorized' });
+
+  const user = prisma
+    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+    : await findUserByEmail(session.user.email);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const userId = user.id;
+
+  try {
+    if (req.method === 'GET') {
+      // List all classes for user
+      const classes = prisma
+        ? await prisma.class.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' }
+          })
+        : (await pool.query(
+            'SELECT id, name, color, "createdAt", "updatedAt" FROM "Class" WHERE "userId" = $1 ORDER BY "createdAt" DESC',
+            [userId]
+          )).rows;
+
+      return res.json({ ok: true, data: classes });
+    }
+
+    if (req.method === 'POST') {
+      // Create a new class
+      const { name, color } = req.body || {};
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ error: 'Class name is required' });
+      }
+
+      const trimmedName = name.trim();
+      try {
+        const newClass = prisma
+          ? await prisma.class.create({
+              data: { userId, name: trimmedName, color: color || '#d4af37' }
+            })
+          : (await pool.query(
+              'INSERT INTO "Class" (id, "userId", name, color, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *',
+              [userId, trimmedName, color || '#d4af37']
+            )).rows[0];
+
+        logger.info('class_created', { userId, name: trimmedName });
+        return res.json({ ok: true, data: newClass });
+      } catch (e) {
+        if (e.code === 'P2002') {
+          return res.status(409).json({ error: 'Class name already exists' });
+        }
+        throw e;
+      }
+    }
+
+    if (req.method === 'DELETE') {
+      // Delete a class
+      const { classId } = req.body || {};
+      if (!classId) return res.status(400).json({ error: 'classId required' });
+
+      if (prisma) {
+        const cls = await prisma.class.findUnique({ where: { id: classId }, select: { userId: true } });
+        if (!cls || cls.userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+
+        await prisma.class.delete({ where: { id: classId } });
+      } else {
+        const { rows } = await pool.query('SELECT "userId" FROM "Class" WHERE id = $1', [classId]);
+        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        await pool.query('DELETE FROM "Class" WHERE id = $1', [classId]);
+      }
+
+      logger.info('class_deleted', { userId, classId });
+      return res.json({ ok: true });
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+  } catch (err) {
+    logger.error('classes_handler_error', { message: err.message });
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
