@@ -2,13 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
-// REMOVED: pdfjs-dist top-level import (handled dynamically)
-
-// Assuming your CSS path is correct now
-import styles from "../styles/Notes.module.css"; 
-
+import styles from "../styles/Notes.module.css";
 
 export default function NotesUI() {
+  // Core state
   const [input, setInput] = useState("");
   const [summaries, setSummaries] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
@@ -19,7 +16,15 @@ export default function NotesUI() {
   const [musicLoaded, setMusicLoaded] = useState(false);
   const audioRef = useRef(null);
 
-  // Fetch user preferences on mount and set up polling to reflect changes
+  // Class + Content persistence
+  const [classes, setClasses] = useState([]);
+  const [selectedClassId, setSelectedClassId] = useState(null);
+  const [savedItems, setSavedItems] = useState([]);
+  const [newClassName, setNewClassName] = useState("");
+  const [showClassForm, setShowClassForm] = useState(false);
+  const [loadingClasses, setLoadingClasses] = useState(false);
+
+  // Fetch user preferences on mount
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -35,31 +40,165 @@ export default function NotesUI() {
       }
     };
     
-    // Fetch immediately
     fetchPreferences();
-    
-    // Poll every 2 seconds to check for preference changes
     const interval = setInterval(fetchPreferences, 2000);
-    
     return () => clearInterval(interval);
   }, []);
 
-  // Handle study music - set loaded flag when music is selected
+  // Fetch classes on mount
   useEffect(() => {
-    if (studyMusic !== 'none' && studyMode) {
+    fetchClasses();
+  }, []);
+
+  const fetchClasses = async () => {
+    setLoadingClasses(true);
+    try {
+      const res = await fetch('/api/content/classes');
+      if (res.ok) {
+        const data = await res.json();
+        setClasses(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch classes:', err);
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
+
+  const fetchSavedNotes = async (classId) => {
+    try {
+      const query = classId ? `?classId=${classId}&type=note` : '?type=note';
+      const res = await fetch(`/api/content/items${query}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSavedItems(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch saved notes:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedClassId) {
+      fetchSavedNotes(selectedClassId);
+    }
+  }, [selectedClassId]);
+
+  const handleCreateClass = async () => {
+    if (!newClassName.trim()) return;
+    setLoadingClasses(true);
+    try {
+      const res = await fetch('/api/content/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newClassName })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClasses([data.data, ...classes]);
+        setSelectedClassId(data.data.id);
+        setNewClassName("");
+        setShowClassForm(false);
+      }
+    } catch (err) {
+      setError('Failed to create class');
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!input.trim()) {
+      setError("Please add notes before saving.");
+      return;
+    }
+    if (!selectedClassId) {
+      setError("Please select or create a class first.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/content/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'note',
+          title: `Note - ${new Date().toLocaleDateString()}`,
+          originalInput: input,
+          classId: selectedClassId,
+          summaries: { summaries, flashcards }
+        })
+      });
+      if (res.ok) {
+        setError("");
+        setSummaries([]);
+        setFlashcards([]);
+        setInput("");
+        await fetchSavedNotes(selectedClassId);
+        setError("Note saved successfully!");
+        setTimeout(() => setError(""), 2000);
+      } else {
+        setError("Failed to save note");
+      }
+    } catch (err) {
+      setError("Error saving note");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadNote = async (item) => {
+    setInput(item.originalInput);
+    if (item.summaries) {
+      setSummaries(item.summaries.summaries || []);
+      const cards = (item.summaries.flashcards || [])
+        .slice(0, 12)
+        .map((q) => ({ ...q, flipped: false }));
+      setFlashcards(cards);
+    }
+    setError("");
+  };
+
+  const handleDeleteNote = async (itemId) => {
+    if (!confirm("Delete this note?")) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/content/items', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId })
+      });
+      if (res.ok) {
+        await fetchSavedNotes(selectedClassId);
+      } else {
+        setError("Failed to delete note");
+      }
+    } catch (err) {
+      setError("Error deleting note");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (studyMusic !== 'none' && studyMode && audioRef.current) {
+      audioRef.current.play().catch((err) => {
+        console.warn('[Audio] Play failed (may require user interaction):', err.message);
+      });
       setMusicLoaded(true);
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+      setMusicLoaded(false);
     } else {
       setMusicLoaded(false);
     }
   }, [studyMusic, studyMode]);
 
-  // Enter/exit fullscreen based on studyMode from preferences
   useEffect(() => {
-    // Reflect study mode globally for CSS overrides
     document.documentElement.dataset.study = studyMode ? 'on' : 'off';
 
     if (studyMode) {
-      // Enter fullscreen
       const elem = document.documentElement;
       if (elem.requestFullscreen) {
         elem.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
@@ -69,7 +208,6 @@ export default function NotesUI() {
         elem.msRequestFullscreen();
       }
     } else {
-      // Exit fullscreen
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
       } else if (document.webkitExitFullscreen) {
@@ -80,50 +218,35 @@ export default function NotesUI() {
     }
   }, [studyMode]);
 
-  //  PPTX Processor (Uses JSZip)
   const extractTextFromPptx = async (fileBuffer) => {
     const zip = await JSZip.loadAsync(fileBuffer);
     let text = "";
-
     const slideFiles = Object.keys(zip.files).filter((f) =>
       f.match(/^ppt\/slides\/slide\d+\.xml$/)
     );
-
     for (const slidePath of slideFiles) {
       const slideXml = await zip.files[slidePath].async("text");
       const matches = [...slideXml.matchAll(/<a:t>(.*?)<\/a:t>/g)];
       matches.forEach((m) => (text += m[1] + "\n"));
     }
-
     return text.trim();
   };
 
-  //  PDF Processor (Uses dynamic pdfjs-dist import)
   const extractTextFromPdf = async (file) => {
-    // 1. Dynamic Import: Safe because it runs only after user interaction
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
-    
-    // 2. Set Worker Source: Required for pdfjs-dist to work
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
-
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      
-      const pageText = content.items
-        .map((item) => item.str)
-        .join(" ");
-
+      const pageText = content.items.map((item) => item.str).join(" ");
       text += pageText + "\n\n";
     }
-
     return text.trim();
   };
 
-  //  Handle file uploads
   const handleFileChange = async (e) => {
     setError("");
     const file = e.target.files?.[0];
@@ -132,23 +255,19 @@ export default function NotesUI() {
     setLoading(true);
     try {
       let extractedText = "";
-
       if (file.name.toLowerCase().endsWith(".pptx")) {
         const buffer = await file.arrayBuffer();
         extractedText = await extractTextFromPptx(buffer);
       } else if (file.name.toLowerCase().endsWith(".pdf")) {
-        // Calls the new, robust PDF extraction function
         extractedText = await extractTextFromPdf(file);
       } else {
         throw new Error("Unsupported file type. Use PDF or PPTX.");
       }
-
       if (!extractedText.trim()) throw new Error("No readable text found.");
-
       setInput((prev) =>
         prev ? prev.trim() + "\n\n" + extractedText.trim() : extractedText.trim()
       );
-      e.target.value = ""; // allow re-upload
+      e.target.value = "";
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to extract text. File might be protected or corrupted.");
@@ -157,14 +276,11 @@ export default function NotesUI() {
     }
   };
 
-  //  Generate summaries + flashcards (Logic remains unchanged)
   const handleGenerate = async () => {
     if (!input.trim()) {
-      // Updated error to include files again
-      setError("Please add notes or upload a file first."); 
+      setError("Please add notes or upload a file first.");
       return;
     }
-
     setLoading(true);
     setError("");
     setSummaries([]);
@@ -175,17 +291,14 @@ export default function NotesUI() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes: input }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) { 
+      if (!res.ok) {
         setError(data.error || "An unknown error occurred during generation.");
       } else {
         setSummaries(data.summaries || []);
         const newFlashcards = (data.flashcards || [])
-          .slice(0, 12) 
-          .map((q) => ({ ...q, flipped: false })); 
-        
+          .slice(0, 12)
+          .map((q) => ({ ...q, flipped: false }));
         setFlashcards(newFlashcards);
       }
     } catch (err) {
@@ -207,9 +320,7 @@ export default function NotesUI() {
 
   const useSample = () => {
     setInput(sampleNotes);
-    // give a tiny visual affordance
     setTimeout(() => {
-      // focus the textarea if present
       const ta = document.querySelector("textarea");
       if (ta) ta.focus();
     }, 50);
@@ -218,7 +329,6 @@ export default function NotesUI() {
   const copySummary = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      // small non-blocking feedback
       setError("Summary copied to clipboard");
       setTimeout(() => setError(""), 1500);
     } catch (err) {
@@ -242,7 +352,6 @@ export default function NotesUI() {
 
   return (
     <>
-      {/* Music Player - Hidden audio element */}
       {studyMode && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
@@ -256,109 +365,208 @@ export default function NotesUI() {
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>
         <h1 className={styles.pageTitle}>Lift Notes</h1>
 
-      <textarea
-        className={styles.textarea}
-        rows={6}
-        placeholder="Paste your notes here or upload a file..."
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-      />
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(212, 175, 55, 0.08)', borderRadius: '8px' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Select or Create a Class</label>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <select
+              value={selectedClassId || ""}
+              onChange={(e) => setSelectedClassId(e.target.value || null)}
+              disabled={loadingClasses}
+              style={{
+                flex: 1,
+                padding: '0.65rem 0.75rem',
+                border: '1px solid var(--card-border)',
+                borderRadius: '6px',
+                background: 'var(--input-bg)',
+                color: 'var(--text-color)',
+                fontSize: '1rem'
+              }}
+            >
+              <option value="">-- Select a class --</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowClassForm(!showClassForm)}
+              style={{
+                padding: '0.65rem 1rem',
+                background: 'var(--accent)',
+                color: 'var(--accent-contrast)',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              + New Class
+            </button>
+          </div>
 
-      {/*  ADDED: File Input and Generate/Clear/Sample Button Row */}
-      <div className={styles.fileGenerateRow}>
-        <label htmlFor="file-upload" className={styles.fileButton} tabIndex={0} role="button">
-          Upload File (.pdf, .pptx)
-        </label>
-        <input
-          id="file-upload"
-          type="file"
-          accept=".pdf, .pptx"
-          onChange={handleFileChange}
-          className={styles.hiddenFileInput}
-        />
-
-        <button
-          className={`${styles.generateButton} ${loading ? styles.loading : ""}`}
-          onClick={handleGenerate}
-          disabled={loading}
-          aria-label="Generate summaries and flashcards"
-        >
-          {loading ? "Generating…" : "Generate"}
-        </button>
-
-        <button
-          className={styles.secondaryButton}
-          onClick={clearInput}
-          aria-label="Clear notes and results"
-          title="Clear"
-        >
-          Clear
-        </button>
-
-        <button
-          className={styles.secondaryButton}
-          onClick={useSample}
-          aria-label="Use sample notes"
-          title="Use sample notes"
-        >
-          Sample
-        </button>
-      </div>
-
-      {error && <div className={styles.error}>{error}</div>}
-
-      {/* Results rendering remains the same */}
-      {summaries.length > 0 ? (
-        <div className={styles.resultCard}>
-          <h2 className={styles.resultTitle}>Summaries</h2>
-          {summaries.map((sum, i) => (
-            <div key={i} className={styles.summaryRow}>
-              <p className={styles.summaryText}>{sum}</p>
+          {showClassForm && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input
+                type="text"
+                placeholder="Class name (e.g., Biology 101)"
+                value={newClassName}
+                onChange={(e) => setNewClassName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateClass();
+                }}
+                style={{
+                  flex: 1,
+                  padding: '0.65rem 0.75rem',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  background: 'var(--input-bg)',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem'
+                }}
+              />
               <button
-                className={styles.copyButton}
-                onClick={() => copySummary(sum)}
-                aria-label={`Copy summary ${i + 1}`}
+                onClick={handleCreateClass}
+                disabled={loadingClasses}
+                style={{
+                  padding: '0.65rem 1rem',
+                  background: 'var(--accent)',
+                  color: 'var(--accent-contrast)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
               >
-                Copy
+                Create
               </button>
             </div>
-          ))}
+          )}
         </div>
-      ) : (
-        // Friendly empty state helper when there are no summaries yet
-        <div className={styles.resultCard}>
-          <h2 className={styles.resultTitle}>Need a hand?</h2>
-          <p style={{ marginBottom: "0.75rem" }}>
-            Paste your lecture notes, textbook excerpts, or upload a PDF/PPTX to generate concise summaries and quick flashcards.
-          </p>
-          <p style={{ color: "#555", fontSize: "0.95rem" }}>
-            Tip: Try the <strong>Sample</strong> button to see how Lift extracts summaries.
-          </p>
-        </div>
-      )}
 
-      {flashcards.length > 0 && (
-        <div className={styles.flashcardsContainer}>
-          <h2 className={styles.resultTitle}>Flashcards</h2>
-          <div className={styles.flashcardsScroll}>
-            {flashcards.map((card, i) => (
-              <div
-                key={i}
-                className={`${styles.flashcard} ${card.flipped ? styles.flipped : ""}`}
-                onClick={() => toggleFlashcard(i)}
-              >
-                <div className={styles.front}>
-                  <p>{card.question}</p>
+        {selectedClassId && savedItems.length > 0 && (
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
+            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Saved Notes in this Class</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {savedItems.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.75rem',
+                    background: 'rgba(212, 175, 55, 0.1)',
+                    borderRadius: '6px'
+                  }}
+                >
+                  <span style={{ flex: 1, cursor: 'pointer' }} onClick={() => handleLoadNote(item)}>
+                    {item.title}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteNote(item.id)}
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      background: 'rgba(255, 0, 0, 0.2)',
+                      color: '#ff6b6b',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
-                <div className={styles.back}>
-                  <p>{card.answer}</p>
-                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <textarea
+          className={styles.textarea}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Paste notes or type here..."
+        />
+
+        <div className={styles.buttonGroup}>
+          <button className={styles.submitButton} onClick={handleGenerate} disabled={loading}>
+            {loading ? "Generating..." : "Generate Summary & Flashcards"}
+          </button>
+          <button className={styles.submitButton} onClick={handleSaveNote} disabled={loading || !selectedClassId}>
+            {loading ? "Saving..." : "Save Note to Class"}
+          </button>
+          <button className={styles.submitButton} onClick={useSample}>
+            Use Sample
+          </button>
+          <button className={styles.submitButton} onClick={clearInput}>
+            Clear
+          </button>
+          <label className={styles.submitButton} style={{ cursor: "pointer" }}>
+            Upload File
+            <input
+              type="file"
+              accept=".pdf,.pptx"
+              onChange={handleFileChange}
+              disabled={loading}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
+
+        {error && <div className={styles.errorMessage}>{error}</div>}
+
+        {summaries.length > 0 && (
+          <div className={styles.section}>
+            <h2>Summary</h2>
+            {summaries.map((summary, index) => (
+              <div key={index} className={styles.summaryBox}>
+                <p>{summary}</p>
+                <button
+                  onClick={() => copySummary(summary)}
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 0.75rem',
+                    background: 'rgba(212, 175, 55, 0.2)',
+                    color: 'var(--accent)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  Copy
+                </button>
               </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {flashcards.length > 0 && (
+          <div className={styles.section}>
+            <h2>Flashcards</h2>
+            <div className={styles.flashcardGrid}>
+              {flashcards.map((card, index) => (
+                <div
+                  key={index}
+                  className={`${styles.flashcard} ${card.flipped ? styles.flipped : ''}`}
+                  onClick={() => toggleFlashcard(index)}
+                >
+                  <div className={styles.flashcardInner}>
+                    <div className={styles.flashcardFront}>
+                      <p>{card.question}</p>
+                    </div>
+                    <div className={styles.flashcardBack}>
+                      <p>{card.answer}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }
