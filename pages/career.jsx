@@ -445,8 +445,6 @@ export default function Career() {
     }
   };
 
-  const handleChange = setter => e => setter(e.target.value);
-
   const musicUrls = {
     lofi: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
     classical: 'https://cdn.pixabay.com/audio/2022/03/10/audio_4621b1a4d4.mp3',
