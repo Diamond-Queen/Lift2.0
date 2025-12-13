@@ -58,15 +58,16 @@ html[data-theme="light"] {
 }
 
 /* Study Mode Global Override: when active, force a focused dark palette
-   Place after light overrides so it always wins */
+   MUST come after all other theme rules to ensure highest specificity
+   Use !important to guarantee override of any theme selection */
 html[data-study="on"] {
-    --bg-top: #0a0a1a;
-    --bg-bottom: #1a1a2e;
-    --text-color: rgba(224,224,255,0.98);
-    --card-bg: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-    --card-border: rgba(167,139,250,0.3);
-    --glass-shadow: 0 10px 40px rgba(10,10,26,0.6);
-    --muted: #c4b5fd;
+    --bg-top: #0a0a1a !important;
+    --bg-bottom: #1a1a2e !important;
+    --text-color: rgba(224,224,255,0.98) !important;
+    --card-bg: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)) !important;
+    --card-border: rgba(167,139,250,0.3) !important;
+    --glass-shadow: 0 10px 40px rgba(10,10,26,0.6) !important;
+    --muted: #c4b5fd !important;
 }
 
 

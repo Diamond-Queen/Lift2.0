@@ -17,7 +17,7 @@ export default function App({ Component, pageProps }) {
   // Initialize keyboard shortcuts
   useKeyboardShortcuts(keyboardShortcutsEnabled);
 
-  // Load user preferences on mount (theme, font size, accent color, shortcuts)
+  // Load user preferences on mount (theme, font size, accent color, shortcuts, study mode)
   useEffect(() => {
     async function loadPreferences() {
       // Try localStorage first for instant load
@@ -25,11 +25,13 @@ export default function App({ Component, pageProps }) {
       const cachedFontSize = localStorage.getItem('fontSize') || 'medium';
       const cachedAccentColor = localStorage.getItem('accentColor') || '#d4af37';
       const cachedShortcuts = localStorage.getItem('keyboardShortcuts') !== 'false';
+      const cachedStudyMode = localStorage.getItem('studyMode') === 'true';
       
-      // Apply cached values immediately for instant theme load
+      // Apply cached values immediately for instant load
       document.documentElement.setAttribute('data-theme', cachedTheme);
       document.documentElement.setAttribute('data-font-size', cachedFontSize);
       document.documentElement.style.setProperty('--accent-color', cachedAccentColor);
+      document.documentElement.dataset.study = cachedStudyMode ? 'on' : 'off';
       setKeyboardShortcutsEnabled(cachedShortcuts);
       
       // Then fetch from API in background to sync (non-blocking)
@@ -43,10 +45,12 @@ export default function App({ Component, pageProps }) {
           const fontSize = prefs.fontSize || cachedFontSize;
           const accentColor = prefs.accentColor || cachedAccentColor;
           const shortcutsEnabled = prefs.keyboardShortcuts !== false;
+          const studyMode = typeof prefs.studyMode === 'boolean' ? prefs.studyMode : cachedStudyMode;
           
           if (theme !== cachedTheme) document.documentElement.setAttribute('data-theme', theme);
           if (fontSize !== cachedFontSize) document.documentElement.setAttribute('data-font-size', fontSize);
           if (accentColor !== cachedAccentColor) document.documentElement.style.setProperty('--accent-color', accentColor);
+          if (studyMode !== cachedStudyMode) document.documentElement.dataset.study = studyMode ? 'on' : 'off';
           if (shortcutsEnabled !== cachedShortcuts) setKeyboardShortcutsEnabled(shortcutsEnabled);
           
           // Update localStorage only if changed
@@ -54,6 +58,7 @@ export default function App({ Component, pageProps }) {
           localStorage.setItem('fontSize', fontSize);
           localStorage.setItem('accentColor', accentColor);
           localStorage.setItem('keyboardShortcuts', String(shortcutsEnabled));
+          localStorage.setItem('studyMode', String(studyMode));
         }
       } catch (err) {
         // Already using cached values, no action needed
@@ -62,10 +67,13 @@ export default function App({ Component, pageProps }) {
     loadPreferences();
   }, []);
 
-  // Reset study override on route changes; study pages will re-enable explicitly
+  // Reset study override on route changes; study pages will re-enable explicitly if studyMode is on
   useEffect(() => {
     const handleRouteStart = () => {
-      try { document.documentElement.dataset.study = 'off'; } catch(e) {}
+      try { 
+        const studyModeEnabled = localStorage.getItem('studyMode') === 'true';
+        document.documentElement.dataset.study = studyModeEnabled ? 'on' : 'off'; 
+      } catch(e) {}
     };
     router.events.on('routeChangeStart', handleRouteStart);
     return () => {
