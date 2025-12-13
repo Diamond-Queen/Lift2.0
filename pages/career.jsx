@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import styles from "../styles/Career.module.css";
 import { musicUrls } from "../lib/musicUrls";
+import TemplatePicker from "../components/TemplatePicker";
 
 export default function Career() {
   const { status } = useSession();
@@ -36,6 +37,8 @@ export default function Career() {
   const [paragraphs, setParagraphs] = useState("");
 
   const [result, setResult] = useState(null);
+  const [formatTemplate, setFormatTemplate] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("professional");
 
   // Class + Content persistence
   const [classes, setClasses] = useState([]);
@@ -49,7 +52,44 @@ export default function Career() {
   const [editingClassName, setEditingClassName] = useState("");
   const [editingClassColor, setEditingClassColor] = useState("#d4af37");
 
-  // Fetch user preferences on mount and poll for changes
+  // Reset template when type changes
+  useEffect(() => {
+    if (type === "resume") {
+      setSelectedTemplateId("professional");
+      setFormatTemplate(`Professional Resume Format:
+- Contact info at top (Name, Email, Phone, Address)
+- Professional Summary: 2-3 sentences
+- Experience: Job Title | Company | Dates on one line, bullet points for details
+- Education: Degree, School (Year)
+- Skills: Comma-separated list
+- Certifications: List format`);
+    } else {
+      setSelectedTemplateId("formal");
+      setFormatTemplate(`Formal Cover Letter:
+[Your Name]
+[Address]
+[City, State ZIP]
+[Email] | [Phone]
+
+[Date]
+
+[Recipient Name]
+[Title]
+[Company]
+[Address]
+
+Dear [Recipient],
+
+[Opening paragraph: Express interest, mention position]
+[Body paragraph: Highlight relevant skills and experience]
+[Closing: Express enthusiasm, call to action]
+
+Sincerely,
+[Your Name]`);
+    }
+  }, [type]);
+
+  // Fetch user preferences on mount only (removed slow polling)
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -66,9 +106,6 @@ export default function Career() {
     };
     
     fetchPreferences();
-    const interval = setInterval(fetchPreferences, 2000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch classes on mount
@@ -322,17 +359,21 @@ export default function Career() {
 
     setLoading(true);
 
-    // Fetch user's format template preference
-    let formatTemplate = '';
-    try {
-      const prefRes = await fetch('/api/user/preferences');
-      if (prefRes.ok) {
-        const prefData = await prefRes.json();
-        formatTemplate = prefData?.data?.formatTemplate || '';
+    // Use the selected template from TemplatePicker (already in state)
+    // If not set, try to fetch from user preferences as fallback
+    let templateToUse = formatTemplate;
+    if (!templateToUse) {
+      try {
+        const prefRes = await fetch('/api/user/preferences');
+        if (prefRes.ok) {
+          const prefData = await prefRes.json();
+          templateToUse = prefData?.data?.formatTemplate || '';
+        }
+      } catch (e) {
+        // Ignore and proceed without format template
       }
-    } catch (e) {
-      // Ignore and proceed without format template
     }
+
     try {
       // parse textarea inputs for structured display — accept commas (preferred) or pipes
       const parsedExperience = (String(experience || "")).split("\n").map(l => l.trim()).filter(Boolean).map(line => {
@@ -355,7 +396,7 @@ export default function Career() {
         name,
         email,
         phone,
-        formatTemplate,
+        formatTemplate: templateToUse,
         ...(type === "resume" && {
           address,
           linkedin,
@@ -617,6 +658,31 @@ export default function Career() {
         <option value="resume">Resume</option>
         <option value="cover">Cover Letter</option>
       </select>
+
+      {/* Info Box */}
+      <div style={{ 
+        padding: '12px 16px', 
+        backgroundColor: 'rgba(212, 175, 55, 0.1)', 
+        border: '1px solid rgba(212, 175, 55, 0.3)',
+        borderRadius: '8px',
+        marginBottom: '16px',
+        fontSize: '14px',
+        lineHeight: 1.6
+      }}>
+        <strong>💡 Quick Start:</strong> Choose a template below, fill in your information, and click Generate. 
+        The AI will create a professional {type === 'resume' ? 'resume' : 'cover letter'} based on your selected style.
+        {type === 'resume' && <span> Use commas or | to separate experience/education details.</span>}
+      </div>
+
+      {/* Template Picker */}
+      <TemplatePicker 
+        type={type} 
+        onSelect={(template, id) => {
+          setFormatTemplate(template);
+          setSelectedTemplateId(id);
+        }}
+        currentTemplate={selectedTemplateId}
+      />
 
       {/* Common Fields */}
       <input type="text" placeholder="Full Name" className={styles.input} value={name} onChange={handleChange(setName)} disabled={loading} />

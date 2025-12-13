@@ -1,0 +1,67 @@
+/* Theme variables for light/dark modes */
+:root[data-theme="light"] {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --card-bg: #ffffff;
+  --card-border: #e0e0e0;
+  --input-bg: #ffffff;
+  --input-border: #dddddd;
+  --accent-color: #d4af37;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="dark"] {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --card-bg: #2a2a2a;
+  --card-border: #3a3a3a;
+  --input-bg: #333333;
+  --input-border: #444444;
+  --accent-color: #d4af37;
+  --shadow: rgba(0, 0, 0, 0.3);
+}
+
+/* Font size scaling */
+:root[data-font-size="small"] {
+  font-size: 14px;
+}
+
+:root[data-font-size="medium"] {
+  font-size: 16px;
+}
+
+:root[data-font-size="large"] {
+  font-size: 18px;
+}
+
+/* Apply theme colors globally */
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Auto theme detection */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --card-bg: #2a2a2a;
+    --card-border: #3a3a3a;
+    --input-bg: #333333;
+    --input-border: #444444;
+    --shadow: rgba(0, 0, 0, 0.3);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --card-border: #e0e0e0;
+    --input-bg: #ffffff;
+    --input-border: #dddddd;
+    --shadow: rgba(0, 0, 0, 0.1);
+  }
+}

@@ -7,6 +7,9 @@ const {
   auditLog,
 } = require('../../lib/security');
 const { extractClientIp } = require('../../lib/ip');
+const { getServerSession } = require('next-auth/next');
+const prisma = require('../../lib/prisma');
+const { pool } = require('../../lib/db');
 
 export default async function handler(req, res) {
   setSecureHeaders(res);
@@ -23,6 +26,28 @@ export default async function handler(req, res) {
   if (!rl.allowed) {
     auditLog('career_rate_limited', null, { ip });
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+  }
+
+  // Load user preferences for AI tone (if authenticated)
+  let aiTone = 'professional'; // Default tone
+  try {
+    const { authOptions } = await import('./auth/[...nextauth]');
+    const session = await getServerSession(req, res, authOptions);
+    if (session?.user?.id) {
+      if (prisma) {
+        const user = await prisma.user.findUnique({ 
+          where: { id: session.user.id }, 
+          select: { preferences: true } 
+        });
+        aiTone = user?.preferences?.aiTone || 'professional';
+      } else {
+        const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
+        aiTone = rows[0]?.preferences?.aiTone || 'professional';
+      }
+    }
+  } catch (err) {
+    // If preference load fails, continue with default
+    logger.error('Failed to load AI tone preference', { error: err.message });
   }
 
   const {
@@ -204,6 +229,16 @@ Layout preferences:
 `;
 
     const formatInstructions = `\n\n--- FORMAT PREFERENCES ---\n${(formatTemplate || '').trim() || defaultFormatTemplate}\n\nIMPORTANT: Apply the above formatting preferences to the generated content while maintaining the required JSON structure.`;
+    
+    // Apply AI tone preference to prompts
+    const toneMapping = {
+      'professional': 'Use a formal, corporate tone. Be polished and conventional.',
+      'friendly': 'Use a warm, conversational tone while remaining professional. Be approachable.',
+      'creative': 'Use an engaging, unique voice. Be bold and memorable without sacrificing clarity.',
+      'technical': 'Use precise, data-driven language. Focus on technical skills and quantifiable achievements.'
+    };
+    const toneInstruction = toneMapping[aiTone] || toneMapping['professional'];
+    const toneDirective = `\n\n--- TONE & STYLE ---\n${toneInstruction}`;
 
     if (type === "resume") {
       // PROMPT FOR RESUME GENERATION
@@ -245,7 +280,7 @@ Certifications (Comma separated list): ${certifications || "N/A"}
   ],
   "skills": ["Skill 1", "Skill 2"],
   "certifications": ["Certification 1", "Certification 2"]
-}${formatInstructions}
+}${formatInstructions}${toneDirective}
       `;
     } else {
       // PROMPT FOR COVER LETTER GENERATION
@@ -276,7 +311,7 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     "First paragraph: Introduction and motivation derived from user input.",
     "Second paragraph: Elaboration on skills/qualities from user input and closing with enthusiasm."
   ]
-}${formatInstructions}
+}${formatInstructions}${toneDirective}
       `;
     }
 

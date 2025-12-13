@@ -33,6 +33,7 @@
   grid-template-columns: 1fr 320px;
   gap: 1.25rem;
   align-items: center;
+  background: rgb(0, 0, 0);
 }
 
 /* Inner card styling (mutes to transparent) */
@@ -43,13 +44,6 @@
   box-shadow: 0 8px 30px rgba(2,6,23,0.5); /* Specific shadow for contrast */
 }
 
-.heroContainer {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  align-items: center;
-  justify-items: center; /* center children horizontally */
-}
 /* Title and Flourish */
 .titleWrap { display: inline-block; position: relative; }
 .titleFlourish {

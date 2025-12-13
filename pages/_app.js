@@ -1,22 +1,68 @@
 import '../styles/globals.css'
+import '../styles/theme.css'
 import Head from 'next/head'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SessionProvider, useSession } from 'next-auth/react'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import ShootingStars from '../components/ShootingStars'
 import SiteHeader from '../components/SiteHeader'
+import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts'
 
 export default function App({ Component, pageProps }) {
-  // Load theme on mount
+  const router = useRouter();
+  const [keyboardShortcutsEnabled, setKeyboardShortcutsEnabled] = useState(true);
+  
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts(keyboardShortcutsEnabled);
+
+  // Load user preferences on mount (theme, font size, accent color, shortcuts)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    async function loadPreferences() {
+      // Try localStorage first for instant load
+      const cachedTheme = localStorage.getItem('theme') || 'light';
+      const cachedFontSize = localStorage.getItem('fontSize') || 'medium';
+      const cachedAccentColor = localStorage.getItem('accentColor') || '#d4af37';
+      const cachedShortcuts = localStorage.getItem('keyboardShortcuts') !== 'false';
+      
+      // Apply cached values immediately for instant theme load
+      document.documentElement.setAttribute('data-theme', cachedTheme);
+      document.documentElement.setAttribute('data-font-size', cachedFontSize);
+      document.documentElement.style.setProperty('--accent-color', cachedAccentColor);
+      setKeyboardShortcutsEnabled(cachedShortcuts);
+      
+      // Then fetch from API in background to sync (non-blocking)
+      try {
+        const res = await fetch('/api/user/preferences');
+        if (res.ok) {
+          const data = await res.json();
+          const prefs = data.data?.preferences || {};
+          
+          const theme = prefs.theme || cachedTheme;
+          const fontSize = prefs.fontSize || cachedFontSize;
+          const accentColor = prefs.accentColor || cachedAccentColor;
+          const shortcutsEnabled = prefs.keyboardShortcuts !== false;
+          
+          if (theme !== cachedTheme) document.documentElement.setAttribute('data-theme', theme);
+          if (fontSize !== cachedFontSize) document.documentElement.setAttribute('data-font-size', fontSize);
+          if (accentColor !== cachedAccentColor) document.documentElement.style.setProperty('--accent-color', accentColor);
+          if (shortcutsEnabled !== cachedShortcuts) setKeyboardShortcutsEnabled(shortcutsEnabled);
+          
+          // Update localStorage only if changed
+          localStorage.setItem('theme', theme);
+          localStorage.setItem('fontSize', fontSize);
+          localStorage.setItem('accentColor', accentColor);
+          localStorage.setItem('keyboardShortcuts', String(shortcutsEnabled));
+        }
+      } catch (err) {
+        // Already using cached values, no action needed
+      }
+    }
+    loadPreferences();
   }, []);
 
   // Reset study override on route changes; study pages will re-enable explicitly
-  const router = useRouter();
   useEffect(() => {
     const handleRouteStart = () => {
       try { document.documentElement.dataset.study = 'off'; } catch(e) {}

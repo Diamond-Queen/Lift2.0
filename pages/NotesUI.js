@@ -29,7 +29,7 @@ export default function NotesUI() {
   const [editingClassName, setEditingClassName] = useState("");
   const [editingClassColor, setEditingClassColor] = useState("#d4af37");
 
-  // Fetch user preferences on mount
+  // Fetch user preferences on mount only (removed slow polling)
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -46,8 +46,6 @@ export default function NotesUI() {
     };
     
     fetchPreferences();
-    const interval = setInterval(fetchPreferences, 2000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

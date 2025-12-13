@@ -18,8 +18,9 @@ export default async function handler(req, res) {
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
   if (!validation.valid) {
+    const statusCode = validation.status || 400;
     auditLog('register_request_rejected', null, { reason: validation.reason, ip }, 'warning');
-    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+    return res.status(statusCode).json({ ok: false, error: 'Request rejected', reason: validation.reason });
   }
 
   const rl = trackIpRateLimit(ip, '/api/auth/register');

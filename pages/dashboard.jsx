@@ -33,9 +33,6 @@ export default function Dashboard() {
     };
     
     fetchPreferences();
-    const interval = setInterval(fetchPreferences, 2000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   // Enter/exit fullscreen based on studyMode and handle music playback

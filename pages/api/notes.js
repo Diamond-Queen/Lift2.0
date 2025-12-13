@@ -7,6 +7,9 @@ const {
   auditLog,
 } = require('../../lib/security');
 const { extractClientIp } = require('../../lib/ip');
+const { getServerSession } = require('next-auth/next');
+const prisma = require('../../lib/prisma');
+const { pool } = require('../../lib/db');
 
 export default async function handler(req, res) {
   setSecureHeaders(res);
@@ -26,6 +29,31 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Too many requests. Try again later.' });
     }
 
+    // Load user preferences for AI tone and note preferences (if authenticated)
+    let summaryLength = 'medium'; // short, medium, long
+    let flashcardDifficulty = 'medium'; // easy, medium, hard
+    try {
+      const { authOptions } = await import('./auth/[...nextauth]');
+      const session = await getServerSession(req, res, authOptions);
+      if (session?.user?.id) {
+        if (prisma) {
+          const user = await prisma.user.findUnique({ 
+            where: { id: session.user.id }, 
+            select: { preferences: true } 
+          });
+          summaryLength = user?.preferences?.summaryLength || 'medium';
+          flashcardDifficulty = user?.preferences?.flashcardDifficulty || 'medium';
+        } else {
+          const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
+          summaryLength = rows[0]?.preferences?.summaryLength || 'medium';
+          flashcardDifficulty = rows[0]?.preferences?.flashcardDifficulty || 'medium';
+        }
+      }
+    } catch (err) {
+      // If preference load fails, continue with defaults
+      logger.error('Failed to load notes preferences', { error: err.message });
+    }
+
     const { notes } = req.body;
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
@@ -35,16 +63,32 @@ export default async function handler(req, res) {
       setTimeout(() => reject(new Error('Generation timeout - try shorter notes')), 120000)
     );
 
+    // Adjust summary prompt based on user preference
+    const summaryLengthMap = {
+      'short': 'in 2-3 concise sentences',
+      'medium': 'in 1-2 paragraphs',
+      'long': 'in detail with 3-4 comprehensive paragraphs'
+    };
+    const summaryInstruction = summaryLengthMap[summaryLength] || summaryLengthMap['medium'];
+
     const summaryPromise = generateCompletion({
-      prompt: `Summarize the following notes clearly and concisely:\n\n${notes}`,
+      prompt: `Summarize the following notes clearly and concisely ${summaryInstruction}:\n\n${notes}`,
       temperature: 0.5,
-      maxTokens: 1500,
+      maxTokens: summaryLength === 'long' ? 2000 : summaryLength === 'short' ? 500 : 1500,
       type: 'text',
-      context: { type: 'summary', notes }
+      context: { type: 'summary', notes, summaryLength }
     });
 
+    // Adjust flashcard prompt based on difficulty preference
+    const flashcardDifficultyMap = {
+      'easy': 'Create 12 straightforward flashcards covering basic concepts and definitions.',
+      'medium': 'Create 12 flashcards with balanced complexity covering key concepts.',
+      'hard': 'Create 12 challenging flashcards that test deep understanding and application.'
+    };
+    const flashcardInstruction = flashcardDifficultyMap[flashcardDifficulty] || flashcardDifficultyMap['medium'];
+
     const flashcardsPromise = generateCompletion({
-      prompt: `Create exactly 12 flashcards from the following text. Respond ONLY with valid JSON in this format:
+      prompt: `${flashcardInstruction} Respond ONLY with valid JSON in this format:
 [
   {"question":"...","answer":"..."},
   ...
@@ -54,7 +98,7 @@ ${notes}`,
       temperature: 0.3,
       maxTokens: 1200,
       type: 'json',
-      context: { type: 'flashcards', notes }
+      context: { type: 'flashcards', notes, flashcardDifficulty }
     });
 
     const [summaryResp, flashcardsResp] = await Promise.race([
