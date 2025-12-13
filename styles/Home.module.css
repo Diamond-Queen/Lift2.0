@@ -10,14 +10,16 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  margin: 0;
+  background: rgb(0, 0, 0);
   /* color is handled by global var(--text-color) */
 }
 
 /* Glassy Card Styles */
 .hero {
-  text-align: center;
-  max-width: 880px;
   width: 100%;
+  max-width: 500px;
+  text-align: center;
   padding: 2.5rem;
   border-radius: 14px;
   backdrop-filter: blur(6px) saturate(120%);
@@ -29,11 +31,14 @@
 }
 
 .heroContainer {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.25rem;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  background: rgb(0, 0, 0);
+  justify-content: center;
+  gap: 1.25rem;
 }
 
 /* Inner card styling (mutes to transparent) */

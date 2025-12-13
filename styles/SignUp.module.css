@@ -9,13 +9,14 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  /* Use global body gradient; keep transparent here */
-  background: transparent;
+  /* Black background underlay */
+  background: rgb(0, 0, 0) !important;
 }
 
 .signupCard {
   width: 100%;
   max-width: 400px;
+  margin: 0 auto;
   padding: 2rem;
   border-radius: 14px;
   backdrop-filter: blur(6px) saturate(120%);
@@ -44,7 +45,7 @@
   border-radius: 6px;
   background: var(--input-bg);
   color: var(--text-color);
-  font-size: 1rem;
+  font-size: 16px; /* Prevent iOS zoom */
   transition: border-color 0.18s var(--easing);
 }
 .formGroup input:focus {
@@ -129,11 +130,32 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 640px) {
-  .signupCard { padding: 1.5rem; max-width: 92vw; }
-  .pageTitle { font-size: 1.35rem; }
+@media (max-width: 768px) {
+  .signupCard { 
+    padding: 1.5rem; 
+    max-width: 92vw; 
+  }
+  .pageTitle { 
+    font-size: clamp(1.25rem, 4vw, 1.5rem); 
+  }
+  .submitButton {
+    min-height: 44px;
+    font-size: 16px;
+  }
 }
-@media (max-width: 400px) {
-  .signupCard { padding: 1.25rem; }
-  .submitButton { font-size: 1rem; }
+
+@media (max-width: 480px) {
+  .signupContainer {
+    padding: 0.75rem;
+  }
+  .signupCard { 
+    padding: 1.25rem; 
+  }
+  .submitButton { 
+    font-size: 16px;
+    padding: 0.875rem;
+  }
+  .formGroup {
+    margin-bottom: 1rem;
+  }
 }

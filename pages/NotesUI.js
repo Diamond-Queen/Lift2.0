@@ -407,29 +407,21 @@ export default function NotesUI() {
     );
   };
 
-  const musicUrls = {
-    lofi: {
-      primary: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
-      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
-    },
-    classical: {
-      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
-    },
-    ambient: {
-      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
-    },
-    rain: {
-      primary: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-      fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
-    }
-  };
-
   return (
     <>
       {studyMode && studyMusic !== 'none' && (
-        <audio ref={audioRef} src={musicUrls[studyMusic]?.primary} autoPlay loop style={{ display: 'none' }} />
+        <audio ref={audioRef} src={musicUrls[studyMusic]?.primary} autoPlay loop style={{ display: 'none' }} onError={() => {
+          const fallback = musicUrls[studyMusic]?.fallback;
+          if (fallback) {
+            console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
+            audioRef.current.src = fallback;
+            audioRef.current.load();
+            audioRef.current.play().catch((err) => {
+              console.error('[Audio] Fallback also failed:', err.message);
+              setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+            });
+          }
+        }} />
       )}
 
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>

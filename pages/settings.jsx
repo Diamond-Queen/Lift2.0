@@ -91,17 +91,18 @@ export default function Settings() {
   }
 
   return (
-    <div className={styles.container} style={{ minHeight: '100vh', padding: '2rem' }}>
+    <div className={styles.container} style={{ minHeight: '100vh', padding: '1rem' }}>
       <Head>
         <title>Settings - Lift</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '1.5rem' }}>⚙️ Settings</h1>
+      <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+        <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', marginBottom: '1.5rem' }}>⚙️ Settings</h1>
 
         {/* Appearance */}
-        <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>🎨 Appearance</h2>
+        <section style={{ marginBottom: '2rem', padding: 'clamp(1rem, 3vw, 1.5rem)', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+          <h2 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', marginBottom: '1rem' }}>🎨 Appearance</h2>
           
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Theme</label>

@@ -39,35 +39,38 @@ export default function QuickActions() {
 
   return (
     <div style={{
-      padding: 24,
+      padding: 'clamp(16px, 3vw, 24px)',
       backgroundColor: 'var(--card-bg)',
       borderRadius: 12,
       border: '1px solid var(--border-color)',
       boxShadow: 'var(--shadow)'
     }}>
-      <h3 style={{ marginBottom: 16, fontSize: 18, fontWeight: 600 }}>Quick Actions</h3>
+      <h3 style={{ marginBottom: 16, fontSize: 'clamp(16px, 3.5vw, 18px)', fontWeight: 600 }}>Quick Actions</h3>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
         gap: 12
       }}>
         {enabledActions.map(action => (
           <Link key={action.id} href={action.href}>
             <div style={{
-              padding: 16,
+              padding: 'clamp(16px, 3vw, 20px)',
               backgroundColor: 'var(--bg-color)',
               border: '1px solid var(--border-color)',
               borderRadius: 8,
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              ':hover': {
-                borderColor: 'var(--accent-color)',
-                transform: 'translateY(-2px)'
-              }
+              minHeight: 100,
+              minWidth: 44,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8
             }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>{action.icon}</div>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>{action.label}</div>
+              <div style={{ fontSize: 'clamp(24px, 5vw, 32px)' }}>{action.icon}</div>
+              <div style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', fontWeight: 500 }}>{action.label}</div>
             </div>
           </Link>
         ))}

@@ -200,26 +200,30 @@ Best,
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <h3 style={{ fontSize: 18, marginBottom: 12, fontWeight: 600 }}>
+      <h3 style={{ fontSize: 'clamp(16px, 4vw, 18px)', marginBottom: 12, fontWeight: 600 }}>
         Choose a {type === 'resume' ? 'Resume' : 'Cover Letter'} Template
       </h3>
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: 16
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: 'clamp(8px, 2vw, 16px)'
       }}>
         {templates.map(template => (
           <div
             key={template.id}
             onClick={() => handleSelect(template)}
             style={{
-              padding: 16,
+              padding: 'clamp(12px, 3vw, 16px)',
               border: selectedId === template.id ? '2px solid var(--accent-color, #d4af37)' : '1px solid #333',
               borderRadius: 8,
               backgroundColor: selectedId === template.id ? 'rgba(212, 175, 55, 0.1)' : '#1a1a1a',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              position: 'relative'
+              position: 'relative',
+              minHeight: '140px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => {
               if (selectedId !== template.id) {
@@ -234,13 +238,13 @@ Best,
               }
             }}
           >
-            <div style={{ fontSize: 48, textAlign: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 'clamp(36px, 8vw, 48px)', textAlign: 'center', marginBottom: 8 }}>
               {template.preview}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
+            <div style={{ fontSize: 'clamp(14px, 3.5vw, 16px)', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
               {template.name}
             </div>
-            <div style={{ fontSize: 12, color: '#888', textAlign: 'center', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 'clamp(11px, 2.5vw, 12px)', color: '#888', textAlign: 'center', lineHeight: 1.4 }}>
               {template.description}
             </div>
             {selectedId === template.id && (
