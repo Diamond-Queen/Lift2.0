@@ -222,48 +222,7 @@ Sincerely,
     }
   };
 
-  // Handle study music
-  useEffect(() => {
-    if (studyMusic !== 'none' && studyMode) {
-      const audioElement = document.querySelector('audio');
-      if (audioElement) {
-        let usedFallback = false;
-        
-        const handleError = () => {
-          if (!usedFallback) {
-            console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
-            usedFallback = true;
-            audioElement.src = musicUrls[studyMusic].fallback;
-            audioElement.load();
-            audioElement.play().catch((err) => {
-              console.error('[Audio] Fallback also failed:', err.message);
-              setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-            });
-          } else {
-            console.error('[Audio] Both primary and fallback failed:', studyMusic);
-            setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
-          }
-        };
-        
-        audioElement.onerror = handleError;
-        audioElement.onabort = handleError;
-        
-        audioElement.play().catch((err) => {
-          console.warn('[Audio] Play failed:', err.message);
-          setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-        });
-      }
-      setMusicLoaded(true);
-    } else {
-      const audioElement = document.querySelector('audio');
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.onerror = null;
-        audioElement.onabort = null;
-      }
-      setMusicLoaded(false);
-    }
-  }, [studyMusic, studyMode]);
+  // Handle study music - removed useEffect that conflicts with audio element props
 
   // Enter/exit fullscreen based on studyMode
   useEffect(() => {

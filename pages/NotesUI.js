@@ -231,40 +231,8 @@ export default function NotesUI() {
   };
 
   useEffect(() => {
-    if (studyMusic !== 'none' && studyMode && audioRef.current) {
-      const audioElement = audioRef.current;
-      let usedFallback = false;
-      
-      const handleError = () => {
-        if (!usedFallback) {
-          console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
-          usedFallback = true;
-          audioElement.src = musicUrls[studyMusic].fallback;
-          audioElement.load();
-          audioElement.play().catch((err) => {
-            console.error('[Audio] Fallback also failed:', err.message);
-            setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-          });
-        } else {
-          console.error('[Audio] Both primary and fallback failed:', studyMusic);
-          setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
-        }
-      };
-      
-      audioElement.onerror = handleError;
-      audioElement.onabort = handleError;
-      
-      audioElement.play().catch((err) => {
-        console.warn('[Audio] Play failed:', err.message);
-        setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-      });
-      setMusicLoaded(true);
-    } else if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onerror = null;
-      audioRef.current.onabort = null;
-      setMusicLoaded(false);
-    }
+    // Study music is now handled by audio element props and onError handler
+    // No need for manual useEffect control
   }, [studyMusic, studyMode]);
 
   useEffect(() => {
