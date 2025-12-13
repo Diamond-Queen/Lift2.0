@@ -18,7 +18,6 @@ export default function Account() {
   const [studyMusic, setStudyMusic] = useState('none');
   const [mounted, setMounted] = useState(false);
   const [preferencesSaved, setPreferencesSaved] = useState(true);
-  const [templateSaved, setTemplateSaved] = useState(true);
   const [showSensitive, setShowSensitive] = useState(false);
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
@@ -48,25 +47,18 @@ export default function Account() {
     }
   }, [theme, mounted]);
 
-  // Track changes to preferences
+  // Track changes to all preferences and templates
   useEffect(() => {
-    if (mounted && theme !== null && studyMode !== null) {
+    if (mounted && (theme !== null || studyMode !== null || formatTemplate || resumeTemplate || coverLetterTemplate || studyMusic)) {
       setPreferencesSaved(false);
     }
-  }, [theme, studyMode, studyMusic, mounted]);
+  }, [theme, studyMode, formatTemplate, resumeTemplate, coverLetterTemplate, studyMusic, mounted]);
 
   // Reflect study mode globally for CSS overrides only when active
   useEffect(() => {
     if (!mounted) return;
     document.documentElement.dataset.study = studyMode ? 'on' : 'off';
   }, [studyMode, mounted]);
-
-  // Track changes to template
-  useEffect(() => {
-    if (mounted && (formatTemplate || resumeTemplate || coverLetterTemplate)) {
-      setTemplateSaved(false);
-    }
-  }, [formatTemplate, resumeTemplate, coverLetterTemplate, mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -109,8 +101,8 @@ export default function Account() {
               setStudyMusic('none');
               setPreferencesSaved(true);
             }
-            // Mark template as saved after loading
-            setTemplateSaved(true);
+            // Mark as saved after loading
+            setPreferencesSaved(true);
           }
         } catch (e) {
           // fallback to defaults
@@ -118,7 +110,6 @@ export default function Account() {
           setStudyMode(false);
           setStudyMusic('none');
           setPreferencesSaved(true);
-          setTemplateSaved(true);
         }
       } catch (e) {
         // ignore
@@ -132,7 +123,7 @@ export default function Account() {
 
 
 
-  const savePreferences = () => {
+  const saveAllSettings = () => {
     // Persist locally and to server preferences endpoint
     localStorage.setItem("theme", theme);
     localStorage.setItem("studyMode", studyMode ? "true" : "false");
@@ -141,15 +132,20 @@ export default function Account() {
         const res = await fetch('/api/user/preferences', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ preferences: { theme, studyMode, studyMusic } }),
+          body: JSON.stringify({ 
+            preferences: { theme, studyMode, studyMusic },
+            formatTemplate,
+            resumeTemplate,
+            coverLetterTemplate
+          }),
         });
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
-          setUiStatus({ type: 'error', text: d.error || 'Failed to save preferences' });
+          setUiStatus({ type: 'error', text: d.error || 'Failed to save settings' });
           setTimeout(() => setUiStatus({ type: null, text: '' }), 2000);
           return;
         }
-        setUiStatus({ type: 'success', text: 'Preferences saved.' });
+        setUiStatus({ type: 'success', text: '✅ All settings saved successfully' });
         setPreferencesSaved(true);
         setTimeout(() => setUiStatus({ type: null, text: '' }), 1500);
       } catch (err) {
@@ -159,33 +155,9 @@ export default function Account() {
     })();
   };
 
-  const saveTemplate = async () => {
-    try {
-      const res = await fetch('/api/user/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          formatTemplate,
-          resumeTemplate,
-          coverLetterTemplate
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setUiStatus({ type: 'error', text: d.error || 'Failed to save template' });
-        return;
-      }
-      setUiStatus({ type: 'success', text: 'Template saved.' });
-      setTemplateSaved(true);
-      setTimeout(() => setUiStatus({ type: null, text: '' }), 1500);
-    } catch (e) {
-      setUiStatus({ type: 'error', text: 'Network error.' });
-    }
-  };
-
   const handleDone = () => {
-    if (!preferencesSaved || !templateSaved) {
-      setUiStatus({ type: 'error', text: 'Remember to save your information' });
+    if (!preferencesSaved) {
+      setUiStatus({ type: 'error', text: 'Remember to save your settings' });
       setTimeout(() => setUiStatus({ type: null, text: '' }), 3000);
       return;
     }
@@ -354,7 +326,7 @@ export default function Account() {
           </small>
         </div>
 
-        <button className={styles.submitButton} onClick={savePreferences} style={{ marginBottom: '1rem' }}>Save Preferences</button>
+        <button className={styles.submitButton} onClick={saveAllSettings} style={{ marginBottom: '1rem' }}>💾 Save All Settings</button>
 
         <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
           <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>Resume & Cover Letter Templates</h3>
@@ -377,7 +349,6 @@ export default function Account() {
             <small style={{ display: 'block', marginTop: '-0.25rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Add any additional formatting instructions for your documents.</small>
             <textarea value={formatTemplate} onChange={(e) => setFormatTemplate(e.target.value)} rows={4} placeholder="e.g. Two-column resume: left=contact, right=experience; compact font" style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}></textarea>
           </div>
-          <button className={styles.submitButton} onClick={saveTemplate} style={{ marginBottom: '1rem' }}>Save Templates</button>
           <button className={styles.submitButton} onClick={handleDone} style={{ marginTop: '0.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-color)' }}>Done</button>
         </div>
 
