@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import styles from "../styles/Career.module.css";
 import { musicUrls } from "../lib/musicUrls";
-import TemplatePicker from "../components/TemplatePicker";
 
 export default function Career() {
   const { status } = useSession();
@@ -670,16 +669,6 @@ Sincerely,
         The AI will create a professional {type === 'resume' ? 'resume' : 'cover letter'} based on your selected style.
         {type === 'resume' && <span> Use commas or | to separate experience/education details.</span>}
       </div>
-
-      {/* Template Picker */}
-      <TemplatePicker 
-        type={type} 
-        onSelect={(template, id) => {
-          setFormatTemplate(template);
-          setSelectedTemplateId(id);
-        }}
-        currentTemplate={selectedTemplateId}
-      />
 
       {/* Common Fields */}
       <input type="text" placeholder="Full Name" className={styles.input} value={name} onChange={handleChange(setName)} disabled={loading} />

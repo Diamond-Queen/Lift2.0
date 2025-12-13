@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import styles from "../styles/SignUp.module.css";
 import { useSession, signOut } from 'next-auth/react';
+import TemplatePicker from "../components/TemplatePicker";
 
 export default function Account() {
   const { status } = useSession();
@@ -12,6 +13,8 @@ export default function Account() {
   const [theme, setTheme] = useState(null);
   const [studyMode, setStudyMode] = useState(null);
   const [formatTemplate, setFormatTemplate] = useState('');
+  const [resumeTemplate, setResumeTemplate] = useState('professional');
+  const [coverLetterTemplate, setCoverLetterTemplate] = useState('formal');
   const [studyMusic, setStudyMusic] = useState('none');
   const [mounted, setMounted] = useState(false);
   const [preferencesSaved, setPreferencesSaved] = useState(true);
@@ -60,10 +63,10 @@ export default function Account() {
 
   // Track changes to template
   useEffect(() => {
-    if (mounted && formatTemplate) {
+    if (mounted && (formatTemplate || resumeTemplate || coverLetterTemplate)) {
       setTemplateSaved(false);
     }
-  }, [formatTemplate, mounted]);
+  }, [formatTemplate, resumeTemplate, coverLetterTemplate, mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -87,6 +90,8 @@ export default function Account() {
           if (p.ok) {
             const pd = await p.json();
             setFormatTemplate(pd.data?.formatTemplate || '');
+            setResumeTemplate(pd.data?.resumeTemplate || 'professional');
+            setCoverLetterTemplate(pd.data?.coverLetterTemplate || 'formal');
             // Apply server preferences
             if (pd.data?.preferences) {
               const prefs = pd.data.preferences;
@@ -159,7 +164,11 @@ export default function Account() {
       const res = await fetch('/api/user/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formatTemplate }),
+        body: JSON.stringify({ 
+          formatTemplate,
+          resumeTemplate,
+          coverLetterTemplate
+        }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -348,12 +357,27 @@ export default function Account() {
         <button className={styles.submitButton} onClick={savePreferences} style={{ marginBottom: '1rem' }}>Save Preferences</button>
 
         <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
-          <div className={styles.formGroup}>
-            <label>Resume / Cover formatting template</label>
-            <small style={{ display: 'block', marginTop: '-0.25rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Instructions applied when printing resumes or cover letters.</small>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>Resume & Cover Letter Templates</h3>
+          <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Choose your preferred templates for generating resumes and cover letters.</p>
+          
+          <TemplatePicker 
+            type="resume" 
+            currentTemplate={resumeTemplate}
+            onSelect={(template) => setResumeTemplate(template.id)}
+          />
+          
+          <TemplatePicker 
+            type="cover-letter" 
+            currentTemplate={coverLetterTemplate}
+            onSelect={(template) => setCoverLetterTemplate(template.id)}
+          />
+          
+          <div className={styles.formGroup} style={{ marginTop: '1.5rem' }}>
+            <label>Custom Format Instructions (Optional)</label>
+            <small style={{ display: 'block', marginTop: '-0.25rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Add any additional formatting instructions for your documents.</small>
             <textarea value={formatTemplate} onChange={(e) => setFormatTemplate(e.target.value)} rows={4} placeholder="e.g. Two-column resume: left=contact, right=experience; compact font" style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}></textarea>
           </div>
-          <button className={styles.submitButton} onClick={saveTemplate} style={{ marginBottom: '1rem' }}>Save Template</button>
+          <button className={styles.submitButton} onClick={saveTemplate} style={{ marginBottom: '1rem' }}>Save Templates</button>
           <button className={styles.submitButton} onClick={handleDone} style={{ marginTop: '0.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-color)' }}>Done</button>
         </div>
 
