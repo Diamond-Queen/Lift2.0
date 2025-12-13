@@ -294,6 +294,8 @@ export default function Account() {
             <option value="classical">Classical Focus</option>
             <option value="ambient">Ambient</option>
             <option value="rain">Rain & Thunder</option>
+            <option value="rap">Rap / Hip-Hop</option>
+            <option value="rnb">R&B Soul</option>
           </select>
         </div>
 
