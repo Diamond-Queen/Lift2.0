@@ -58,23 +58,22 @@ export default async function handler(req, res) {
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
 
-    // --- Generate summary and flashcards in parallel with resilient adapter (max 120 seconds) ---
+    // --- Generate summary and flashcards in parallel with resilient adapter (max 30 seconds) ---
     const timeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Generation timeout - try shorter notes')), 120000)
+      setTimeout(() => reject(new Error('Generation timeout - try shorter notes')), 30000)
     );
 
     // Adjust summary prompt based on user preference
     const summaryLengthMap = {
-      'short': 'in 2-3 concise sentences',
-      'medium': 'in 1-2 paragraphs',
-      'long': 'in detail with 3-4 comprehensive paragraphs'
+      'short': 'in 1-2 concise sentences',
+      'medium': 'in 1 paragraph',
+      'long': 'in 2-3 paragraphs'
     };
     const summaryInstruction = summaryLengthMap[summaryLength] || summaryLengthMap['medium'];
 
     const summaryPromise = generateCompletion({
       prompt: `Summarize the following notes clearly and concisely ${summaryInstruction}:\n\n${notes}`,
       temperature: 0.5,
-      maxTokens: summaryLength === 'long' ? 2000 : summaryLength === 'short' ? 500 : 1500,
       type: 'text',
       context: { type: 'summary', notes, summaryLength }
     });
@@ -96,7 +95,6 @@ export default async function handler(req, res) {
 Text:
 ${notes}`,
       temperature: 0.3,
-      maxTokens: 1200,
       type: 'json',
       context: { type: 'flashcards', notes, flashcardDifficulty }
     });

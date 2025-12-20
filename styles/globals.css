@@ -72,14 +72,27 @@ html[data-study="on"] {
 
 
 /* General resets and tokens */
-body, html {
+html {
     margin: 0;
     padding: 0;
     font-family: var(--inter);
-    background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    background-color: var(--bg-top);
+    background-image: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
     min-height: 100vh;
-    transition: background 300ms var(--easing);
     color: var(--text-color);
+    background-attachment: fixed;
+    scrollbar-gutter: stable;
+    will-change: auto;
+    scroll-behavior: auto;
+    overflow-y: scroll;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--inter);
+    color: var(--text-color);
+    overflow: visible;
 }
 
 /* Animated star backgrounds

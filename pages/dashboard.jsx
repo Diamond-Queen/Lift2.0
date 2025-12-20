@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../styles/SignUp.module.css';
 import { useEffect, useState, useRef } from 'react';
-import { musicUrls } from '../lib/musicUrls';
+import { musicUrls, getAudioStreamUrl } from '../lib/musicUrls';
 
 export default function Dashboard() {
   const { status } = useSession();
@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [studyMusic, setStudyMusic] = useState('none');
   const [error, setError] = useState("");
   const audioRef = useRef(null);
+  const iframeRef = useRef(null);
 
   // Fetch user preferences for study mode and music
   useEffect(() => {
@@ -39,38 +40,40 @@ export default function Dashboard() {
   useEffect(() => {
     document.documentElement.dataset.study = studyMode ? 'on' : 'off';
 
-    // Handle audio playback with fallback support
-    if (studyMode && studyMusic !== 'none' && audioRef.current) {
-      let usedFallback = false;
-      
-      const handleError = () => {
-        if (!usedFallback) {
-          console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
-          usedFallback = true;
-          audioRef.current.src = musicUrls[studyMusic].fallback;
-          audioRef.current.load();
-          audioRef.current.play().catch((err) => {
-            console.error('[Audio] Fallback also failed:', err.message);
-            setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-          });
-        } else {
-          console.error('[Audio] Both primary and fallback failed:', studyMusic);
-          setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+    const setupAudio = async () => {
+      if (studyMode && studyMusic !== 'none' && audioRef.current) {
+        try {
+          // Get stream URL from backend
+          const primaryUrl = musicUrls[studyMusic]?.primary;
+          const fallbackUrl = musicUrls[studyMusic]?.fallback;
+          
+          let streamUrl = await getAudioStreamUrl(primaryUrl);
+          
+          if (!streamUrl && fallbackUrl) {
+            console.warn('[Audio] Primary URL failed, trying fallback');
+            streamUrl = await getAudioStreamUrl(fallbackUrl);
+          }
+          
+          if (streamUrl) {
+            audioRef.current.src = streamUrl;
+            audioRef.current.load();
+            audioRef.current.play().catch((err) => {
+              console.warn('[Audio] Play failed:', err.message);
+              setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+            });
+          } else {
+            setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+          }
+        } catch (err) {
+          console.error('[Audio] Setup error:', err);
+          setError(`⚠ Failed to setup audio stream.`);
         }
-      };
-      
-      audioRef.current.onerror = handleError;
-      audioRef.current.onabort = handleError;
-      
-      audioRef.current.play().catch((err) => {
-        console.warn('[Audio] Play failed:', err.message);
-        setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-      });
-    } else if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onerror = null;
-      audioRef.current.onabort = null;
-    }
+      } else if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+
+    setupAudio();
 
     if (studyMode) {
       const elem = document.documentElement;
@@ -131,16 +134,30 @@ export default function Dashboard() {
 
   if (loadingUser) {
     return (
-      <div className={styles.signupContainer}>
-        <div className={styles.signupCard}>
-          <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</p>
+      <>
+        {/* Music Player - Hidden audio element */}
+        {studyMode && studyMusic !== 'none' && (
+          <audio
+            ref={audioRef}
+            autoPlay
+            loop
+            style={{ display: 'none' }}
+            onError={() => {
+              setError(`⚠ Failed to load audio. Try another track.`);
+            }}
+          />
+        )}
+        <div className={styles.signupContainer}>
+          <div className={styles.signupCard}>
+            <h1 className={styles.pageTitle}>Dashboard</h1>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  const musicUrls = {
+  const musicUrls_temp = {
     lofi: {
       primary: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
       fallback: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
@@ -161,16 +178,6 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* Music Player - Hidden audio element */}
-      {studyMode && studyMusic !== 'none' && (
-        <audio
-          ref={audioRef}
-          src={musicUrls[studyMusic]?.primary}
-          autoPlay
-          loop
-          style={{ display: 'none' }}
-        />
-      )}
 
       <div className={`${styles.signupContainer} ${studyMode ? styles.studyModeActive : ''}`}>
         {/* Shooting-stars overlay (pure CSS animation) */}
@@ -219,7 +226,24 @@ export default function Dashboard() {
               Notes is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($10/month)
+              Upgrade to Full Access ($10/month) or Notes Only ($5/month)
+            </Link>
+          </div>
+        )}
+        {plan === 'notes' && (
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '1rem',
+            padding: '0.75rem',
+            borderRadius: '8px',
+            border: '1px solid var(--card-border)',
+            background: 'rgba(255,255,255,0.04)'
+          }}>
+            <div style={{ fontSize: '0.95rem' }}>
+              Career is part of Full Access. Upgrade to unlock.
+            </div>
+            <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
+              Upgrade to Full Access ($10/month) or Career Only ($5/month)
             </Link>
           </div>
         )}
@@ -229,7 +253,7 @@ export default function Dashboard() {
           {plan === 'career' ? (
             <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed' }}>
               Lift Notes
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Full Access ($10/month)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Notes ($5/mo) or Full Access ($10/mo)</div>
             </button>
           ) : (
             <Link href="/notes" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem' }}>
@@ -238,16 +262,24 @@ export default function Dashboard() {
             </Link>
           )}
 
-          <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, rgba(99, 102, 241, 1) 0%, rgba(139, 92, 246, 0.95) 100%)' }}>
-            Lift Career
-            <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Build resumes and cover letters</div>
-          </Link>
+          {/* Career button: disabled for Notes-only plan */}
+          {plan === 'notes' ? (
+            <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.5) 0%, rgba(139, 92, 246, 0.5) 100%)' }}>
+              Lift Career
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($5/mo) or Full Access ($10/mo)</div>
+            </button>
+          ) : (
+            <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, rgba(99, 102, 241, 1) 0%, rgba(139, 92, 246, 0.95) 100%)' }}>
+              Lift Career
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Build resumes and cover letters</div>
+            </Link>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
             <Link href="/account" className={styles.loginLink}>
               Account Settings
             </Link>
-            {plan === 'career' && (
+            {(plan === 'career' || plan === 'notes') && (
               <Link href="/subscription/plans" className={styles.loginLink}>
                 Upgrade to Full Access
               </Link>

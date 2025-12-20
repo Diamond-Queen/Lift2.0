@@ -4,6 +4,7 @@ import Link from "next/link";
 import styles from "../styles/SignUp.module.css";
 import { useSession, signOut } from 'next-auth/react';
 import TemplatePicker from "../components/TemplatePicker";
+import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 
 export default function Account() {
   const { status } = useSession();
@@ -42,8 +43,16 @@ export default function Account() {
   // Apply theme to DOM
   useEffect(() => {
     if (theme && mounted) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
+      // Save current scroll position
+      const scrollPos = window.scrollY || document.documentElement.scrollTop;
+      
+      requestAnimationFrame(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollPos);
+      });
     }
   }, [theme, mounted]);
 
@@ -127,6 +136,7 @@ export default function Account() {
     // Persist locally and to server preferences endpoint
     localStorage.setItem("theme", theme);
     localStorage.setItem("studyMode", studyMode ? "true" : "false");
+    try { localStorage.setItem('studyMusicType', studyMusic || 'none'); } catch(e){}
     (async () => {
       try {
         const res = await fetch('/api/user/preferences', {
@@ -288,15 +298,71 @@ export default function Account() {
 
         <div className={styles.formGroup}>
           <label>Study Music</label>
-          <select value={studyMusic} onChange={(e) => setStudyMusic(e.target.value)} style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem' }}>
-            <option value="none">None</option>
-            <option value="lofi">Lo-fi Beats</option>
-            <option value="classical">Classical Focus</option>
-            <option value="ambient">Ambient</option>
-            <option value="rain">Rain & Thunder</option>
-            <option value="rap">Rap / Hip-Hop</option>
-            <option value="rnb">R&B Soul</option>
-          </select>
+          <div className={styles.pillGroup}>
+            {[
+              { key: 'none', label: 'None' },
+              { key: 'lofi', label: 'Lo-fi Beats' },
+              { key: 'classical', label: 'Classical Focus' },
+              { key: 'ambient', label: 'Ambient' },
+              { key: 'rain', label: 'Rain & Thunder' },
+              { key: 'rap', label: 'Rap / Hip-Hop' },
+              { key: 'rnb', label: 'R&B Soul' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setStudyMusic(key)}
+                className={`${styles.pill} ${studyMusic === key ? styles.pillActive : ''}`}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={async () => {
+                if (studyMusic === 'none') {
+                  alert('Please select a music track first');
+                  return;
+                }
+                const el = document.getElementById('musicPreviewAudio');
+                if (!el) return;
+                
+                if (el.paused) {
+                  try {
+                    // Get stream URL
+                    const primaryUrl = musicUrls[studyMusic]?.primary;
+                    const fallbackUrl = musicUrls[studyMusic]?.fallback;
+                    
+                    let streamUrl = await getAudioStreamUrl(primaryUrl);
+                    if (!streamUrl && fallbackUrl) {
+                      streamUrl = await getAudioStreamUrl(fallbackUrl);
+                    }
+                    
+                    if (streamUrl) {
+                      el.src = streamUrl;
+                      el.load();
+                      el.play().catch(() => {});
+                    }
+                  } catch (err) {
+                    console.error('Preview failed:', err);
+                  }
+                } else {
+                  el.pause();
+                }
+              }}
+              className={styles.previewPill}
+              title="Preview selected music"
+            >
+              Preview Music
+            </button>
+          </div>
+          {(() => {
+            return (
+              <audio id="musicPreviewAudio" style={{ display: 'none' }} onError={(e) => {
+                console.error('Audio playback failed');
+              }} />
+            );
+          })()}
         </div>
 
         <div className={styles.formGroup}>
@@ -321,14 +387,12 @@ export default function Account() {
               gap: '0.5rem'
             }}
           >
-            {studyMode ? '🌙 Study Mode ON' : '✨ Study Mode OFF'}
+            {studyMode ? 'Study Mode ON' : 'Study Mode OFF'}
           </button>
           <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
             {studyMode ? 'Focus mode with fullscreen and music enabled' : 'Enable for immersive study experience'}
           </small>
         </div>
-
-        <button className={styles.submitButton} onClick={saveAllSettings} style={{ marginBottom: '1rem' }}>💾 Save All Settings</button>
 
         <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
           <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>Resume & Cover Letter Templates</h3>
@@ -351,6 +415,9 @@ export default function Account() {
             <small style={{ display: 'block', marginTop: '-0.25rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Add any additional formatting instructions for your documents.</small>
             <textarea value={formatTemplate} onChange={(e) => setFormatTemplate(e.target.value)} rows={4} placeholder="e.g. Two-column resume: left=contact, right=experience; compact font" style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}></textarea>
           </div>
+          
+          <button className={styles.submitButton} onClick={saveAllSettings} style={{ marginBottom: '1rem' }}>Save All Settings</button>
+          
           <button className={styles.submitButton} onClick={handleDone} style={{ marginTop: '0.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-color)' }}>Done</button>
         </div>
 

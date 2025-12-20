@@ -38,7 +38,8 @@ export default async function handler(req, res) {
   
   // Validate plan
   const validPlans = {
-    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 900, name: 'Career Only' },
+    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 500, name: 'Career Only' },
+    notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 500, name: 'Notes Only' },
     full: { price: process.env.STRIPE_PRICE_FULL, amount: 1000, name: 'Full Access' }
   };
   

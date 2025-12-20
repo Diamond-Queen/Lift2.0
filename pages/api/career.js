@@ -319,7 +319,6 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     const aiResponse = await generateCompletion({
       prompt,
       temperature: 0.7,
-      maxTokens: 2000,
       type: 'json',
       context: {
         type: type,

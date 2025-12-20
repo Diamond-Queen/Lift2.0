@@ -21,7 +21,7 @@ export default function App({ Component, pageProps }) {
   useEffect(() => {
     async function loadPreferences() {
       // Try localStorage first for instant load
-      const cachedTheme = localStorage.getItem('theme') || 'light';
+      const cachedTheme = localStorage.getItem('theme') || 'dark';
       const cachedFontSize = localStorage.getItem('fontSize') || 'medium';
       const cachedAccentColor = localStorage.getItem('accentColor') || '#d4af37';
       const cachedShortcuts = localStorage.getItem('keyboardShortcuts') !== 'false';

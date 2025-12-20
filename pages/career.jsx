@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import styles from "../styles/Career.module.css";
-import { musicUrls } from "../lib/musicUrls";
+import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 
 export default function Career() {
   const { status } = useSession();
@@ -16,7 +16,8 @@ export default function Career() {
   const [studyMusic, setStudyMusic] = useState('none');
   const [musicLoaded, setMusicLoaded] = useState(false);
 
-  // Common fields
+  // Refs
+  const audioRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -39,17 +40,20 @@ export default function Career() {
   const [formatTemplate, setFormatTemplate] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("professional");
 
-  // Class + Content persistence
-  const [classes, setClasses] = useState([]);
-  const [selectedClassId, setSelectedClassId] = useState(null);
+  // Job + Content persistence
+  const [jobs, setJobs] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState(null);
   const [savedItems, setSavedItems] = useState([]);
-  const [newClassName, setNewClassName] = useState("");
-  const [newClassColor, setNewClassColor] = useState("#d4af37");
-  const [showClassForm, setShowClassForm] = useState(false);
-  const [loadingClasses, setLoadingClasses] = useState(false);
-  const [editingClassId, setEditingClassId] = useState(null);
-  const [editingClassName, setEditingClassName] = useState("");
-  const [editingClassColor, setEditingClassColor] = useState("#d4af37");
+  const [newJobName, setNewJobName] = useState("");
+  const [newJobColor, setNewJobColor] = useState("#d4af37");
+  const [showJobForm, setShowJobForm] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [editingJobId, setEditingJobId] = useState(null);
+  const [editingJobName, setEditingJobName] = useState("");
+  const [editingJobColor, setEditingJobColor] = useState("#d4af37");
+  
+  // Per-job generation results
+  const [jobGenerations, setJobGenerations] = useState({});
 
   // Reset template when type changes
   useEffect(() => {
@@ -107,29 +111,29 @@ Sincerely,
     fetchPreferences();
   }, []);
 
-  // Fetch classes on mount
+  // Fetch jobs on mount
   useEffect(() => {
-    fetchClasses();
+    fetchJobs();
   }, []);
 
-  const fetchClasses = async () => {
-    setLoadingClasses(true);
+  const fetchJobs = async () => {
+    setLoadingJobs(true);
     try {
       const res = await fetch('/api/content/classes');
       if (res.ok) {
         const data = await res.json();
-        setClasses(data.data || []);
+        setJobs(data.data || []);
       }
     } catch (err) {
-      console.error('Failed to fetch classes:', err);
+      console.error('Failed to fetch jobs:', err);
     } finally {
-      setLoadingClasses(false);
+      setLoadingJobs(false);
     }
   };
 
-  const fetchSavedItems = async (classId) => {
+  const fetchSavedItems = async (jobId) => {
     try {
-      const query = classId ? `?classId=${classId}&type=${type}` : `?type=${type}`;
+      const query = jobId ? `?classId=${jobId}&type=${type}` : `?type=${type}`;
       const res = await fetch(`/api/content/items${query}`);
       if (res.ok) {
         const data = await res.json();
@@ -141,88 +145,133 @@ Sincerely,
   };
 
   useEffect(() => {
-    if (selectedClassId) {
-      fetchSavedItems(selectedClassId);
+    if (selectedJobId) {
+      fetchSavedItems(selectedJobId);
+      // Load previous generated content for this specific job
+      if (jobGenerations[selectedJobId]) {
+        setResult(jobGenerations[selectedJobId].result || null);
+      } else {
+        setResult(null);
+      }
+      setError("");
     }
-  }, [selectedClassId, type]);
+  }, [selectedJobId, type]);
 
-  const handleCreateClass = async () => {
-    if (!newClassName.trim()) return;
-    setLoadingClasses(true);
+  const handleCreateJob = async () => {
+    if (!newJobName.trim()) return;
+    setLoadingJobs(true);
     try {
       const res = await fetch('/api/content/classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newClassName, color: newClassColor })
+        body: JSON.stringify({ name: newJobName, color: newJobColor })
       });
       if (res.ok) {
         const data = await res.json();
-        setClasses([data.data, ...classes]);
-        setSelectedClassId(data.data.id);
-        setNewClassName("");
-        setNewClassColor("#d4af37");
-        setShowClassForm(false);
-        setError("✓ Class created!");
+        setJobs([data.data, ...jobs]);
+        setSelectedJobId(data.data.id);
+        setNewJobName("");
+        setNewJobColor("#d4af37");
+        setShowJobForm(false);
+        setError("✓ Job created!");
         setTimeout(() => setError(""), 2000);
       }
     } catch (err) {
-      setError('Failed to create class');
+      setError('Failed to create job');
     } finally {
-      setLoadingClasses(false);
+      setLoadingJobs(false);
     }
   };
 
-  const handleRenameClass = async (classId) => {
-    if (!editingClassName.trim()) return;
-    setLoadingClasses(true);
+  const handleRenameJob = async (jobId) => {
+    if (!editingJobName.trim()) return;
+    setLoadingJobs(true);
     try {
       const res = await fetch('/api/content/classes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId, name: editingClassName, color: editingClassColor })
+        body: JSON.stringify({ classId: jobId, name: editingJobName, color: editingJobColor })
       });
       if (res.ok) {
         const data = await res.json();
-        setClasses(classes.map(cls => cls.id === classId ? data.data : cls));
-        setEditingClassId(null);
-        setEditingClassName("");
-        setEditingClassColor("#d4af37");
-        setError("✓ Class renamed!");
+        setJobs(jobs.map(job => job.id === jobId ? data.data : job));
+        setEditingJobId(null);
+        setEditingJobName("");
+        setEditingJobColor("#d4af37");
+        setError("✓ Job renamed!");
         setTimeout(() => setError(""), 2000);
       }
     } catch (err) {
-      setError('Error renaming class');
+      setError('Error renaming job');
     } finally {
-      setLoadingClasses(false);
+      setLoadingJobs(false);
     }
   };
 
-  const handleDeleteClass = async (classId) => {
-    if (!confirm("Delete this class and all its documents?")) return;
-    setLoadingClasses(true);
+  const handleDeleteJob = async (jobId) => {
+    if (!confirm("Delete this job and all its documents?")) return;
+    setLoadingJobs(true);
     try {
       const res = await fetch('/api/content/classes', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId })
+        body: JSON.stringify({ classId: jobId })
       });
       if (res.ok) {
-        setClasses(classes.filter(cls => cls.id !== classId));
-        if (selectedClassId === classId) {
-          setSelectedClassId(null);
+        setJobs(jobs.filter(job => job.id !== jobId));
+        if (selectedJobId === jobId) {
+          setSelectedJobId(null);
           setSavedItems([]);
         }
-        setError("✓ Class deleted");
+        setError("✓ Job deleted");
         setTimeout(() => setError(""), 2000);
       }
     } catch (err) {
-      setError('Error deleting class');
+      setError('Error deleting job');
     } finally {
-      setLoadingClasses(false);
+      setLoadingJobs(false);
     }
   };
 
   // Handle study music - removed useEffect that conflicts with audio element props
+
+  // Audio setup for study music
+  useEffect(() => {
+    const setupAudio = async () => {
+      if (studyMode && studyMusic !== 'none' && audioRef.current) {
+        try {
+          // Get stream URL from backend
+          const primaryUrl = musicUrls[studyMusic]?.primary;
+          const fallbackUrl = musicUrls[studyMusic]?.fallback;
+          
+          let streamUrl = await getAudioStreamUrl(primaryUrl);
+          
+          if (!streamUrl && fallbackUrl) {
+            console.warn('[Audio] Primary URL failed, trying fallback');
+            streamUrl = await getAudioStreamUrl(fallbackUrl);
+          }
+          
+          if (streamUrl) {
+            audioRef.current.src = streamUrl;
+            audioRef.current.load();
+            audioRef.current.play().catch((err) => {
+              console.warn('[Audio] Play failed:', err.message);
+              setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
+            });
+          } else {
+            setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
+          }
+        } catch (err) {
+          console.error('[Audio] Setup error:', err);
+          setError(`⚠ Failed to setup audio stream.`);
+        }
+      } else if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+
+    setupAudio();
+  }, [studyMode, studyMusic]);
 
   // Enter/exit fullscreen based on studyMode
   useEffect(() => {
@@ -263,6 +312,14 @@ Sincerely,
             const user = data?.data?.user;
             if (user && !user.onboarded) {
               router.replace('/onboarding');
+              return;
+            }
+            // Check subscription tier via user.preferences
+            const plan = user?.preferences?.subscriptionPlan || null;
+            if (plan === 'notes') {
+              alert('Career requires Career Only ($5/month) or Full Access ($10/month). You currently have Notes Only access.');
+              router.replace('/subscription/plans');
+              return;
             }
           }
         } catch (e) {
@@ -308,7 +365,6 @@ Sincerely,
 
   const handleGenerate = async () => {
     setError("");
-    setResult(null);
 
     if (!name.trim() || !email.trim() || !phone.trim()) {
       setError("Name, email, and phone are required.");
@@ -375,7 +431,15 @@ Sincerely,
 
       if (!res.ok) throw new Error("Network response not ok");
       const data = await res.json();
-      setResult(data.result || {});
+      const newResult = data.result || {};
+      setResult(newResult);
+      // Store per-job
+      if (selectedJobId) {
+        setJobGenerations(prev => ({
+          ...prev,
+          [selectedJobId]: { result: newResult }
+        }));
+      }
     } catch (err) {
       console.error(err);
       setError("Failed to generate. Try again.");
@@ -387,8 +451,8 @@ Sincerely,
   const handleChange = setter => e => setter(e.target.value);
 
   const handleSaveDocument = async () => {
-    if (!selectedClassId) {
-      setError("Please select or create a class first.");
+    if (!selectedJobId) {
+      setError("Please select or create a job first.");
       return;
     }
 
@@ -417,13 +481,13 @@ Sincerely,
           type: type === "resume" ? "resume" : "cover_letter",
           title: `${type === "resume" ? "Resume" : "Cover Letter"} - ${new Date().toLocaleDateString()}`,
           originalInput: JSON.stringify(documentData),
-          classId: selectedClassId,
+          classId: selectedJobId,
           metadata: documentData
         })
       });
       if (res.ok) {
         setError("");
-        await fetchSavedItems(selectedClassId);
+        await fetchSavedItems(selectedJobId);
         setError("✓ Document saved!");
         setTimeout(() => setError(""), 2000);
       }
@@ -489,24 +553,11 @@ Sincerely,
       {studyMode && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
-          src={musicUrls[studyMusic]?.primary}
           autoPlay
           loop
           style={{ display: 'none' }}
           onError={() => {
-            const fallback = musicUrls[studyMusic]?.fallback;
-            if (fallback) {
-              console.warn('[Audio] Primary source failed, attempting fallback:', studyMusic);
-              audioRef.current.src = fallback;
-              audioRef.current.load();
-              audioRef.current.play().catch((err) => {
-                console.error('[Audio] Fallback also failed:', err.message);
-                setError(`⚠ Unable to play ${studyMusic} music. Try another track.`);
-              });
-            } else {
-              console.error('[Audio] Both primary and fallback failed:', studyMusic);
-              setError(`⚠ Unable to load ${studyMusic} music. Check your connection.`);
-            }
+            setError(`⚠ Failed to load audio. Try another track.`);
           }}
         />
       )}
@@ -514,77 +565,77 @@ Sincerely,
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>
         <h1 className={styles.pageTitle}>📋 Lift Career</h1>
 
-        {/* Class Manager */}
+        {/* Job Manager */}
         <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.05))', borderRadius: '10px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>📚 Classes</h2>
+            <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Jobs</h2>
             <button
-              onClick={() => setShowClassForm(!showClassForm)}
+              onClick={() => setShowJobForm(!showJobForm)}
               style={{ padding: '0.5rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
             >
-              {showClassForm ? '✕ Cancel' : '+ New Class'}
+              {showJobForm ? '✕ Cancel' : '+ New Job'}
             </button>
           </div>
 
-          {showClassForm && (
+          {showJobForm && (
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
               <input
                 type="text"
-                placeholder="Class name (e.g., Job Search 2025)"
-                value={newClassName}
-                onChange={(e) => setNewClassName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); }}
+                placeholder="Job name (e.g., Software Engineer @ Google)"
+                value={newJobName}
+                onChange={(e) => setNewJobName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateJob(); }}
                 autoFocus
                 style={{ flex: 1, padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem' }}
               />
               <input
                 type="color"
-                value={newClassColor}
-                onChange={(e) => setNewClassColor(e.target.value)}
-                title="Choose class color"
+                value={newJobColor}
+                onChange={(e) => setNewJobColor(e.target.value)}
+                title="Choose job color"
                 style={{ width: '50px', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }}
               />
-              <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: loadingClasses ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
-                {loadingClasses ? '...' : 'Create'}
+              <button onClick={handleCreateJob} disabled={loadingJobs} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: loadingJobs ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingJobs ? 0.6 : 1 }}>
+                {loadingJobs ? '...' : 'Create'}
               </button>
             </div>
           )}
 
-          {classes.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '1rem 0' }}>No classes. Create one to start!</p>
+          {jobs.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '1rem 0' }}>No jobs. Create one to start!</p>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
-              {classes.map((cls) => (
+              {jobs.map((job) => (
                 <div
-                  key={cls.id}
-                  onClick={() => !editingClassId && setSelectedClassId(cls.id)}
-                  style={{ padding: '1rem', background: selectedClassId === cls.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${cls.color || '#d4af37'}`, border: selectedClassId === cls.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingClassId === cls.id ? 'default' : 'pointer', transition: 'all 0.2s' }}
+                  key={job.id}
+                  onClick={() => !editingJobId && setSelectedJobId(job.id)}
+                  style={{ padding: '1rem', background: selectedJobId === job.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${job.color || '#d4af37'}`, border: selectedJobId === job.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingJobId === job.id ? 'default' : 'pointer', transition: 'all 0.2s' }}
                 >
-                  {editingClassId === cls.id ? (
+                  {editingJobId === job.id ? (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
                       <input
                         type="text"
-                        value={editingClassName}
-                        onChange={(e) => setEditingClassName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameClass(cls.id); if (e.key === 'Escape') setEditingClassId(null); }}
+                        value={editingJobName}
+                        onChange={(e) => setEditingJobName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameJob(job.id); if (e.key === 'Escape') setEditingJobId(null); }}
                         autoFocus
                         style={{ flex: 1, padding: '0.5rem', border: '1px solid var(--accent)', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.9rem' }}
                       />
                       <input
                         type="color"
-                        value={editingClassColor}
-                        onChange={(e) => setEditingClassColor(e.target.value)}
+                        value={editingJobColor}
+                        onChange={(e) => setEditingJobColor(e.target.value)}
                         style={{ width: '40px', height: '32px', border: '1px solid var(--card-border)', borderRadius: '4px', cursor: 'pointer' }}
                       />
-                      <button onClick={() => handleRenameClass(cls.id)} disabled={loadingClasses} style={{ padding: '0.5rem 0.75rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>✓</button>
-                      <button onClick={() => setEditingClassId(null)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-color)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+                      <button onClick={() => handleRenameJob(job.id)} disabled={loadingJobs} style={{ padding: '0.5rem 0.75rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>✓</button>
+                      <button onClick={() => setEditingJobId(null)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-color)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600 }}>{cls.name}</span>
+                      <span style={{ fontWeight: 600 }}>{job.name}</span>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button onClick={(e) => { e.stopPropagation(); setEditingClassId(cls.id); setEditingClassName(cls.name); setEditingClassColor(cls.color || '#d4af37'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(255, 0, 0, 0.15)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>🗑</button>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingJobId(job.id); setEditingJobName(job.name); setEditingJobColor(job.color || '#d4af37'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(255, 0, 0, 0.15)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
                       </div>
                     </div>
                   )}
@@ -595,9 +646,9 @@ Sincerely,
         </div>
 
         {/* Saved Documents */}
-        {selectedClassId && savedItems.length > 0 && (
+        {selectedJobId && savedItems.length > 0 && (
           <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>📄 Saved Documents ({savedItems.length})</label>
+            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Saved Documents ({savedItems.length})</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {savedItems.map((item) => (
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(212, 175, 55, 0.1)', borderRadius: '6px' }}>
@@ -608,6 +659,16 @@ Sincerely,
             </div>
           </div>
         )}
+
+        {/* Job Color Header */}
+        {selectedJobId && (() => {
+          const selectedJob = jobs.find(j => j.id === selectedJobId);
+          return selectedJob ? (
+            <div style={{ padding: '0.75rem', borderLeft: `4px solid ${selectedJob.color || '#d4af37'}`, background: `rgba(${parseInt(selectedJob.color?.slice(1, 3), 16)}, ${parseInt(selectedJob.color?.slice(3, 5), 16)}, ${parseInt(selectedJob.color?.slice(5, 7), 16)}, 0.02)`, borderRadius: '8px', marginBottom: '1.5rem' }}>
+              <span style={{ color: selectedJob.color || '#d4af37', fontWeight: 600, fontSize: '1rem' }}>Job: {selectedJob.name}</span>
+            </div>
+          ) : null;
+        })()}
 
       <select className={styles.input} value={type} onChange={handleChange(setType)} disabled={loading}>
         <option value="resume">Resume</option>
@@ -645,7 +706,7 @@ Sincerely,
           <textarea placeholder="Skills (comma separated)" className={styles.textarea} value={skills} onChange={handleChange(setSkills)} rows={2} disabled={loading} />
           <textarea placeholder="Certifications (comma separated)" className={styles.textarea} value={certifications} onChange={handleChange(setCertifications)} rows={2} disabled={loading} />
           <button
-            className={`${styles.btnAction} ${styles.btnPurple} ${loading ? styles.loading : ""}`}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
             onClick={handleGenerate}
             disabled={loading}
             aria-label="Generate resume or cover letter"
@@ -653,9 +714,9 @@ Sincerely,
             {loading ? "Generating…" : "Generate"}
           </button>
           <button
-            className={`${styles.btnAction} ${styles.btnPurple} ${loading ? styles.loading : ""}`}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
             onClick={handleSaveDocument}
-            disabled={loading || !selectedClassId}
+            disabled={loading || !selectedJobId}
             aria-label="Save resume"
           >
             {loading ? "Saving…" : "Save Document"}
@@ -670,7 +731,7 @@ Sincerely,
           <input type="text" placeholder="Position Applying For" className={styles.input} value={position} onChange={handleChange(setPosition)} disabled={loading} />
           <textarea placeholder="Just one sentence: your experience, skills, and why you want this job" className={styles.textarea} value={paragraphs} onChange={handleChange(setParagraphs)} rows={6} disabled={loading} />
           <button
-            className={`${styles.btnAction} ${styles.btnPurple} ${loading ? styles.loading : ""}`}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
             onClick={handleGenerate}
             disabled={loading}
             aria-label="Generate cover letter"
@@ -678,9 +739,9 @@ Sincerely,
             {loading ? "Generating…" : "Generate"}
           </button>
           <button
-            className={`${styles.btnAction} ${styles.btnPurple} ${loading ? styles.loading : ""}`}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
             onClick={handleSaveDocument}
-            disabled={loading || !selectedClassId}
+            disabled={loading || !selectedJobId}
             aria-label="Save cover letter"
           >
             {loading ? "Saving…" : "Save Document"}

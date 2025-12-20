@@ -1,6 +1,7 @@
 //bit.ly/LiftStudy
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 import Link from "next/link";
 import styles from "../styles/Home.module.css";
 
@@ -51,97 +52,75 @@ export default function Home() {
     }
   }, [toggleStudyMode]);
 
-  // WebAudio-based study music (start/stop on study mode). Lightweight, user-gesture-initiated.
-  const audioCtxRef = useRef(null);
-  const nodesRef = useRef(null);
+  // Audio reference for streaming study music
+  const audioRef = useRef(null);
   const [musicEnabled, setMusicEnabled] = useState(null);
+  const [studyMusic, setStudyMusic] = useState('none');
+  
   useEffect(() => {
     try { setMusicEnabled(localStorage.getItem('studyMusic') !== 'false'); } catch (e) { setMusicEnabled(true); }
+    // load preferred music type from server or localStorage
+    (async () => {
+      try {
+        const res = await fetch('/api/user/preferences');
+        if (res.ok) {
+          const data = await res.json();
+          const prefType = data?.preferences?.studyMusic;
+          if (typeof prefType === 'string') setStudyMusic(prefType);
+        } else {
+          const localType = localStorage.getItem('studyMusicType');
+          if (localType) setStudyMusic(localType);
+        }
+      } catch {
+        const localType = localStorage.getItem('studyMusicType');
+        if (localType) setStudyMusic(localType);
+      }
+    })();
   }, []);
 
   const startStudyMusic = async () => {
-    if (!musicEnabled) return;
-    if (audioCtxRef.current) return;
+    if (!musicEnabled || !audioRef.current) return;
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      // Some browsers require resume() after user gesture
-      try { await ctx.resume(); } catch(e) {}
-      audioCtxRef.current = ctx;
-
-      const master = ctx.createGain();
-      master.gain.value = 0.02; // very low volume
-      master.connect(ctx.destination);
-
-      // Two detuned oscillators for a warm, non-intrusive pad
-      const o1 = ctx.createOscillator();
-      o1.type = 'sine';
-      o1.frequency.value = 220; // A3
-      const o2 = ctx.createOscillator();
-      o2.type = 'sine';
-      o2.frequency.value = 223; // slight detune
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1200;
-
-      o1.connect(filter);
-      o2.connect(filter);
-      filter.connect(master);
-
-      // slow LFO to breathe the amplitude
-      const lfo = ctx.createOscillator();
-      lfo.type = 'sine';
-      lfo.frequency.value = 0.08; // very slow
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 0.012;
-      lfo.connect(lfoGain);
-      lfoGain.connect(master.gain);
-
-      o1.start();
-      o2.start();
-      lfo.start();
-
-      nodesRef.current = { o1, o2, lfo, lfoGain, filter, master };
+      const primaryUrl = musicUrls[studyMusic]?.primary;
+      const fallbackUrl = musicUrls[studyMusic]?.fallback;
+      
+      let streamUrl = await getAudioStreamUrl(primaryUrl);
+      if (!streamUrl && fallbackUrl) {
+        streamUrl = await getAudioStreamUrl(fallbackUrl);
+      }
+      
+      if (streamUrl && audioRef.current) {
+        audioRef.current.src = streamUrl;
+        audioRef.current.load();
+        audioRef.current.play().catch((err) => {
+          console.warn('[Audio] Play failed:', err.message);
+        });
+      }
     } catch (err) {
       console.warn('Could not start study audio', err);
     }
   };
 
   const stopStudyMusic = async () => {
-    if (!audioCtxRef.current) return;
-    try {
-      const ctx = audioCtxRef.current;
-      const n = nodesRef.current || {};
-      if (n.o1?.stop) n.o1.stop();
-      if (n.o2?.stop) n.o2.stop();
-      if (n.lfo?.stop) n.lfo.stop();
-      try { n.o1?.disconnect(); n.o2?.disconnect(); n.lfo?.disconnect(); n.filter?.disconnect(); n.master?.disconnect(); } catch(e){}
-      await ctx.close();
-    } catch (err) {
-      console.warn('Error stopping audio', err);
-    } finally {
-      audioCtxRef.current = null;
-      nodesRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
     }
   };
 
   // react to studyMode changes
   useEffect(() => {
-    if (studyMode) {
-      // user gesture (toggleStudyMode) should allow audio to start
+    if (studyMode && musicEnabled && studyMusic !== 'none') {
       startStudyMusic();
     } else {
       stopStudyMusic();
     }
     try { localStorage.setItem('studyMode', studyMode ? 'true' : 'false'); } catch(e){}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studyMode, musicEnabled]);
+  }, [studyMode, musicEnabled, studyMusic]);
 
   // Cleanup audio on unmount
   useEffect(() => {
     return () => { stopStudyMusic(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleMusicEnabled = () => {
@@ -150,6 +129,17 @@ export default function Home() {
 
   return (
     <main className={styles.root} role="main">
+      {studyMode && musicEnabled && studyMusic !== 'none' && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          loop
+          style={{ display: 'none' }}
+          onError={() => {
+            console.error('Audio playback failed');
+          }}
+        />
+      )}
       {/* Shooting-stars overlay (pure CSS animation) */}
       <div className="shooting-stars" aria-hidden="true">
         <span className="shooting-star s1" />
@@ -160,6 +150,11 @@ export default function Home() {
         <span className="shooting-star s6" />
       </div>
       <div className={styles.hero}>
+        {(studyMode && musicEnabled && studyMusic !== 'none') && (
+          <div style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 9999, padding: '0.4rem 0.75rem', borderRadius: '999px', background: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            Now Playing: {String(studyMusic).toUpperCase()}
+          </div>
+        )}
         <div className={styles.heroContainer}>
           <div className={`${styles.heroCard} ${styles.fadeIn}`}>
             <div className={styles.titleWrap}>
