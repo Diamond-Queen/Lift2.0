@@ -298,21 +298,25 @@ export default function Account() {
 
         <div className={styles.formGroup}>
           <label>Study Music</label>
+          <small style={{ display: 'block', marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            💡 Music plays automatically when Study Mode is enabled on Dashboard, Career, or Notes pages
+          </small>
           <div className={styles.pillGroup}>
             {[
-              { key: 'none', label: 'None' },
-              { key: 'lofi', label: 'Lo-fi Beats' },
-              { key: 'classical', label: 'Classical Focus' },
-              { key: 'ambient', label: 'Ambient' },
-              { key: 'rain', label: 'Rain & Thunder' },
-              { key: 'rap', label: 'Rap / Hip-Hop' },
-              { key: 'rnb', label: 'R&B Soul' }
-            ].map(({ key, label }) => (
+              { key: 'none', label: 'None', enabled: true },
+              { key: 'lofi', label: 'Lo-fi Beats', enabled: true },
+              { key: 'classical', label: 'Classical Focus', enabled: true },
+              { key: 'ambient', label: 'Ambient', enabled: true },
+              { key: 'rain', label: 'Rain & Thunder', enabled: true },
+              { key: 'rap', label: 'Rap / Hip-Hop', enabled: true },
+              { key: 'rnb', label: 'R&B Soul', enabled: true }
+            ].map(({ key, label, enabled }) => (
               <button
                 key={key}
                 type="button"
-                onClick={() => setStudyMusic(key)}
+                onClick={() => enabled && setStudyMusic(key)}
                 className={`${styles.pill} ${studyMusic === key ? styles.pillActive : ''}`}
+                disabled={!enabled}
               >
                 {label}
               </button>

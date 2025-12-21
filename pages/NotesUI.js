@@ -456,32 +456,17 @@ export default function NotesUI() {
     <>
       {studyMode && studyMusic !== 'none' && (
         <audio
-              {showClassForm ? '✕ Cancel' : '+ New Class'}
-          // Helper functions for localStorage persistence
-          const saveClassNotesToStorage = (classId, input, summaries, flashcards) => {
-            if (!classId) return;
-            try {
-              const data = { input, summaries, flashcards, timestamp: Date.now() };
-              localStorage.setItem(`lift_class_notes_${classId}`, JSON.stringify(data));
-            } catch (err) {
-              console.error('Failed to save class notes to localStorage:', err);
-            }
-          };
+          ref={audioRef}
+          autoPlay
+          loop
+          style={{ display: 'none' }}
+          onError={() => {
+            setError(`⚠ Failed to load audio. Try another track.`);
+          }}
+        />
+      )}
 
-          const loadClassNotesFromStorage = (classId) => {
-            if (!classId) return null;
-            try {
-              const data = localStorage.getItem(`lift_class_notes_${classId}`);
-              return data ? JSON.parse(data) : null;
-            } catch (err) {
-              console.error('Failed to load class notes from localStorage:', err);
-              return null;
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
-                const handleSaveNote = async () => {
-                  if (!input.trim()) {
-                    setError("Please add notes before saving.");
-                    return;
-                  }
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
               <input type="text" placeholder="Class name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); }} autoFocus style={{ padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.95rem' }} />
               <input type="color" value={newClassColor} onChange={(e) => setNewClassColor(e.target.value)} title="Choose class color" style={{ width: '100%', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }} />
               <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
