@@ -224,7 +224,7 @@ export default function Subscription() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          By starting your free trial, you agree to our Terms of Service and Privacy Policy.
+          By starting your free trial, you agree to our <a href="/important/TERMS_OF_SERVICE.md" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</a> and <a href="/important/PRIVACY_POLICY.md" style={{ color: 'inherit', textDecoration: 'underline' }}>Privacy Policy</a>.
         </p>
       </div>
     </div>

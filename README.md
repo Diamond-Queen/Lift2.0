@@ -1,8 +1,5 @@
 # Lift 2.0
 
-# Lift 2.0
-
-## Overview
 ## Overview
 Lift 2.0 is a Next.js application providing AI-assisted career and study tooling (resume/cover letter generation, note summarization, flashcards) with user accounts backed by Prisma/PostgreSQL.
 
@@ -124,10 +121,10 @@ npm run lint
 - Passwords hashed with Argon2 (tuned parameters).
 - Account lockout after repeated failed logins.
 
-**Please review [SECURITY_POLICY.md](./SECURITY_POLICY.md) for security information and responsible disclosure.**
+**Please review [SECURITY_POLICY.md](./important/SECURITY_POLICY.md) for security information and responsible disclosure.**
 
 ## Legal & Compliance
-**Please review [LEGAL_NOTICE.md](./LEGAL_NOTICE.md) for licensing and legal information.**
+**Please review [LEGAL_NOTICE.md](./important/LEGAL_NOTICE.md) for licensing and legal information.**
 
 ## Logging
 Structured JSON logs via `lib/logger.js`. Adjust verbosity with `LOG_LEVEL`.
