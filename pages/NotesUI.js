@@ -305,7 +305,7 @@ export default function NotesUI() {
     if (studyMode) {
       const elem = document.documentElement;
       if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
+        elem.requestFullscreen().catch(() => {});
       } else if (elem.webkitRequestFullscreen) {
         elem.webkitRequestFullscreen();
       } else if (elem.msRequestFullscreen) {
@@ -313,7 +313,7 @@ export default function NotesUI() {
       }
     } else {
       if (document.exitFullscreen) {
-        document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
+        document.exitFullscreen().catch(() => {});
       } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
       } else if (document.msExitFullscreen) {

@@ -1,0 +1,28 @@
+# Browserslist targets for cross-browser compatibility
+# Supports browsers with >0.2% global usage and modern browser updates
+
+# Modern browsers (default for production)
+[production]
+> 0.2%
+not dead
+supports es6-module
+not IE 11
+
+# Development - support newer features without transpilation
+[development]
+last 3 chrome versions
+last 3 firefox versions
+last 3 safari versions
+last 3 edge versions
+
+# Legacy fallback - uncomment to support IE11 and older browsers
+# [legacy]
+# > 0%
+# last 10 years
+
+# Specifically target:
+# - Chrome 90+
+# - Firefox 88+
+# - Safari 14+
+# - Edge 90+
+# - Mobile browsers with same versions

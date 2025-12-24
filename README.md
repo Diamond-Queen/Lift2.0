@@ -14,9 +14,9 @@ Tip: You can use a free managed Postgres from Neon or Supabase. See "Database Se
 - Prisma (PostgreSQL)
 - Tailwind / PostCSS for styling
 - **AI Providers** (resilient tiered fallback):
-  - Primary: OpenAI (gpt-4o-mini)
-  - Fallback: Anthropic (Claude 3.5 Sonnet)
-  - Last resort: Template-based generation (never fails)
+  - Primary: Template-based generation (never fails)
+  - Fallback: OpenAI (gpt-4o-mini)
+  - Last resort: Anthropic (Claude 3.5 Sonnet)
 
 ## Prerequisites
 - Node.js 18+
@@ -123,6 +123,11 @@ npm run lint
 - CSP, CORP, COOP, COEP headers set via `lib/security.js`.
 - Passwords hashed with Argon2 (tuned parameters).
 - Account lockout after repeated failed logins.
+
+**Please review [SECURITY_POLICY.md](./SECURITY_POLICY.md) for security information and responsible disclosure.**
+
+## Legal & Compliance
+**Please review [LEGAL_NOTICE.md](./LEGAL_NOTICE.md) for licensing and legal information.**
 
 ## Logging
 Structured JSON logs via `lib/logger.js`. Adjust verbosity with `LOG_LEVEL`.
