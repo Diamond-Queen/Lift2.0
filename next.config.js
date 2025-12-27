@@ -4,8 +4,6 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
-  // Support older browsers
-  swcMinify: true,
   // Environment variables
   env: {
     // Browser compatibility level

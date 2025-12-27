@@ -27,6 +27,7 @@ model User {
   contentItems        ContentItem[]
   sessions            Session[]
   subscriptions       Subscription[] @relation("UserSubscriptions")
+  betaTester          BetaTester?
   school              School?        @relation(fields: [schoolId], references: [id])
 }
 
@@ -127,3 +128,18 @@ model ContentItem {
   @@index([userId, classId])
   @@index([userId, type])
 }
+
+model BetaTester {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  trialType       String   // "school" or "social"
+  schoolName      String?  // For school trials
+  organizationName String? // For social trials
+  trialEndsAt     DateTime
+  status          String   @default("active") // "active", "expired", "converted"
+  convertedToSub  String?  // subscription ID if converted
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

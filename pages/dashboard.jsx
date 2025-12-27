@@ -10,6 +10,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [plan, setPlan] = useState(null);
+  const [trialInfo, setTrialInfo] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [studyMode, setStudyMode] = useState(false);
   const [studyMusic, setStudyMusic] = useState('none');
@@ -111,6 +112,17 @@ export default function Dashboard() {
             const p = u?.preferences?.subscriptionPlan || null;
             setPlan(p);
           }
+
+          // Fetch trial info
+          try {
+            const trialRes = await fetch('/api/beta/status');
+            if (trialRes.ok) {
+              const trialData = await trialRes.json();
+              setTrialInfo(trialData?.data?.trial || null);
+            }
+          } catch (err) {
+            console.error('Failed to fetch trial info:', err);
+          }
         } catch (_) {}
         setLoadingUser(false);
       })();
@@ -191,6 +203,52 @@ export default function Dashboard() {
         </div>
         <div className={styles.signupCard}>
         <h1 className={styles.pageTitle}>Welcome to Lift</h1>
+        {trialInfo && trialInfo.status === 'trial-active' && (
+          <div style={{
+            textAlign: 'center',
+            marginTop: '-0.5rem',
+            marginBottom: '1rem',
+            padding: '1rem',
+            borderRadius: '8px',
+            border: '2px solid var(--accent)',
+            background: 'rgba(var(--accent-rgb),0.1)',
+            color: 'var(--accent)'
+          }}>
+            <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              🎉 Beta Trial Active
+            </div>
+            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              {trialInfo.trialType === 'school' 
+                ? `School Trial: ${trialInfo.daysRemaining} days remaining` 
+                : `Social Beta: ${trialInfo.daysRemaining} days remaining`}
+            </div>
+            <Link href="/subscription/plans" className={styles.loginLink} style={{ color: 'var(--accent)', textDecoration: 'underline', display: 'inline-block', marginTop: '0.5rem' }}>
+              Upgrade to Paid Plan
+            </Link>
+          </div>
+        )}
+        {trialInfo && trialInfo.status === 'trial-expired' && (
+          <div style={{
+            textAlign: 'center',
+            marginTop: '-0.5rem',
+            marginBottom: '1rem',
+            padding: '1rem',
+            borderRadius: '8px',
+            border: '2px solid #d97706',
+            background: 'rgba(217, 119, 6, 0.1)',
+            color: '#d97706'
+          }}>
+            <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              ⏰ Trial Expired
+            </div>
+            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              Your beta trial has ended. Subscribe now to continue using Lift.
+            </div>
+            <Link href="/subscription/plans" className={styles.loginLink} style={{ color: '#d97706', textDecoration: 'underline', display: 'inline-block', marginTop: '0.5rem' }}>
+              View Subscription Plans
+            </Link>
+          </div>
+        )}
         {plan && (
           <div style={{
             textAlign: 'center',

@@ -44,7 +44,8 @@ export default function Signup() {
         setLoading(false);
         return;
       }
-      router.push('/onboarding');
+      // Redirect to beta signup to let user choose if they want to join beta testing
+      router.push('/beta-signup');
     } catch (err) {
       setError("Network error. Please try again.");
       setLoading(false);

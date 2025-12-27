@@ -98,19 +98,47 @@ export default async function handler(req, res) {
       // Merge subscription plan into preferences JSON
       const current = user.preferences || {};
       const nextPreferences = { ...current, subscriptionPlan: plan, subscriptionPrice: priceMonthly };
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { onboarded: true, preferences: nextPreferences },
-      });
-      // Store subscription info matching current Prisma schema
-      await prisma.subscription.create({
+      
+      // Create subscription record
+      const subscription = await prisma.subscription.create({
         data: {
           status: 'trialing',
           plan: plan, // 'career' or 'full'
+          userId: user.id,
           // stripeCustomerId: customer.id, // Add when Stripe integrated
           // schoolId: user.schoolId || null, // if tied to a school program
         },
       });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { onboarded: true, preferences: nextPreferences },
+      });
+
+      // Check if user has an active beta trial and convert it
+      try {
+        const betaTester = await prisma.betaTester.findUnique({
+          where: { userId: user.id },
+        });
+        
+        if (betaTester && betaTester.status === 'active') {
+          await prisma.betaTester.update({
+            where: { userId: user.id },
+            data: {
+              status: 'converted',
+              convertedToSub: subscription.id,
+            },
+          });
+          auditLog('beta_trial_converted_to_paid', user.id, { 
+            subscriptionId: subscription.id, 
+            plan,
+            previousTrialType: betaTester.trialType 
+          });
+        }
+      } catch (betaErr) {
+        // Non-critical error, log but don't fail the subscription creation
+        logger.warn('failed_to_convert_beta_trial', { userId: user.id, error: betaErr.message });
+      }
     } else {
       // Merge subscription plan into preferences JSON (pg fallback)
       const current = user.preferences || {};

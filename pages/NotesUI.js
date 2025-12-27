@@ -466,16 +466,18 @@ export default function NotesUI() {
         />
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
-              <input type="text" placeholder="Class name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); }} autoFocus style={{ padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.95rem' }} />
-              <input type="color" value={newClassColor} onChange={(e) => setNewClassColor(e.target.value)} title="Choose class color" style={{ width: '100%', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }} />
-              <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
-                {loadingClasses ? '...' : 'Create'}
-              </button>
-            </div>
-          )}
+      {showClassInput && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
+          <input type="text" placeholder="Class name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); }} autoFocus style={{ padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.95rem' }} />
+          <input type="color" value={newClassColor} onChange={(e) => setNewClassColor(e.target.value)} title="Choose class color" style={{ width: '100%', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }} />
+          <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
+            {loadingClasses ? '...' : 'Create'}
+          </button>
+        </div>
+      )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+      <aside>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
             {classes.length === 0 ? (
               <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '0.5rem 0' }}>No classes</p>
             ) : (
@@ -615,9 +617,8 @@ export default function NotesUI() {
             </div>
           )}
         </main>
-      </div>
 
-      <UnlockModal
+        <UnlockModal
         isOpen={showUnlockModal}
         onClose={() => setShowUnlockModal(false)}
         feature={unlockFeature}
