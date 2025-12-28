@@ -28,7 +28,7 @@ async function handler(req, res) {
   try {
     let authOptions;
     try {
-      const imported = await import('../auth/[...nextauth].js');
+      const imported = require('../../../lib/authOptions');
       authOptions = imported.authOptions;
     } catch (importErr) {
       logger.error('authOptions_import_error', { message: importErr.message });

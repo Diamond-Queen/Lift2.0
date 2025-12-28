@@ -1,17 +1,18 @@
-const prisma = require('../../lib/prisma');
-const { getServerSession } = require('next-auth/next');
-const { findUserByEmail } = require('../../lib/db');
-const logger = require('../../lib/logger');
-const {
+import prisma from '../../lib/prisma.js';
+import { getServerSession } from 'next-auth/next';
+import { findUserByEmail } from '../../lib/db.js';
+import logger from '../../lib/logger.js';
+import {
   setSecureHeaders,
   validateRequest,
   trackIpRateLimit,
   trackUserRateLimit,
   auditLog,
-} = require('../../lib/security');
-const { extractClientIp } = require('../../lib/ip');
+} from '../../lib/security.js';
+import { extractClientIp } from '../../lib/ip.js';
+const { authOptions } = require('../../lib/authOptions');
 
-async function handler(req, res) {
+export default async function handler(req, res) {
   setSecureHeaders(res);
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
@@ -25,15 +26,6 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
-  let authOptions;
-  try {
-    const imported = await import('./auth/[...nextauth].js');
-    authOptions = imported.authOptions;
-  } catch (importErr) {
-    logger.error('authOptions_import_error', { message: importErr.message });
-    return res.status(500).json({ ok: false, error: 'Server configuration error' });
-  }
-  
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
@@ -59,5 +51,3 @@ async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
-
-module.exports = handler;

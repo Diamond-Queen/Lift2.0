@@ -33,7 +33,7 @@ async function handler(req, res) {
     let summaryLength = 'medium'; // short, medium, long
     let flashcardDifficulty = 'medium'; // easy, medium, hard
     try {
-      const { authOptions } = await import('../auth/[...nextauth]');
+      const { authOptions } = require('../../lib/authOptions');
       const session = await getServerSession(req, res, authOptions);
       if (session?.user?.id) {
         if (prisma) {
