@@ -18,28 +18,28 @@ export default async function handler(req, res) {
   const validation = validateRequest(req);
   if (!validation.valid) {
     auditLog('content_items_request_blocked', null, { ip, reason: validation.reason }, 'warning');
-    return res.status(400).json({ error: 'Request rejected', reason: validation.reason });
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
   }
   const ipLimit = trackIpRateLimit(ip, '/api/content/items');
   if (!ipLimit.allowed) {
     auditLog('content_items_rate_limited_ip', null, { ip });
-    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.email) return res.status(401).json({ error: 'Unauthorized' });
+  if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
   const user = prisma
     ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
     : await findUserByEmail(session.user.email);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
 
   const userId = user.id;
   const userLimit = trackUserRateLimit(userId, '/api/content/items');
   if (!userLimit.allowed) {
     auditLog('content_items_rate_limited_user', userId, { ip });
-    return res.status(429).json({ error: 'Too many requests for this user.' });
+    return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
   }
 
   try {
@@ -70,11 +70,11 @@ export default async function handler(req, res) {
       // Create a new content item
       const { type, title, originalInput, classId, summaries, metadata } = req.body || {};
       if (!type || !['note', 'resume', 'cover_letter'].includes(type)) {
-        return res.status(400).json({ error: 'Invalid content type' });
+        return res.status(400).json({ ok: false, error: 'Invalid content type' });
       }
-      if (!title || typeof title !== 'string') return res.status(400).json({ error: 'Title required' });
+      if (!title || typeof title !== 'string') return res.status(400).json({ ok: false, error: 'Title required' });
       if (!originalInput || typeof originalInput !== 'string') {
-        return res.status(400).json({ error: 'Original input required' });
+        return res.status(400).json({ ok: false, error: 'Original input required' });
       }
 
       try {
@@ -101,18 +101,18 @@ export default async function handler(req, res) {
         return res.json({ ok: true, data: newItem });
       } catch (e) {
         logger.error('content_create_error', { message: e.message });
-        return res.status(500).json({ error: 'Failed to create content item' });
+        return res.status(500).json({ ok: false, error: 'Failed to create content item' });
       }
     }
 
     if (req.method === 'PUT') {
       // Update a content item
       const { itemId, classId, summaries, metadata } = req.body || {};
-      if (!itemId) return res.status(400).json({ error: 'itemId required' });
+      if (!itemId) return res.status(400).json({ ok: false, error: 'itemId required' });
 
       if (prisma) {
         const item = await prisma.contentItem.findUnique({ where: { id: itemId }, select: { userId: true } });
-        if (!item || item.userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        if (!item || item.userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
 
         const updated = await prisma.contentItem.update({
           where: { id: itemId },
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
         return res.json({ ok: true, data: updated });
       } else {
         const { rows } = await pool.query('SELECT "userId" FROM "ContentItem" WHERE id = $1', [itemId]);
-        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
 
         const updates = [];
         const values = [];
@@ -142,7 +142,7 @@ export default async function handler(req, res) {
           updates.push(`metadata = $${idx++}`);
           values.push(JSON.stringify(metadata));
         }
-        if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+        if (updates.length === 0) return res.status(400).json({ ok: false, error: 'No fields to update' });
 
         values.push(itemId);
         const { rows: updated } = await pool.query(
@@ -156,15 +156,15 @@ export default async function handler(req, res) {
     if (req.method === 'DELETE') {
       // Delete a content item
       const { itemId } = req.body || {};
-      if (!itemId) return res.status(400).json({ error: 'itemId required' });
+      if (!itemId) return res.status(400).json({ ok: false, error: 'itemId required' });
 
       if (prisma) {
         const item = await prisma.contentItem.findUnique({ where: { id: itemId }, select: { userId: true } });
-        if (!item || item.userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        if (!item || item.userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
         await prisma.contentItem.delete({ where: { id: itemId } });
       } else {
         const { rows } = await pool.query('SELECT "userId" FROM "ContentItem" WHERE id = $1', [itemId]);
-        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
         await pool.query('DELETE FROM "ContentItem" WHERE id = $1', [itemId]);
       }
 
@@ -172,9 +172,9 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
   } catch (err) {
     logger.error('content_handler_error', { message: err.message });
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

@@ -18,28 +18,28 @@ export default async function handler(req, res) {
   const validation = validateRequest(req);
   if (!validation.valid) {
     auditLog('classes_request_blocked', null, { ip, reason: validation.reason }, 'warning');
-    return res.status(400).json({ error: 'Request rejected', reason: validation.reason });
+    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
   }
   const ipLimit = trackIpRateLimit(ip, '/api/content/classes');
   if (!ipLimit.allowed) {
     auditLog('classes_rate_limited_ip', null, { ip });
-    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
   const { authOptions } = await import('../auth/[...nextauth]');
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.email) return res.status(401).json({ error: 'Unauthorized' });
+  if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
   const user = prisma
     ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
     : await findUserByEmail(session.user.email);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
 
   const userId = user.id;
   const userLimit = trackUserRateLimit(userId, '/api/content/classes');
   if (!userLimit.allowed) {
     auditLog('classes_rate_limited_user', userId, { ip });
-    return res.status(429).json({ error: 'Too many requests for this user.' });
+    return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
   }
 
   try {
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       // Create a new class
       const { name, color } = req.body || {};
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ error: 'Class name is required' });
+        return res.status(400).json({ ok: false, error: 'Class name is required' });
       }
 
       const trimmedName = name.trim();
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         return res.json({ ok: true, data: newClass });
       } catch (e) {
         if (e.code === 'P2002') {
-          return res.status(409).json({ error: 'Class name already exists' });
+          return res.status(409).json({ ok: false, error: 'Class name already exists' });
         }
         throw e;
       }
@@ -89,9 +89,9 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       // Rename a class and update color
       const { classId, name, color } = req.body || {};
-      if (!classId) return res.status(400).json({ error: 'classId required' });
+      if (!classId) return res.status(400).json({ ok: false, error: 'classId required' });
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ error: 'Class name is required' });
+        return res.status(400).json({ ok: false, error: 'Class name is required' });
       }
 
       const trimmedName = name.trim();
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
       try {
         if (prisma) {
           const cls = await prisma.class.findUnique({ where: { id: classId }, select: { userId: true } });
-          if (!cls || cls.userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+          if (!cls || cls.userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
 
           const updatedClass = await prisma.class.update({
             where: { id: classId },
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
           return res.json({ ok: true, data: updatedClass });
         } else {
           const { rows: classRows } = await pool.query('SELECT "userId" FROM "Class" WHERE id = $1', [classId]);
-          if (!classRows[0] || classRows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+          if (!classRows[0] || classRows[0].userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
 
           const colorClause = color ? ', color = $2' : '';
           const params = color ? [trimmedName, color, classId] : [trimmedName, classId];
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
         }
       } catch (e) {
         if (e.code === 'P2002') {
-          return res.status(409).json({ error: 'Class name already exists' });
+          return res.status(409).json({ ok: false, error: 'Class name already exists' });
         }
         throw e;
       }
@@ -135,16 +135,16 @@ export default async function handler(req, res) {
     if (req.method === 'DELETE') {
       // Delete a class
       const { classId } = req.body || {};
-      if (!classId) return res.status(400).json({ error: 'classId required' });
+      if (!classId) return res.status(400).json({ ok: false, error: 'classId required' });
 
       if (prisma) {
         const cls = await prisma.class.findUnique({ where: { id: classId }, select: { userId: true } });
-        if (!cls || cls.userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        if (!cls || cls.userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
 
         await prisma.class.delete({ where: { id: classId } });
       } else {
         const { rows } = await pool.query('SELECT "userId" FROM "Class" WHERE id = $1', [classId]);
-        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ error: 'Not authorized' });
+        if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
         await pool.query('DELETE FROM "Class" WHERE id = $1', [classId]);
       }
 
@@ -152,9 +152,9 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ ok: false, error: 'Method not allowed' });
   } catch (err) {
     logger.error('classes_handler_error', { message: err.message });
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

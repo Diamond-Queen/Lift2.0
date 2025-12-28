@@ -88,6 +88,12 @@ export default async function handler(req, res) {
       },
     });
 
+    // Mark user as onboarded
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { onboarded: true },
+    });
+
     auditLog('beta_register_success', session.user.id, {
       email: normalizedEmail,
       trialType,
