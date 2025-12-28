@@ -242,8 +242,8 @@ export default function BetaSignup() {
 
               <p style={{ textAlign: "center", color: "var(--text-muted)" }}>
                 {trialType === "school"
-                  ? "📚 School Beta Program (14 days free)"
-                  : "🌟 Social Beta Program (3-4 days free)"}
+                  ? " School Beta Program (14 days free)"
+                  : " Social Beta Program (3-4 days free)"}
               </p>
             </div>
 
@@ -348,8 +348,8 @@ export default function BetaSignup() {
         <div style={{ marginTop: "20px", textAlign: "center" }}>
           <p style={{ fontSize: "0.9em", color: "var(--text-muted)" }}>
             Questions? Email us at{" "}
-            <a href="mailto:beta@lift.dev" style={{ color: "var(--primary-color)" }}>
-              beta@lift.dev
+            <a href="mailto:williams.lift101@gmail.com" style={{ color: "var(--primary-color)" }}>
+              williams.lift101@gmail.com
             </a>
           </p>
         </div>
