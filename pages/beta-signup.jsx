@@ -332,6 +332,20 @@ export default function BetaSignup() {
               {loading ? "Starting Your Trial..." : "Start Beta Trial"}
             </button>
 
+            <button
+              type="button"
+              className={styles.submitButton}
+              style={{
+                marginTop: "10px",
+                backgroundColor: "transparent",
+                border: "1px solid var(--border-color)",
+                color: "var(--text-muted)",
+              }}
+              onClick={() => router.push("/onboarding")}
+            >
+              No thanks, continue to onboarding
+            </button>
+
             {error && (
               <div
                 id="beta-error"
