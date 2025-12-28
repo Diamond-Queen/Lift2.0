@@ -11,7 +11,7 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -84,6 +84,9 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Webhook handler failed' });
   }
 }
+
+module.exports = handler;
+module.exports.config = config;
 
 async function handleCheckoutCompleted(session) {
   const userId = session.metadata?.userId;

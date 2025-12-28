@@ -11,7 +11,7 @@ const {
 } = require('../../../lib/security');
 const { extractClientIp } = require('../../../lib/ip');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
@@ -25,18 +25,18 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
-  const { authOptions } = await import('../auth/[...nextauth]');
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.id) return res.status(401).json({ error: 'Unauthorized' });
-
-  const userId = session.user.id;
-  const userLimit = trackUserRateLimit(userId, '/api/user/preferences');
-  if (!userLimit.allowed) {
-    auditLog('preferences_rate_limited_user', userId, { ip });
-    return res.status(429).json({ error: 'Too many requests for this user.' });
-  }
-
   try {
+    const { authOptions } = await import('../auth/[...nextauth]');
+    const session = await getServerSession(req, res, authOptions);
+    if (!session || !session.user?.id) return res.status(401).json({ error: 'Unauthorized' });
+
+    const userId = session.user.id;
+    const userLimit = trackUserRateLimit(userId, '/api/user/preferences');
+    if (!userLimit.allowed) {
+      auditLog('preferences_rate_limited_user', userId, { ip });
+      return res.status(429).json({ error: 'Too many requests for this user.' });
+    }
+
     if (req.method === 'GET') {
       if (prisma) {
         const user = await prisma.user.findUnique({ where: { id: userId }, select: { formatTemplate: true, preferences: true } });
@@ -101,10 +101,12 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Allow', 'GET, PUT, POST');
-    res.status(405).json({ ok: false, error: 'Method Not Allowed' });
+    return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   } catch (err) {
     logger.error('preferences_error', { message: err.message });
     auditLog('preferences_error', userId, { message: err.message }, 'error');
-    res.status(500).json({ ok: false, error: 'Server error' });
+    return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
+
+module.exports = handler;

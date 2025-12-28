@@ -2,7 +2,7 @@ const prisma = require('../../../lib/prisma');
 const { getSession } = require('next-auth/react');
 const { setSecureHeaders } = require('../../../lib/security');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
 
   if (req.method !== 'GET') {
@@ -62,3 +62,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
+
+module.exports = handler;

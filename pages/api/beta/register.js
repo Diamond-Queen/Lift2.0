@@ -9,7 +9,7 @@ const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
 const { getSession } = require('next-auth/react');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   
   if (req.method !== 'POST') {
@@ -117,3 +117,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
   }
 }
+
+module.exports = handler;

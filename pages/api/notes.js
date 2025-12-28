@@ -11,7 +11,7 @@ const { getServerSession } = require('next-auth/next');
 const prisma = require('../../lib/prisma');
 const { pool } = require('../../lib/db');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
@@ -136,3 +136,5 @@ ${notes}`,
     res.status(500).json({ ok: false, error: err.message || "An unexpected error occurred." });
   }
 }
+
+module.exports = handler;

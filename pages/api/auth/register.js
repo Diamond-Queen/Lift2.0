@@ -11,7 +11,7 @@ const {
 const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
@@ -58,4 +58,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
+
+module.exports = handler;
 

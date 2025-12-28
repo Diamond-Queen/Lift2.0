@@ -11,7 +11,7 @@ const {
 } = require('../../../lib/security');
 const { extractClientIp } = require('../../../lib/ip');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
@@ -100,3 +100,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
+
+module.exports = handler;
