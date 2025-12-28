@@ -112,15 +112,20 @@ export const authOptions = {
     async session({ session, token, user }) {
       // For JWT sessions: copy token data to session.user
       // For DB sessions: user object will be present
-      if (token) {
-        session.user = session.user || {};
-        session.user.id = token.id || token.sub;
-        session.user.email = token.email;
-        session.user.name = token.name;
-        session.user.role = token.role;
-      } else if (user) {
-        session.user.id = user.id;
-        session.user.role = user.role;
+      try {
+        if (token) {
+          session.user = session.user || {};
+          session.user.id = token.id || token.sub;
+          session.user.email = token.email || '';
+          session.user.name = token.name || '';
+          session.user.role = token.role || 'user';
+        } else if (user) {
+          session.user = session.user || {};
+          session.user.id = user.id;
+          session.user.role = user.role || 'user';
+        }
+      } catch (err) {
+        logger.error('session_callback_error', { message: err.message, stack: err.stack });
       }
       return session;
     },

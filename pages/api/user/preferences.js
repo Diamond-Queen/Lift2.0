@@ -26,7 +26,15 @@ async function handler(req, res) {
   }
 
   try {
-    const { authOptions } = await import('../auth/[...nextauth]');
+    let authOptions;
+    try {
+      const imported = await import('../auth/[...nextauth].js');
+      authOptions = imported.authOptions;
+    } catch (importErr) {
+      logger.error('authOptions_import_error', { message: importErr.message });
+      return res.status(500).json({ ok: false, error: 'Server configuration error' });
+    }
+    
     const session = await getServerSession(req, res, authOptions);
     if (!session || !session.user?.id) return res.status(401).json({ error: 'Unauthorized' });
 
