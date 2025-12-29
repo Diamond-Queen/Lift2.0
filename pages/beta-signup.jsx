@@ -19,6 +19,7 @@ export default function BetaSignup() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isNewUser, setIsNewUser] = useState(status === 'unauthenticated');
+  const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || '';
 
   // If user is not authenticated, redirect to signup
   if (status === "loading") {
@@ -130,6 +131,26 @@ export default function BetaSignup() {
         setError(data.error || "Failed to register for beta program.");
         setLoading(false);
         return;
+      }
+
+      // Send a copy of the signup to Formspree (non-blocking on failure)
+      try {
+        if (FORMSPREE_ENDPOINT) {
+          await fetch(FORMSPREE_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: formData.name.trim(),
+              email: formData.email.trim().toLowerCase(),
+              trialType,
+              schoolName: trialType === 'school' ? formData.schoolName.trim() : undefined,
+              organizationName: trialType === 'social' ? formData.organizationName.trim() : undefined,
+              source: 'beta-signup'
+            }),
+          });
+        }
+      } catch (fsErr) {
+        console.error('Formspree submission failed', fsErr);
       }
 
       setSuccess(true);
