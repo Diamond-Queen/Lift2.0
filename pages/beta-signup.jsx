@@ -18,7 +18,7 @@ export default function BetaSignup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(status === 'unauthenticated');
+  const isNewUser = status === 'unauthenticated';
   const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || '';
 
   // If user is not authenticated, redirect to signup
@@ -78,36 +78,73 @@ export default function BetaSignup() {
     setLoading(true);
 
     try {
-      // If new user, register account first
-      if (isNewUser) {
-        const regRes = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: formData.name.trim(),
+      // Ensure the user is authenticated. For unauthenticated users,
+      // try signing in first (covers existing accounts). If sign-in fails,
+      // attempt registration and then sign-in. Any sign-in/registration
+       // error will stop the flow and present a clear message.
+      if (status === 'unauthenticated') {
+        // password validation already performed above for unauthenticated users
+        let signedIn = false;
+
+        // Try signing in first (covers existing accounts)
+        try {
+          const signInRes = await signIn('credentials', {
+            redirect: false,
             email: formData.email.trim().toLowerCase(),
             password: formData.password,
-          }),
-        });
-
-        const regData = await regRes.json();
-        if (!regRes.ok || !regData.ok) {
-          setError(regData.error || "Failed to create account.");
-          setLoading(false);
-          return;
+          });
+          if (!signInRes?.error) signedIn = true;
+        } catch (e) {
+          // swallow - we'll try registration next
         }
 
-        // Sign in the newly created user
-        const signInRes = await signIn('credentials', {
-          redirect: false,
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
-        });
+        if (!signedIn) {
+          // Attempt to register a new account
+          const regRes = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: formData.name.trim(),
+              email: formData.email.trim().toLowerCase(),
+              password: formData.password,
+            }),
+          });
 
-        if (signInRes?.error) {
-          setError(signInRes.error || 'Sign-in failed');
-          setLoading(false);
-          return;
+          const regData = await regRes.json();
+
+          if (!regRes.ok || !regData.ok) {
+            // If registration failed because the account already exists,
+            // try signing in one more time with the provided credentials.
+            const alreadyExists = regRes.status === 409 || /exist/i.test(regData.error || '');
+            if (alreadyExists) {
+              const signInRes2 = await signIn('credentials', {
+                redirect: false,
+                email: formData.email.trim().toLowerCase(),
+                password: formData.password,
+              });
+              if (signInRes2?.error) {
+                setError(signInRes2.error || 'Sign-in failed for existing account');
+                setLoading(false);
+                return;
+              }
+            } else {
+              setError(regData.error || "Failed to create account.");
+              setLoading(false);
+              return;
+            }
+          } else {
+            // Registration succeeded — sign in the new user
+            const signInRes3 = await signIn('credentials', {
+              redirect: false,
+              email: formData.email.trim().toLowerCase(),
+              password: formData.password,
+            });
+            if (signInRes3?.error) {
+              setError(signInRes3.error || 'Sign-in failed after registration');
+              setLoading(false);
+              return;
+            }
+          }
         }
       }
 
