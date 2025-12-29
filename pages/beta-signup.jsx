@@ -347,6 +347,7 @@ export default function BetaSignup() {
         )}
 
         <div style={{ marginTop: "20px", textAlign: "center" }}>
+
           <button
               type="button"
               className={styles.submitButton}
@@ -357,10 +358,10 @@ export default function BetaSignup() {
                 color: "var(--text-muted)",
               }}
               onClick={() => router.push("/onboarding")}
-            >
+             >
               No thanks
-            </button>
-            
+              </button>
+
           <p style={{ fontSize: "0.9em", color: "var(--text-muted)" }}>
             Questions? Email us at{" "}
             <a href="mailto:williams.lift101@gmail.com" style={{ color: "var(--primary-color)" }}>
