@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import ReactMarkdown from 'react-markdown';
 
 export default function PrivacyPolicy() {
+  const router = useRouter();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +34,7 @@ export default function PrivacyPolicy() {
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px', minHeight: '100vh' }}>
       <button
-        onClick={() => window.history.back()}
+        onClick={() => router.back()}
         style={{
           marginBottom: '20px',
           padding: '8px 16px',
