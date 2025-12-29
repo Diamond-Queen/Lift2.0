@@ -225,7 +225,7 @@ export default function SubscriptionPlans() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          By subscribing, you agree to our <a href="/important/TERMS_OF_SERVICE.md" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</a> and <a href="/important/PRIVACY_POLICY.md" style={{ color: 'inherit', textDecoration: 'underline' }}>Privacy Policy</a>.
+          By subscribing, you agree to our <a href="/terms" style={{ color: 'inherit', textDecoration: 'underline' }}>Terms of Service</a> and <a href="/privacy" style={{ color: 'inherit', textDecoration: 'underline' }}>Privacy Policy</a>.
         </p>
       </div>
     </div>
