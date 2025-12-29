@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, getSession } from "next-auth/react";
 import Link from "next/link";
 import styles from "../styles/SignUp.module.css";
 
@@ -20,6 +20,16 @@ export default function BetaSignup() {
   const [success, setSuccess] = useState(false);
   const isNewUser = status === 'unauthenticated';
   const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || '';
+
+  // Wait for NextAuth session to be available after signIn.
+  const waitForSession = async (tries = 6, delayMs = 300) => {
+    for (let i = 0; i < tries; i++) {
+      const s = await getSession();
+      if (s && s.user) return s;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    return null;
+  };
 
   // If user is not authenticated, redirect to signup
   if (status === "loading") {
@@ -93,7 +103,10 @@ export default function BetaSignup() {
             email: formData.email.trim().toLowerCase(),
             password: formData.password,
           });
-          if (!signInRes?.error) signedIn = true;
+          if (!signInRes?.error) {
+            const s = await waitForSession();
+            if (s && s.user) signedIn = true;
+          }
         } catch (e) {
           // swallow - we'll try registration next
         }
@@ -127,6 +140,13 @@ export default function BetaSignup() {
                 setLoading(false);
                 return;
               }
+              // wait for session cookie to propagate
+              const s2 = await waitForSession();
+              if (!s2 || !s2.user) {
+                setError('Sign-in did not complete. Please try again.');
+                setLoading(false);
+                return;
+              }
             } else {
               setError(regData.error || "Failed to create account.");
               setLoading(false);
@@ -141,6 +161,12 @@ export default function BetaSignup() {
             });
             if (signInRes3?.error) {
               setError(signInRes3.error || 'Sign-in failed after registration');
+              setLoading(false);
+              return;
+            }
+            const s3 = await waitForSession();
+            if (!s3 || !s3.user) {
+              setError('Sign-in did not complete after registration. Please try again.');
               setLoading(false);
               return;
             }
