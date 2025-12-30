@@ -34,98 +34,100 @@ async function handler(req, res) {
 
   // Check session - user must be logged in
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user || !session.user.id) {
+  if (!session?.user?.id) {
     return res.status(401).json({ ok: false, error: 'Unauthorized. You must be logged in.' });
   }
 
   const userId = session.user.id;
+  const sessionEmail = session.user.email;
 
-  const { email, name, trialType, schoolName, organizationName } = req.body || {};
+  const { trialType, schoolName, organizationName } = req.body || {};
 
   // Validate required fields
-  if (!email || !name || !trialType) {
-    return res.status(400).json({ ok: false, error: 'Email, name, and trial type are required.' });
+  if (!trialType) {
+    return res.status(400).json({ ok: false, error: 'Trial type is required.' });
   }
 
   if (!['school', 'social'].includes(trialType)) {
-    return res.status(400).json({ ok: false, error: 'Invalid trial type.' });
+    return res.status(400).json({ ok: false, error: 'Invalid trial type. Must be "school" or "social".' });
   }
 
-  if (trialType === 'school' && !schoolName) {
-    return res.status(400).json({ ok: false, error: 'School name is required for school trials.' });
+  // Validate school-specific fields
+  if (trialType === 'school') {
+    const cleanSchoolName = schoolName ? String(schoolName).trim() : '';
+    if (!cleanSchoolName) {
+      return res.status(400).json({ ok: false, error: 'School name is required for school trials.' });
+    }
   }
-
-  const normalizedEmail = String(email).trim().toLowerCase();
 
   try {
-    // Verify user exists in database
+    // Fetch complete user data from database
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { id: true, email: true, name: true, onboarded: true }
     });
 
     if (!user) {
+      logger.warn('beta_register_user_not_found', { userId, sessionEmail });
       return res.status(401).json({ ok: false, error: 'User not found. Please sign in again.' });
     }
 
     // Check if user already exists as a beta tester
     const existingBeta = await prisma.betaTester.findUnique({
-      where: { userId: userId }
+      where: { userId }
     });
 
     if (existingBeta) {
       return res.status(400).json({ ok: false, error: 'You are already registered as a beta tester.' });
     }
 
-    // Calculate trial end date based on trial type
+    // Prepare beta tester data with proper null handling
+    const cleanSchoolName = trialType === 'school' ? String(schoolName).trim().slice(0, 200) : null;
+    const cleanOrgName = organizationName ? String(organizationName).trim().slice(0, 200) : null;
+
+    // Ensure cleaned org name is null, not empty string
+    const finalOrgName = cleanOrgName && cleanOrgName.length > 0 ? cleanOrgName : null;
+
+    // Calculate trial end date
     const now = new Date();
-    let trialEndsAt;
+    const daysToAdd = trialType === 'school' ? 14 : 4;
+    const trialEndsAt = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
 
-    if (trialType === 'school') {
-      // 14 days for schools
-      trialEndsAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-    } else {
-      // 3-4 days for social (using 4 days)
-      trialEndsAt = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
-    }
-
-    // Create beta tester record
     const betaTesterData = {
-      userId: userId,
+      userId,
       trialType,
-      schoolName: trialType === 'school' ? String(schoolName).slice(0, 200) : null,
-      organizationName: organizationName && organizationName.trim() ? String(organizationName).slice(0, 200) : null,
+      schoolName: cleanSchoolName,
+      organizationName: finalOrgName,
       trialEndsAt,
       status: 'active',
     };
-    
-    logger.info('beta_register_creating', { userId, data: betaTesterData });
-    
-    const betaTester = await prisma.betaTester.create({
-      data: betaTesterData,
-    });
-    
-    if (!betaTester) {
-      throw new Error('BetaTester create returned null');
-    }
-    
-    logger.info('beta_register_created', { betaTesterId: betaTester.id });
 
-    // Mark user as onboarded
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { onboarded: true },
-    });
-    
-    if (!updatedUser) {
-      throw new Error('Failed to mark user as onboarded');
+    // Create beta tester record and mark user as onboarded in same transaction
+    const [betaTester, updatedUser] = await Promise.all([
+      prisma.betaTester.create({ data: betaTesterData }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { onboarded: true },
+        select: { id: true, email: true, onboarded: true }
+      })
+    ]);
+
+    if (!betaTester || !updatedUser) {
+      throw new Error('Failed to create beta tester record or update user');
     }
 
-    logger.info('beta_register_user_updated', { userId, onboarded: updatedUser.onboarded });
+    logger.info('beta_register_success', {
+      userId,
+      betaTesterId: betaTester.id,
+      trialType,
+      userEmail: user.email
+    });
 
     auditLog('beta_register_success', userId, {
-      email: normalizedEmail,
+      email: user.email,
       trialType,
       trialEndsAt: trialEndsAt.toISOString(),
+      betaTesterId: betaTester.id,
     });
 
     return res.status(201).json({
@@ -134,24 +136,26 @@ async function handler(req, res) {
         betaTester: {
           id: betaTester.id,
           trialType: betaTester.trialType,
-          trialEndsAt: betaTester.trialEndsAt instanceof Date ? betaTester.trialEndsAt.toISOString() : betaTester.trialEndsAt,
-          daysRemaining: Math.ceil((new Date(betaTester.trialEndsAt).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)),
+          trialEndsAt: trialEndsAt.toISOString(),
+          daysRemaining: daysToAdd,
         },
       },
     });
   } catch (err) {
-    logger.error('beta_register_error', { 
-      message: err.message, 
+    logger.error('beta_register_error', {
+      message: err.message,
       code: err.code,
-      stack: err.stack,
-      userId: userId, 
-      email: normalizedEmail 
+      userId,
+      userEmail: sessionEmail,
+      stack: err.stack
     });
-    auditLog('beta_register_error', userId, { 
-      message: err.message, 
+
+    auditLog('beta_register_error', userId, {
+      message: err.message,
       code: err.code,
-      email: normalizedEmail 
+      email: sessionEmail,
     }, 'error');
+
     return res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
   }
 }

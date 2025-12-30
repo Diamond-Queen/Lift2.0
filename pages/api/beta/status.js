@@ -12,45 +12,58 @@ async function handler(req, res) {
   }
 
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.id) {
+  if (!session?.user?.id) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
   try {
     const betaTester = await prisma.betaTester.findUnique({
       where: { userId: session.user.id },
+      select: {
+        id: true,
+        userId: true,
+        trialType: true,
+        schoolName: true,
+        organizationName: true,
+        trialEndsAt: true,
+        status: true,
+        createdAt: true,
+      }
     });
 
     if (!betaTester) {
       return res.status(200).json({
         ok: true,
-        data: {
-          trial: null,
-        },
+        data: { trial: null },
       });
     }
 
+    // Ensure dates are Date objects
+    const trialEndsAt = new Date(betaTester.trialEndsAt);
+    const createdAt = new Date(betaTester.createdAt);
     const now = new Date();
-    const daysRemaining = Math.ceil(
-      (betaTester.trialEndsAt - now) / (24 * 60 * 60 * 1000)
-    );
 
-    let status = 'active';
-    if (betaTester.status === 'converted' || betaTester.status === 'expired') {
-      status = betaTester.status;
-    } else if (betaTester.trialEndsAt <= now) {
-      status = 'trial-expired';
-      // Auto-mark as expired if trial ended
-      try {
-        await prisma.betaTester.update({
+    // Calculate days remaining
+    const msRemaining = trialEndsAt.getTime() - now.getTime();
+    const daysRemaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
+
+    // Determine trial status
+    let status = betaTester.status; // Could be 'active', 'converted', or 'expired'
+
+    // If status is not explicitly 'converted' or 'expired', check if expired
+    if (status !== 'converted' && status !== 'expired') {
+      if (now > trialEndsAt) {
+        status = 'expired';
+        // Async update status in database
+        prisma.betaTester.update({
           where: { id: betaTester.id },
           data: { status: 'expired' }
+        }).catch(e => {
+          logger.warn('failed_to_mark_beta_expired', { betaTesterId: betaTester.id, error: e.message });
         });
-      } catch (e) {
-        logger.warn('failed_to_mark_beta_expired', { betaTester: betaTester.id });
+      } else {
+        status = 'active';
       }
-    } else {
-      status = 'trial-active';
     }
 
     return res.status(200).json({
@@ -61,16 +74,26 @@ async function handler(req, res) {
           trialType: betaTester.trialType,
           schoolName: betaTester.schoolName,
           organizationName: betaTester.organizationName,
-          trialEndsAt: betaTester.trialEndsAt,
+          trialEndsAt: trialEndsAt.toISOString(),
+          createdAt: createdAt.toISOString(),
           daysRemaining: Math.max(0, daysRemaining),
           status,
-          createdAt: betaTester.createdAt,
         },
       },
     });
   } catch (err) {
-    logger.error('beta_status_error', { message: err.message, userId: session.user.id });
-    auditLog('beta_status_error', session.user.id, { message: err.message }, 'error');
+    logger.error('beta_status_error', {
+      message: err.message,
+      code: err.code,
+      userId: session.user.id,
+      stack: err.stack
+    });
+
+    auditLog('beta_status_error', session.user.id, {
+      message: err.message,
+      code: err.code,
+    }, 'error');
+
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

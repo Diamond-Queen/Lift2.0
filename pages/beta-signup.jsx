@@ -199,17 +199,14 @@ export default function BetaSignup() {
       // Extra wait to ensure session is persisted before beta registration
       await new Promise((r) => setTimeout(r, 1000));
 
-      // Now register for beta
+      // Now register for beta (only send trial type and school/org names, not email/name)
       const res = await fetch("/api/beta/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email.trim().toLowerCase(),
-          name: formData.name.trim(),
           trialType,
           schoolName: trialType === "school" ? formData.schoolName.trim() : null,
-          organizationName:
-            trialType === "social" ? formData.organizationName.trim() : null,
+          organizationName: trialType === "social" ? formData.organizationName.trim() : null,
         }),
       });
 
