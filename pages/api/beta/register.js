@@ -7,7 +7,8 @@ const {
 } = require('../../../lib/security');
 const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
-const { getSession } = require('next-auth/react');
+const { getServerSession } = require('next-auth/next');
+const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -32,7 +33,7 @@ async function handler(req, res) {
   }
 
   // Check session - user must be logged in
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user) {
     return res.status(401).json({ ok: false, error: 'Unauthorized. You must be logged in.' });
   }
