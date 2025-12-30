@@ -124,8 +124,9 @@ export default function TrialAccessGate() {
               textDecoration: 'none', 
               display: 'block', 
               textAlign: 'center',
-              background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.95) 0%, rgba(212, 175, 55, 0.85) 100%)',
-              color: '#0a0605'
+              background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)',
+              color: '#D4AF37',
+              border: '1px solid rgba(212, 175, 55, 0.3)'
             }}>
               Individual Subscription
               <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>

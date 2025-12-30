@@ -374,9 +374,9 @@ export default function Account() {
           <button 
             onClick={() => setStudyMode(!studyMode)}
             style={{
-              background: studyMode ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.95) 0%, rgba(212, 175, 55, 0.85) 100%)' : 'rgba(255,255,255,0.06)',
-              color: studyMode ? '#0a0605' : 'var(--text-color)',
-              border: studyMode ? 'none' : '1px solid var(--input-border)',
+              background: studyMode ? 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)' : 'rgba(255,255,255,0.06)',
+              color: studyMode ? '#D4AF37' : 'var(--text-color)',
+              border: studyMode ? '1px solid rgba(212, 175, 55, 0.4)' : '1px solid var(--input-border)',
               padding: '0.75rem 1.5rem',
               borderRadius: '25px',
               fontSize: '1rem',

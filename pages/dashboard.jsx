@@ -232,8 +232,9 @@ export default function Dashboard() {
                 textDecoration: 'none', 
                 display: 'block', 
                 textAlign: 'center',
-                background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.95) 0%, rgba(212, 175, 55, 0.85) 100%)',
-                color: '#0a0605'
+                background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)',
+                border: '1px solid rgba(212, 175, 55, 0.3)',
+                color: '#D4AF37'
               }}>
                 Individual Subscription
                 <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
@@ -423,12 +424,12 @@ export default function Dashboard() {
 
           {/* Career button: disabled for Notes-only plan */}
           {plan === 'notes' ? (
-            <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.5) 0%, rgba(212, 175, 55, 0.4) 100%)' }}>
+            <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
               Lift Career
               <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($5/mo) or Full Access ($10/mo)</div>
             </button>
           ) : (
-            <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.95) 0%, rgba(212, 175, 55, 0.85) 100%)', color: '#0a0605' }}>
+            <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
               Lift Career
               <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Build resumes and cover letters</div>
             </Link>
