@@ -48,7 +48,7 @@ export default function BetaSignup() {
   }, [status, router]);
 
   // Wait for NextAuth session to be available after signIn.
-  const waitForSession = async (tries = 10, delayMs = 300) => {
+  const waitForSession = async (tries = 15, delayMs = 500) => {
     for (let i = 0; i < tries; i++) {
       const s = await getSession();
       if (s && s.user) return s;
@@ -199,6 +199,9 @@ export default function BetaSignup() {
           }
         }
       }
+
+      // Extra wait to ensure session is persisted before beta registration
+      await new Promise((r) => setTimeout(r, 1000));
 
       // Now register for beta
       const res = await fetch("/api/beta/register", {
