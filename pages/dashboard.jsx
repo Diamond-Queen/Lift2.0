@@ -134,7 +134,7 @@ export default function Dashboard() {
             setTrialInfo(trial);
             
             // Check trial/subscription access
-            if (trial?.status === 'trial-expired') {
+            if (trial?.status === 'expired') {
               setAccessDenied(true);
               setDenyReason('trial-expired');
               return;

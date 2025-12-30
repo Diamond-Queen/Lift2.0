@@ -83,6 +83,11 @@ export default function BetaSignup() {
     return typeof pwd === 'string' && pwd.length >= 10 && /[0-9]/.test(pwd) && /[!@#$%^&*(),.?":{}|<>]/.test(pwd);
   };
 
+  const emailIsValid = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return typeof email === 'string' && emailRegex.test(email.trim());
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -91,8 +96,12 @@ export default function BetaSignup() {
       return setError("Please select a trial type.");
     }
 
-    if (!formData.name || !formData.email) {
-      return setError("Name and email are required.");
+    if (!formData.name || !formData.name.trim()) {
+      return setError("Name is required.");
+    }
+
+    if (!formData.email || !emailIsValid(formData.email)) {
+      return setError("Valid email is required.");
     }
 
     if (isNewUser && !formData.password) {
@@ -103,7 +112,7 @@ export default function BetaSignup() {
       return setError("Password must be ≥10 chars and include a number & symbol.");
     }
 
-    if (trialType === "school" && !formData.schoolName) {
+    if (trialType === "school" && !formData.schoolName?.trim()) {
       return setError("School name is required for school trials.");
     }
 

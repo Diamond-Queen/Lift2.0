@@ -9,6 +9,7 @@ const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
 const { getServerSession } = require('next-auth/next');
 const { authOptions } = require('../../../lib/authOptions');
+const { sanitizeName } = require('../../../lib/sanitize');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -82,11 +83,8 @@ async function handler(req, res) {
     }
 
     // Prepare beta tester data with proper null handling
-    const cleanSchoolName = trialType === 'school' ? String(schoolName).trim().slice(0, 200) : null;
-    const cleanOrgName = organizationName ? String(organizationName).trim().slice(0, 200) : null;
-
-    // Ensure cleaned org name is null, not empty string
-    const finalOrgName = cleanOrgName && cleanOrgName.length > 0 ? cleanOrgName : null;
+    const cleanSchoolName = trialType === 'school' ? sanitizeName(schoolName, 200) : null;
+    const cleanOrgName = trialType === 'social' ? sanitizeName(organizationName, 200) : null;
 
     // Calculate trial end date
     const now = new Date();
@@ -97,7 +95,7 @@ async function handler(req, res) {
       userId,
       trialType,
       schoolName: cleanSchoolName,
-      organizationName: finalOrgName,
+      organizationName: cleanOrgName,
       trialEndsAt,
       status: 'active',
     };

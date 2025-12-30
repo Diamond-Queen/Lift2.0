@@ -27,7 +27,7 @@ async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
-  const { authOptions } = await import('../auth/[...nextauth]');
+  const { authOptions } = require('../../../lib/authOptions');
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 

@@ -10,6 +10,7 @@ const {
 } = require('../../../lib/security');
 const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
+const { sanitizeEmail, sanitizeName } = require('../../../lib/sanitize');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -30,34 +31,44 @@ async function handler(req, res) {
   }
 
   const { name, email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ ok: false, error: 'Email and password are required' });
 
-  if (typeof password !== 'string' || password.length < 10 || !/[0-9]/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+  // Validate and sanitize inputs
+  const sanitizedEmail = sanitizeEmail(email);
+  if (!sanitizedEmail) return res.status(400).json({ ok: false, error: 'Valid email is required' });
+
+  const sanitizedName = sanitizeName(name, 120);
+  if (!sanitizedName) return res.status(400).json({ ok: false, error: 'Valid name is required' });
+
+  if (!password || typeof password !== 'string' || password.length < 10 || !/[0-9]/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
     return res.status(400).json({ ok: false, error: 'Password must be at least 10 characters and include a number and special character' });
   }
 
-  const normalizedEmail = String(email).trim().toLowerCase();
-
   try {
-    const existing = prisma ? await prisma.user.findUnique({ where: { email: normalizedEmail } }) : await db.findUserByEmail(normalizedEmail);
-    if (existing) return res.status(400).json({ ok: false, error: 'Email already in use' });
+    const existing = prisma ? await prisma.user.findUnique({ where: { email: sanitizedEmail } }) : await db.findUserByEmail(sanitizedEmail);
+    if (existing) return res.status(409).json({ ok: false, error: 'Email already in use' });
 
     const hash = await argon2.hash(password, { timeCost: 3, memoryCost: 19456 });
     const user = prisma
-      ? await prisma.user.create({ data: { name: name ? String(name).slice(0,120) : null, email: normalizedEmail, password: hash } })
-      : await db.createUser({ name: name ? String(name).slice(0,120) : null, email: normalizedEmail, password: hash });
+      ? await prisma.user.create({ data: { name: sanitizedName, email: sanitizedEmail, password: hash, emailVerified: null } })
+      : await db.createUser({ name: sanitizedName, email: sanitizedEmail, password: hash });
+    
     const { password: _p, ...safe } = user;
-    auditLog('register_success', safe.id, { email: normalizedEmail });
-    return res.status(201).json({ ok: true, data: { user: safe } });
+    auditLog('register_success', safe.id, { email: sanitizedEmail });
+    return res.status(201).json({ ok: true, data: { user: safe, message: 'Account created successfully' } });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      return res.status(400).json({ ok: false, error: 'Email already in use' });
+    // Handle unique constraint violations
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') {
+        return res.status(409).json({ ok: false, error: 'Email already in use' });
+      }
+      // Log other Prisma errors
+      logger.error('register_prisma_error', { code: err.code, message: err.message, email: sanitizedEmail });
+    } else {
+      logger.error('register_error', { message: err.message, email: sanitizedEmail });
     }
-    logger.error('register_error', { message: err.message });
-    auditLog('register_error', null, { message: err.message, email: normalizedEmail }, 'error');
+    auditLog('register_error', null, { message: err.message, email: sanitizedEmail }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
 
 module.exports = handler;
-

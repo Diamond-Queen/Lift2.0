@@ -26,7 +26,7 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
-  const { authOptions } = await import('../auth/[...nextauth]');
+  const { authOptions } = require('../../../lib/authOptions');
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
