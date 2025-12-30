@@ -34,9 +34,11 @@ async function handler(req, res) {
 
   // Check session - user must be logged in
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user) {
+  if (!session || !session.user || !session.user.id) {
     return res.status(401).json({ ok: false, error: 'Unauthorized. You must be logged in.' });
   }
+
+  const userId = session.user.id;
 
   const { email, name, trialType, schoolName, organizationName } = req.body || {};
 
@@ -58,7 +60,7 @@ async function handler(req, res) {
   try {
     // Check if user already exists as a beta tester
     const existingBeta = await prisma.betaTester.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: userId }
     });
 
     if (existingBeta) {
@@ -80,7 +82,7 @@ async function handler(req, res) {
     // Create beta tester record
     const betaTester = await prisma.betaTester.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         trialType,
         schoolName: trialType === 'school' ? String(schoolName).slice(0, 200) : null,
         organizationName: trialType === 'social' ? String(organizationName || '').slice(0, 200) : null,
@@ -91,11 +93,11 @@ async function handler(req, res) {
 
     // Mark user as onboarded
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { onboarded: true },
     });
 
-    auditLog('beta_register_success', session.user.id, {
+    auditLog('beta_register_success', userId, {
       email: normalizedEmail,
       trialType,
       trialEndsAt: trialEndsAt.toISOString(),
@@ -113,8 +115,8 @@ async function handler(req, res) {
       },
     });
   } catch (err) {
-    logger.error('beta_register_error', { message: err.message, userId: session.user.id });
-    auditLog('beta_register_error', session.user.id, { message: err.message, email: normalizedEmail }, 'error');
+    logger.error('beta_register_error', { message: err.message, userId: userId, email: normalizedEmail });
+    auditLog('beta_register_error', userId, { message: err.message, email: normalizedEmail }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
   }
 }

@@ -107,10 +107,6 @@ export default function BetaSignup() {
       return setError("School name is required for school trials.");
     }
 
-    if (trialType === "social" && !formData.organizationName) {
-      return setError("Organization/Team name is required.");
-    }
-
     setLoading(true);
 
     try {
@@ -468,7 +464,7 @@ export default function BetaSignup() {
                 marginTop: "10px",
                 backgroundColor: "transparent",
                 border: "1px solid var(--border-color)",
-                color: "var(--text-muted)",
+                color: "#000",
               }}
               onClick={() => router.push("/onboarding")}
              >
