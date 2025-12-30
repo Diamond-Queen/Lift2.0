@@ -85,7 +85,7 @@ async function handler(req, res) {
         userId: userId,
         trialType,
         schoolName: trialType === 'school' ? String(schoolName).slice(0, 200) : null,
-        organizationName: trialType === 'social' ? String(organizationName || '').slice(0, 200) : null,
+        organizationName: organizationName && organizationName.trim() ? String(organizationName).slice(0, 200) : null,
         trialEndsAt,
         status: 'active',
       },
@@ -109,14 +109,24 @@ async function handler(req, res) {
         betaTester: {
           id: betaTester.id,
           trialType: betaTester.trialType,
-          trialEndsAt: betaTester.trialEndsAt,
-          daysRemaining: Math.ceil((betaTester.trialEndsAt - now) / (24 * 60 * 60 * 1000)),
+          trialEndsAt: betaTester.trialEndsAt.toISOString(),
+          daysRemaining: Math.ceil((new Date(betaTester.trialEndsAt).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)),
         },
       },
     });
   } catch (err) {
-    logger.error('beta_register_error', { message: err.message, userId: userId, email: normalizedEmail });
-    auditLog('beta_register_error', userId, { message: err.message, email: normalizedEmail }, 'error');
+    logger.error('beta_register_error', { 
+      message: err.message, 
+      code: err.code,
+      stack: err.stack,
+      userId: userId, 
+      email: normalizedEmail 
+    });
+    auditLog('beta_register_error', userId, { 
+      message: err.message, 
+      code: err.code,
+      email: normalizedEmail 
+    }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
   }
 }
