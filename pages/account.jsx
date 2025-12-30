@@ -220,9 +220,9 @@ export default function Account() {
             marginBottom: '1rem',
             padding: '0.75rem 1rem',
             borderRadius: '8px',
-            background: uiStatus.type === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-            border: `1px solid ${uiStatus.type === 'error' ? 'rgba(220, 38, 38, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`,
-            color: uiStatus.type === 'error' ? '#ef4444' : '#22c55e',
+            background: 'rgba(212, 175, 55, 0.1)',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            color: '#D4AF37',
             fontSize: '0.95rem',
             fontWeight: 600,
             textAlign: 'center'
@@ -374,15 +374,15 @@ export default function Account() {
           <button 
             onClick={() => setStudyMode(!studyMode)}
             style={{
-              background: studyMode ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255,255,255,0.06)',
-              color: studyMode ? 'white' : 'var(--text-color)',
+              background: studyMode ? 'linear-gradient(135deg, rgba(212, 175, 55, 0.95) 0%, rgba(212, 175, 55, 0.85) 100%)' : 'rgba(255,255,255,0.06)',
+              color: studyMode ? '#0a0605' : 'var(--text-color)',
               border: studyMode ? 'none' : '1px solid var(--input-border)',
               padding: '0.75rem 1.5rem',
               borderRadius: '25px',
               fontSize: '1rem',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: studyMode ? '0 4px 15px rgba(102, 126, 234, 0.4)' : 'none',
+              boxShadow: studyMode ? '0 4px 15px rgba(212, 175, 55, 0.4)' : 'none',
               transition: 'all 0.3s ease',
               width: '100%',
               display: 'flex',

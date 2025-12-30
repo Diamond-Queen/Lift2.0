@@ -141,9 +141,10 @@ export default function Templates() {
             <div style={{ 
               marginTop: 16, 
               padding: 12, 
-              backgroundColor: message.includes('success') ? '#1a4d1a' : '#4d1a1a',
+              backgroundColor: 'rgba(212, 175, 55, 0.1)',
               borderRadius: 8,
-              color: '#fff'
+              color: '#D4AF37',
+              border: '1px solid rgba(212, 175, 55, 0.3)'
             }}>
               {message}
             </div>

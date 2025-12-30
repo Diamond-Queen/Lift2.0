@@ -91,16 +91,40 @@ export default function NotesUI() {
   useEffect(() => {
     if (selectedClassId) {
       fetchSavedNotes(selectedClassId);
-      // Load summaries/flashcards for this specific class from storage
+      // Load summaries/flashcards for this specific class from classGenerations (in-memory) first
       if (classGenerations[selectedClassId]) {
         setSummaries(classGenerations[selectedClassId].summaries || []);
         setFlashcards(classGenerations[selectedClassId].flashcards || []);
       } else {
-        setSummaries([]);
-        setFlashcards([]);
+        // Try to restore from localStorage for this class
+        const key = `class_${selectedClassId}_notes`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            setInput(data.input || "");
+            setSummaries(data.summaries || []);
+            setFlashcards(data.flashcards || []);
+            // Also update classGenerations so it persists in memory
+            setClassGenerations(prev => ({
+              ...prev,
+              [selectedClassId]: {
+                summaries: data.summaries || [],
+                flashcards: data.flashcards || []
+              }
+            }));
+          } catch (e) {
+            console.error('Failed to restore from localStorage:', e);
+            setSummaries([]);
+            setFlashcards([]);
+            setInput("");
+          }
+        } else {
+          setSummaries([]);
+          setFlashcards([]);
+          setInput("");
+        }
       }
-      // Clear input when switching classes
-      setInput("");
       setError("");
     }
   }, [selectedClassId]);
@@ -135,6 +159,24 @@ export default function NotesUI() {
     } finally {
       setLoadingClasses(false);
     }
+  };
+
+  // Helper functions for localStorage persistence per class
+  const saveClassNotesToStorage = (classId, noteInput, noteSummaries, noteFlashcards) => {
+    if (!classId) return;
+    const key = `class_${classId}_notes`;
+    localStorage.setItem(key, JSON.stringify({
+      input: noteInput,
+      summaries: noteSummaries,
+      flashcards: noteFlashcards,
+      timestamp: Date.now()
+    }));
+  };
+
+  const clearClassNotesFromStorage = (classId) => {
+    if (!classId) return;
+    const key = `class_${classId}_notes`;
+    localStorage.removeItem(key);
   };
 
   // Auto-save notes to localStorage whenever input, summaries, or flashcards change

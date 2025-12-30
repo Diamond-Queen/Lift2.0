@@ -111,7 +111,7 @@ export default function Subscription() {
           </ul>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem', padding: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem', padding: '0.75rem', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px' }}>
           <p style={{ margin: 0, color: 'var(--text-color)', fontSize: '0.9rem' }}>
             <strong>Payment Integration Coming Soon</strong><br/>
             Stripe will handle all payments securely. Cancel anytime before trial ends.
@@ -145,7 +145,7 @@ export default function Subscription() {
             />
           </div>
 
-          <div style={{ padding: '1rem', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '8px', marginBottom: '1rem' }}>
+          <div style={{ padding: '1rem', background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px', marginBottom: '1rem' }}>
             <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-color)' }}>
               <strong>⚠️ Development Mode:</strong> Payment card fields are disabled. Stripe integration required for production to securely process payments. Your card data will NEVER be stored on our servers.
             </p>

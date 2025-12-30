@@ -116,6 +116,39 @@ Sincerely,
     fetchJobs();
   }, []);
 
+  // Helper functions for localStorage persistence per job
+  const saveJobContentToStorage = (jobId, jobType, jobInput, jobResult) => {
+    if (!jobId) return;
+    const key = `job_${jobId}_${jobType}`;
+    localStorage.setItem(key, JSON.stringify({
+      type: jobType,
+      input: jobInput,
+      result: jobResult,
+      timestamp: Date.now()
+    }));
+  };
+
+  const clearJobContentFromStorage = (jobId, jobType) => {
+    if (!jobId) return;
+    const key = `job_${jobId}_${jobType}`;
+    localStorage.removeItem(key);
+  };
+
+  // Auto-save job content to localStorage whenever input or result changes
+  useEffect(() => {
+    if (selectedJobId && type && (result || name || email || phone || (type === "resume" ? address || linkedin || objective || experience || education || skills || certifications : recipient || position || paragraphs))) {
+      const jobInput = {
+        type,
+        name,
+        email,
+        phone,
+        ...(type === "resume" && { address, linkedin, objective, experience, education, skills, certifications }),
+        ...(type === "cover" && { recipient, position, paragraphs })
+      };
+      saveJobContentToStorage(selectedJobId, type, jobInput, result);
+    }
+  }, [selectedJobId, type, result, name, email, phone, address, linkedin, objective, experience, education, skills, certifications, recipient, position, paragraphs]);
+
   const fetchJobs = async () => {
     setLoadingJobs(true);
     try {
@@ -147,11 +180,50 @@ Sincerely,
   useEffect(() => {
     if (selectedJobId) {
       fetchSavedItems(selectedJobId);
-      // Load previous generated content for this specific job
+      // Load previous generated content for this specific job from jobGenerations (in-memory) first
       if (jobGenerations[selectedJobId]) {
         setResult(jobGenerations[selectedJobId].result || null);
       } else {
-        setResult(null);
+        // Try to restore from localStorage for this job
+        const key = `job_${selectedJobId}_${type}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            setName(data.input?.name || "");
+            setEmail(data.input?.email || "");
+            setPhone(data.input?.phone || "");
+            
+            if (data.input?.type === "resume") {
+              setAddress(data.input?.address || "");
+              setLinkedin(data.input?.linkedin || "");
+              setObjective(data.input?.objective || "");
+              setExperience(data.input?.experience || "");
+              setEducation(data.input?.education || "");
+              setSkills(data.input?.skills || "");
+              setCertifications(data.input?.certifications || "");
+            } else if (data.input?.type === "cover") {
+              setRecipient(data.input?.recipient || "");
+              setPosition(data.input?.position || "");
+              setParagraphs(data.input?.paragraphs || "");
+            }
+            
+            setResult(data.result || null);
+            
+            // Also update jobGenerations so it persists in memory
+            setJobGenerations(prev => ({
+              ...prev,
+              [selectedJobId]: {
+                result: data.result || null
+              }
+            }));
+          } catch (e) {
+            console.error('Failed to restore from localStorage:', e);
+            setResult(null);
+          }
+        } else {
+          setResult(null);
+        }
       }
       setError("");
     }
@@ -218,6 +290,10 @@ Sincerely,
         body: JSON.stringify({ classId: jobId })
       });
       if (res.ok) {
+        // Clear localStorage for all content types for this job
+        clearJobContentFromStorage(jobId, "resume");
+        clearJobContentFromStorage(jobId, "cover");
+        
         setJobs(jobs.filter(job => job.id !== jobId));
         if (selectedJobId === jobId) {
           setSelectedJobId(null);
@@ -486,6 +562,7 @@ Sincerely,
         })
       });
       if (res.ok) {
+        clearJobContentFromStorage(selectedJobId, type);
         setError("");
         await fetchSavedItems(selectedJobId);
         setError("✓ Document saved!");
@@ -635,7 +712,7 @@ Sincerely,
                       <span style={{ fontWeight: 600 }}>{job.name}</span>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
                         <button onClick={(e) => { e.stopPropagation(); setEditingJobId(job.id); setEditingJobName(job.name); setEditingJobColor(job.color || '#d4af37'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(255, 0, 0, 0.15)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.15)', color: '#D4AF37', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
                       </div>
                     </div>
                   )}
@@ -653,7 +730,7 @@ Sincerely,
               {savedItems.map((item) => (
                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(212, 175, 55, 0.1)', borderRadius: '6px' }}>
                   <span style={{ flex: 1, cursor: 'pointer', fontWeight: 500 }} onClick={() => handleLoadDocument(item)}>{item.title}</span>
-                  <button onClick={() => handleDeleteDocument(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 0, 0, 0.2)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
+                  <button onClick={() => handleDeleteDocument(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(212, 175, 55, 0.15)', color: '#D4AF37', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
                 </div>
               ))}
             </div>
@@ -706,7 +783,7 @@ Sincerely,
           <textarea placeholder="Skills (comma separated)" className={styles.textarea} value={skills} onChange={handleChange(setSkills)} rows={2} disabled={loading} />
           <textarea placeholder="Certifications (comma separated)" className={styles.textarea} value={certifications} onChange={handleChange(setCertifications)} rows={2} disabled={loading} />
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
             onClick={handleGenerate}
             disabled={loading}
             aria-label="Generate resume or cover letter"
@@ -714,7 +791,7 @@ Sincerely,
             {loading ? "Generating…" : "Generate"}
           </button>
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
             onClick={handleSaveDocument}
             disabled={loading || !selectedJobId}
             aria-label="Save resume"
@@ -731,7 +808,7 @@ Sincerely,
           <input type="text" placeholder="Position Applying For" className={styles.input} value={position} onChange={handleChange(setPosition)} disabled={loading} />
           <textarea placeholder="Just one sentence: your experience, skills, and why you want this job" className={styles.textarea} value={paragraphs} onChange={handleChange(setParagraphs)} rows={6} disabled={loading} />
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
             onClick={handleGenerate}
             disabled={loading}
             aria-label="Generate cover letter"
@@ -739,7 +816,7 @@ Sincerely,
             {loading ? "Generating…" : "Generate"}
           </button>
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
+            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
             onClick={handleSaveDocument}
             disabled={loading || !selectedJobId}
             aria-label="Save cover letter"
