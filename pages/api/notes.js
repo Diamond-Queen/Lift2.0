@@ -8,6 +8,7 @@ const {
 } = require('../../lib/security');
 const { extractClientIp } = require('../../lib/ip');
 const { getServerSession } = require('next-auth/next');
+const { authOptions } = require('../../lib/authOptions');
 const prisma = require('../../lib/prisma');
 const { pool } = require('../../lib/db');
 const cache = require('../../lib/cache');

@@ -104,12 +104,15 @@ async function handleCheckoutCompleted(session) {
   const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
 
   // Update user in database
+  const userPrefs = await prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } });
+  const currentPrefs = (userPrefs?.preferences || {});
+  
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
       onboarded: true,
       preferences: {
-        ...(await prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } })).preferences,
+        ...currentPrefs,
         subscriptionPlan: plan
       }
     }
@@ -141,15 +144,23 @@ async function handleSubscriptionUpdate(subscription) {
   const status = subscription.status;
   const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
 
-  await prisma.subscription.update({
-    where: { stripeCustomerId: customerId },
-    data: {
-      status: status,
-      trialEndsAt: trialEnd
+  try {
+    await prisma.subscription.update({
+      where: { stripeCustomerId: customerId },
+      data: {
+        status: status,
+        trialEndsAt: trialEnd
+      }
+    });
+    logger.info('subscription_updated', { customerId, status, trialEnd });
+  } catch (err) {
+    // If subscription not found, create it
+    if (err.code === 'P2025') {
+      logger.warn('subscription_not_found_for_update', { customerId });
+    } else {
+      throw err;
     }
-  });
-
-  logger.info('subscription_updated', { customerId, status, trialEnd });
+  }
 }
 
 async function handleSubscriptionDeleted(subscription) {

@@ -8,6 +8,7 @@ const {
 } = require('../../lib/security');
 const { extractClientIp } = require('../../lib/ip');
 const { getServerSession } = require('next-auth/next');
+const { authOptions } = require('../../lib/authOptions');
 const prisma = require('../../lib/prisma');
 const { pool } = require('../../lib/db');
 const cache = require('../../lib/cache');
@@ -32,7 +33,6 @@ async function handler(req, res) {
   // Load user preferences for AI tone (if authenticated) - USE CACHE FIRST
   let aiTone = 'professional'; // Default tone
   try {
-    const { authOptions } = await import('./auth/[...nextauth]');
     const session = await getServerSession(req, res, authOptions);
     if (session?.user?.id) {
       // Try cache first (5 minute TTL)

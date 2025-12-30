@@ -9,6 +9,12 @@ const nextConfig = {
     // Browser compatibility level
     BROWSER_TARGETS: 'defaults, not dead',
   },
+  // API request body size limits
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    }
+  },
   // Webpack config for better compatibility
   webpack: (config, { isServer }) => {
     if (!isServer) {
