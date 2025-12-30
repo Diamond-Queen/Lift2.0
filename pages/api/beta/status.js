@@ -54,7 +54,7 @@ async function handler(req, res) {
     if (status !== 'converted' && status !== 'expired') {
       if (now > trialEndsAt) {
         status = 'expired';
-        // Async update status in database
+        // Update status in database (async, non-blocking)
         prisma.betaTester.update({
           where: { id: betaTester.id },
           data: { status: 'expired' }
