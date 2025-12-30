@@ -112,8 +112,8 @@ export default function TrialAccessGate() {
               textDecoration: 'none', 
               display: 'block', 
               textAlign: 'center',
-              background: 'rgba(212, 175, 55, 0.08)',
-              border: '1px solid rgba(212, 175, 55, 0.25)',
+              background: 'rgba(147, 51, 234, 0.08)',
+              border: '1px solid rgba(147, 51, 234, 0.25)',
               color: 'inherit'
             }}>
               Beta Program
@@ -124,9 +124,9 @@ export default function TrialAccessGate() {
               textDecoration: 'none', 
               display: 'block', 
               textAlign: 'center',
-              background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)',
-              color: '#D4AF37',
-              border: '1px solid rgba(212, 175, 55, 0.3)'
+              background: 'linear-gradient(90deg, #000000 0%, #000000 100%)',
+              color: '#9333EA',
+              border: '1px solid rgba(147, 51, 234, 0.3)'
             }}>
               Individual Subscription
               <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
@@ -144,12 +144,12 @@ export default function TrialAccessGate() {
           <h1 className={styles.pageTitle}>Trial Period Ended</h1>
           <p style={{ 
             textAlign: 'center', 
-            color: '#D4AF37', 
+            color: '#1f003bff', 
             marginBottom: '20px',
             padding: '15px',
             borderRadius: '8px',
-            border: '1px solid rgba(212, 175, 55, 0.4)',
-            backgroundColor: 'rgba(212, 175, 55, 0.08)'
+            border: '1px solid rgba(139, 117, 0, 0.4)',
+            backgroundColor: 'rgba(139, 117, 0, 0.08)'
           }}>
             ⏰ Your beta trial has ended. Subscribe to continue using Lift.
           </p>

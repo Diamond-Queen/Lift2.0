@@ -126,8 +126,8 @@ export default function Templates() {
             disabled={saving}
             style={{
               padding: '12px 24px',
-              backgroundColor: saving ? '#555' : '#d4af37',
-              color: '#000',
+              backgroundColor: saving ? '#555' : '#1f003bff',
+              color: '#fff',
               border: 'none',
               borderRadius: 8,
               fontWeight: 600,
@@ -141,10 +141,10 @@ export default function Templates() {
             <div style={{ 
               marginTop: 16, 
               padding: 12, 
-              backgroundColor: 'rgba(212, 175, 55, 0.1)',
+              backgroundColor: 'rgba(139, 117, 0, 0.1)',
               borderRadius: 8,
-              color: '#D4AF37',
-              border: '1px solid rgba(212, 175, 55, 0.3)'
+              color: '#1f003bff',
+              border: '1px solid rgba(139, 117, 0, 0.3)'
             }}>
               {message}
             </div>

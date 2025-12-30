@@ -13,7 +13,7 @@ export default function Settings() {
   
   const [preferences, setPreferences] = useState({
     theme: 'light',
-    accentColor: '#d4af37',
+    accentColor: '#8b7500',
     fontSize: 'medium',
     dashboardLayout: 'default',
     aiTone: 'professional',
@@ -271,7 +271,7 @@ export default function Settings() {
             disabled={saving}
             style={{ 
               padding: '0.75rem 2rem', 
-              background: 'var(--accent-color, #d4af37)', 
+              background: 'var(--accent-color, #8b7500)', 
               color: '#fff', 
               border: 'none', 
               borderRadius: '4px', 

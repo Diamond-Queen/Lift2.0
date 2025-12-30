@@ -184,12 +184,12 @@ export default function Dashboard() {
             <h1 className={styles.pageTitle}>Trial Period Ended</h1>
             <p style={{ 
               textAlign: 'center', 
-              color: '#D4AF37', 
+              color: '#1f003bff',
               marginBottom: '20px',
               padding: '15px',
               borderRadius: '8px',
-              border: '1px solid #D4AF37',
-              backgroundColor: 'rgba(212, 175, 55, 0.1)'
+              border: '1px solid #1f003bff',
+              backgroundColor: 'rgba(147, 51, 234, 0.1)'
             }}>
               ⏰ Your beta trial has ended. Subscribe to continue using Lift.
             </p>
@@ -221,8 +221,8 @@ export default function Dashboard() {
                 textDecoration: 'none', 
                 display: 'block', 
                 textAlign: 'center',
-                background: 'rgba(212, 175, 55, 0.08)',
-                border: '1px solid rgba(212, 175, 55, 0.25)',
+                background: 'rgba(147, 51, 234, 0.08)',
+                border: '1px solid rgba(147, 51, 234, 0.25)',
                 color: 'inherit'
               }}>
                 Beta Program
@@ -232,9 +232,9 @@ export default function Dashboard() {
                 textDecoration: 'none', 
                 display: 'block', 
                 textAlign: 'center',
-                background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)',
-                border: '1px solid rgba(212, 175, 55, 0.3)',
-                color: '#D4AF37'
+                background: 'linear-gradient(90deg, #000000 0%, #000000 100%)',
+                border: '1px solid rgba(147, 51, 234, 0.3)',
+                color: '#1f003bff'
               }}>
                 Individual Subscription
                 <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
@@ -336,9 +336,9 @@ export default function Dashboard() {
             marginBottom: '1rem',
             padding: '1rem',
             borderRadius: '8px',
-            border: '2px solid #D4AF37',
-            background: 'rgba(212, 175, 55, 0.1)',
-            color: '#D4AF37'
+            border: '2px solid #1f003bff',
+            background: 'rgba(0, 0, 0, 0)',
+            color: '#1f003bff'
           }}>
             <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
               ⏰ Trial Expired
@@ -346,7 +346,7 @@ export default function Dashboard() {
             <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
               Your beta trial has ended. Subscribe now to continue using Lift.
             </div>
-            <Link href="/subscription/plans" className={styles.loginLink} style={{ color: '#D4AF37', textDecoration: 'underline', display: 'inline-block', marginTop: '0.5rem' }}>
+            <Link href="/subscription/plans" className={styles.loginLink} style={{ color: '#1f003bff', textDecoration: 'underline', display: 'inline-block', marginTop: '0.5rem' }}>
               View Subscription Plans
             </Link>
           </div>
@@ -424,12 +424,12 @@ export default function Dashboard() {
 
           {/* Career button: disabled for Notes-only plan */}
           {plan === 'notes' ? (
-            <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+            <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', border: '1px solid rgba(147, 51, 234, 0.2)' }}>
               Lift Career
               <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($5/mo) or Full Access ($10/mo)</div>
             </button>
           ) : (
-            <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+            <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', color: '#1f003bff', border: '1px solid rgba(31, 0, 59, 0.5)' }}>
               Lift Career
               <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Build resumes and cover letters</div>
             </Link>

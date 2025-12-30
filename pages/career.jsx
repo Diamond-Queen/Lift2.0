@@ -45,12 +45,12 @@ export default function Career() {
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [savedItems, setSavedItems] = useState([]);
   const [newJobName, setNewJobName] = useState("");
-  const [newJobColor, setNewJobColor] = useState("#d4af37");
+  const [newJobColor, setNewJobColor] = useState("#8b7500");
   const [showJobForm, setShowJobForm] = useState(false);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [editingJobId, setEditingJobId] = useState(null);
   const [editingJobName, setEditingJobName] = useState("");
-  const [editingJobColor, setEditingJobColor] = useState("#d4af37");
+  const [editingJobColor, setEditingJobColor] = useState("#8b7500");
   
   // Per-job generation results
   const [jobGenerations, setJobGenerations] = useState({});
@@ -243,7 +243,7 @@ Sincerely,
         setJobs([data.data, ...jobs]);
         setSelectedJobId(data.data.id);
         setNewJobName("");
-        setNewJobColor("#d4af37");
+        setNewJobColor("#8b7500");
         setShowJobForm(false);
         setError("✓ Job created!");
         setTimeout(() => setError(""), 2000);
@@ -269,7 +269,7 @@ Sincerely,
         setJobs(jobs.map(job => job.id === jobId ? data.data : job));
         setEditingJobId(null);
         setEditingJobName("");
-        setEditingJobColor("#d4af37");
+        setEditingJobColor("#8b7500");
         setError("✓ Job renamed!");
         setTimeout(() => setError(""), 2000);
       }
@@ -643,7 +643,7 @@ Sincerely,
         <h1 className={styles.pageTitle}>📋 Lift Career</h1>
 
         {/* Job Manager */}
-        <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.05))', borderRadius: '10px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+        <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(139, 117, 0, 0.12), rgba(139, 117, 0, 0.05))', borderRadius: '10px', border: '1px solid rgba(139, 117, 0, 0.2)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Jobs</h2>
             <button
@@ -686,7 +686,7 @@ Sincerely,
                 <div
                   key={job.id}
                   onClick={() => !editingJobId && setSelectedJobId(job.id)}
-                  style={{ padding: '1rem', background: selectedJobId === job.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${job.color || '#d4af37'}`, border: selectedJobId === job.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingJobId === job.id ? 'default' : 'pointer', transition: 'all 0.2s' }}
+                  style={{ padding: '1rem', background: selectedJobId === job.id ? 'rgba(139, 117, 0, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${job.color || '#8b7500'}`, border: selectedJobId === job.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingJobId === job.id ? 'default' : 'pointer', transition: 'all 0.2s' }}
                 >
                   {editingJobId === job.id ? (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
@@ -711,8 +711,8 @@ Sincerely,
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: 600 }}>{job.name}</span>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button onClick={(e) => { e.stopPropagation(); setEditingJobId(job.id); setEditingJobName(job.name); setEditingJobColor(job.color || '#d4af37'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.15)', color: '#D4AF37', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingJobId(job.id); setEditingJobName(job.name); setEditingJobColor(job.color || '#8b7500'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.15)', color: '#8b7500', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
                       </div>
                     </div>
                   )}
@@ -728,9 +728,9 @@ Sincerely,
             <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Saved Documents ({savedItems.length})</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {savedItems.map((item) => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(212, 175, 55, 0.1)', borderRadius: '6px' }}>
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(139, 117, 0, 0.1)', borderRadius: '6px' }}>
                   <span style={{ flex: 1, cursor: 'pointer', fontWeight: 500 }} onClick={() => handleLoadDocument(item)}>{item.title}</span>
-                  <button onClick={() => handleDeleteDocument(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(212, 175, 55, 0.15)', color: '#D4AF37', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
+                  <button onClick={() => handleDeleteDocument(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(139, 117, 0, 0.15)', color: '#8b7500', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
                 </div>
               ))}
             </div>
@@ -741,8 +741,8 @@ Sincerely,
         {selectedJobId && (() => {
           const selectedJob = jobs.find(j => j.id === selectedJobId);
           return selectedJob ? (
-            <div style={{ padding: '0.75rem', borderLeft: `4px solid ${selectedJob.color || '#d4af37'}`, background: `rgba(${parseInt(selectedJob.color?.slice(1, 3), 16)}, ${parseInt(selectedJob.color?.slice(3, 5), 16)}, ${parseInt(selectedJob.color?.slice(5, 7), 16)}, 0.02)`, borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <span style={{ color: selectedJob.color || '#d4af37', fontWeight: 600, fontSize: '1rem' }}>Job: {selectedJob.name}</span>
+            <div style={{ padding: '0.75rem', borderLeft: `4px solid ${selectedJob.color || '#8b7500'}`, background: `rgba(${parseInt(selectedJob.color?.slice(1, 3), 16)}, ${parseInt(selectedJob.color?.slice(3, 5), 16)}, ${parseInt(selectedJob.color?.slice(5, 7), 16)}, 0.02)`, borderRadius: '8px', marginBottom: '1.5rem' }}>
+              <span style={{ color: selectedJob.color || '#8b7500', fontWeight: 600, fontSize: '1rem' }}>Job: {selectedJob.name}</span>
             </div>
           ) : null;
         })()}
@@ -755,8 +755,8 @@ Sincerely,
       {/* Info Box */}
       <div style={{ 
         padding: '12px 16px', 
-        backgroundColor: 'rgba(212, 175, 55, 0.1)', 
-        border: '1px solid rgba(212, 175, 55, 0.3)',
+        backgroundColor: 'rgba(139, 117, 0, 0.1)', 
+        border: '1px solid rgba(139, 117, 0, 0.3)',
         borderRadius: '8px',
         marginBottom: '16px',
         fontSize: '14px',
@@ -783,7 +783,7 @@ Sincerely,
           <textarea placeholder="Skills (comma separated)" className={styles.textarea} value={skills} onChange={handleChange(setSkills)} rows={2} disabled={loading} />
           <textarea placeholder="Certifications (comma separated)" className={styles.textarea} value={certifications} onChange={handleChange(setCertifications)} rows={2} disabled={loading} />
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
+            style={{ background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)', color: '#8b7500', border: '2px solid #8b7500', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
             onClick={handleGenerate}
             disabled={loading}
             aria-label="Generate resume or cover letter"
@@ -791,7 +791,7 @@ Sincerely,
             {loading ? "Generating…" : "Generate"}
           </button>
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
+            style={{ background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)', color: '#8b7500', border: '2px solid #8b7500', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
             onClick={handleSaveDocument}
             disabled={loading || !selectedJobId}
             aria-label="Save resume"
@@ -808,7 +808,7 @@ Sincerely,
           <input type="text" placeholder="Position Applying For" className={styles.input} value={position} onChange={handleChange(setPosition)} disabled={loading} />
           <textarea placeholder="Just one sentence: your experience, skills, and why you want this job" className={styles.textarea} value={paragraphs} onChange={handleChange(setParagraphs)} rows={6} disabled={loading} />
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
+            style={{ background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)', color: '#8b7500', border: '2px solid #8b7500', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1, width: '100%', fontSize: '1rem' }}
             onClick={handleGenerate}
             disabled={loading}
             aria-label="Generate cover letter"
@@ -816,8 +816,8 @@ Sincerely,
             {loading ? "Generating…" : "Generate"}
           </button>
           <button
-            style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #D4AF37', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
-            onClick={handleSaveDocument}
+            style={{ background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)', color: '#8b7500', border: '2px solid #8b7500', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
+            onClick={handleSaveDocument}}
             disabled={loading || !selectedJobId}
             aria-label="Save cover letter"
           >

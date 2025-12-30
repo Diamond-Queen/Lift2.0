@@ -55,7 +55,7 @@
 }
 .pillActive {
   border-color: var(--accent);
-  background: rgba(212, 175, 55, 0.18);
+  background: rgba(139, 117, 0, 0.18);
   box-shadow: 0 10px 28px rgba(var(--accent-rgb),0.12);
 }
 

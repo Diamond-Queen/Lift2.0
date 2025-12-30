@@ -220,9 +220,9 @@ export default function Account() {
             marginBottom: '1rem',
             padding: '0.75rem 1rem',
             borderRadius: '8px',
-            background: 'rgba(212, 175, 55, 0.1)',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            color: '#D4AF37',
+            background: 'rgba(31, 0, 59, 0.1)',
+            border: '1px solid rgba(31, 0, 59, 0.3)',
+            color: '#1f003bff',
             fontSize: '0.95rem',
             fontWeight: 600,
             textAlign: 'center'
@@ -374,15 +374,15 @@ export default function Account() {
           <button 
             onClick={() => setStudyMode(!studyMode)}
             style={{
-              background: studyMode ? 'linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)' : 'rgba(255,255,255,0.06)',
-              color: studyMode ? '#D4AF37' : 'var(--text-color)',
-              border: studyMode ? '1px solid rgba(212, 175, 55, 0.4)' : '1px solid var(--input-border)',
+              background: studyMode ? 'linear-gradient(135deg, #000000 0%, #000000 100%)' : 'rgba(255,255,255,0.06)',
+              color: studyMode ? '#1f003bff' : 'var(--text-color)',
+              border: studyMode ? '1px solid rgba(147, 51, 234, 0.4)' : '1px solid var(--input-border)',
               padding: '0.75rem 1.5rem',
               borderRadius: '25px',
               fontSize: '1rem',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: studyMode ? '0 4px 15px rgba(212, 175, 55, 0.4)' : 'none',
+              boxShadow: studyMode ? '0 4px 15px rgba(147, 51, 234, 0.4)' : 'none',
               transition: 'all 0.3s ease',
               width: '100%',
               display: 'flex',

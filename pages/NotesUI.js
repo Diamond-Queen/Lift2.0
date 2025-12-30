@@ -23,12 +23,12 @@ export default function NotesUI() {
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [savedItems, setSavedItems] = useState([]);
   const [newClassName, setNewClassName] = useState("");
-  const [newClassColor, setNewClassColor] = useState("#d4af37");
+  const [newClassColor, setNewClassColor] = useState("#8b7500");
   const [showClassForm, setShowClassForm] = useState(false);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [editingClassId, setEditingClassId] = useState(null);
   const [editingClassName, setEditingClassName] = useState("");
-  const [editingClassColor, setEditingClassColor] = useState("#d4af37");
+  const [editingClassColor, setEditingClassColor] = useState("#8b7500");
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [unlockFeature, setUnlockFeature] = useState('');
   const [userPlan, setUserPlan] = useState('full'); // track subscription
@@ -149,7 +149,7 @@ export default function NotesUI() {
         setClasses([data.data, ...classes]);
         setSelectedClassId(data.data.id);
         setNewClassName("");
-        setNewClassColor("#d4af37");
+        setNewClassColor("#8b7500");
         setShowClassForm(false);
         setError("✓ Class created!");
         setTimeout(() => setError(""), 2000);
@@ -199,7 +199,7 @@ export default function NotesUI() {
         setClasses(classes.map(cls => cls.id === classId ? data.data : cls));
         setEditingClassId(null);
         setEditingClassName("");
-        setEditingClassColor("#d4af37");
+        setEditingClassColor("#8b7500");
         setError("✓ Class renamed!");
         setTimeout(() => setError(""), 2000);
       }
@@ -524,7 +524,7 @@ export default function NotesUI() {
               <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '0.5rem 0' }}>No classes</p>
             ) : (
               classes.map((cls) => (
-                <div key={cls.id} onClick={() => !editingClassId && setSelectedClassId(cls.id)} style={{ padding: '0.75rem', background: selectedClassId === cls.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${cls.color || '#d4af37'}`, border: selectedClassId === cls.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingClassId === cls.id ? 'default' : 'pointer', transition: 'all 0.2s' }}>
+                <div key={cls.id} onClick={() => !editingClassId && setSelectedClassId(cls.id)} style={{ padding: '0.75rem', background: selectedClassId === cls.id ? 'rgba(139, 117, 0, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${cls.color || '#8b7500'}`, border: selectedClassId === cls.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingClassId === cls.id ? 'default' : 'pointer', transition: 'all 0.2s' }}>
                   {editingClassId === cls.id ? (
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
                       <input type="text" value={editingClassName} onChange={(e) => setEditingClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleRenameClass(cls.id); if (e.key === 'Escape') setEditingClassId(null); }} autoFocus style={{ flex: 1, padding: '0.5rem', border: '1px solid var(--accent)', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.9rem' }} />
@@ -536,7 +536,7 @@ export default function NotesUI() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: 600 }}>{cls.name}</span>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button onClick={(e) => { e.stopPropagation(); setEditingClassId(cls.id); setEditingClassName(cls.name); setEditingClassColor(cls.color || '#d4af37'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingClassId(cls.id); setEditingClassName(cls.name); setEditingClassColor(cls.color || '#8b7500'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(255, 0, 0, 0.15)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>🗑</button>
                       </div>
                     </div>
@@ -552,7 +552,7 @@ export default function NotesUI() {
               <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Saved Notes ({savedItems.length})</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {savedItems.map((item) => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(212, 175, 55, 0.1)', borderRadius: '6px' }}>
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(139, 117, 0, 0.1)', borderRadius: '6px' }}>
                     <span style={{ flex: 1, cursor: 'pointer', fontWeight: 500 }} onClick={() => handleLoadNote(item)}>{item.title}</span>
                     <button onClick={() => handleDeleteNote(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 0, 0, 0.2)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
                   </div>
@@ -567,9 +567,9 @@ export default function NotesUI() {
           <h1 className={styles.pageTitle}>Lift Notes</h1>
 
           {selectedClassId && classes.find(c => c.id === selectedClassId) && (
-            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderLeft: `4px solid ${classes.find(c => c.id === selectedClassId).color || '#d4af37'}`, borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--card-border)' }}>
+            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderLeft: `4px solid ${classes.find(c => c.id === selectedClassId).color || '#8b7500'}`, borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--card-border)' }}>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Class</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: classes.find(c => c.id === selectedClassId).color || '#d4af37' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: classes.find(c => c.id === selectedClassId).color || '#8b7500' }}>
                 {classes.find(c => c.id === selectedClassId).name}
               </div>
             </div>
@@ -578,10 +578,10 @@ export default function NotesUI() {
           <textarea className={styles.textarea} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste notes, type, or upload a file..." />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-            <button className={styles.secondaryButton} onClick={handleGenerate} disabled={loading} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700 }}>
+            <button className={styles.secondaryButton} onClick={handleGenerate} disabled={loading} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700 }}>
               {loading ? 'Generating…' : 'Generate Notes'}
             </button>
-            <button className={styles.secondaryButton} onClick={handleSaveNote} disabled={loading || !selectedClassId} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700, opacity: !selectedClassId ? 0.6 : 1 }}>
+            <button className={styles.secondaryButton} onClick={handleSaveNote} disabled={loading || !selectedClassId} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700, opacity: !selectedClassId ? 0.6 : 1 }}>
               {loading ? 'Saving…' : 'Save Note'}
             </button>
           </div>
@@ -596,13 +596,13 @@ export default function NotesUI() {
                   alert('Export feature coming soon!');
                 }
               }}
-              style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}
+              style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}
             >
               Export PDF
             </button>
-            <button onClick={useSample} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Sample</button>
-            <button onClick={clearInput} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Clear</button>
-            <label style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#d4af37', border: '2px solid #a78bfa', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', flex: '1 1 auto', minWidth: '100px', justifyContent: 'center' }}>
+            <button onClick={useSample} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Sample</button>
+            <button onClick={clearInput} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Clear</button>
+            <label style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', flex: '1 1 auto', minWidth: '100px', justifyContent: 'center' }}>
               Upload
               <input type="file" accept=".pdf,.pptx" onChange={handleFileChange} disabled={loading} style={{ display: 'none' }} />
             </label>
@@ -637,7 +637,7 @@ export default function NotesUI() {
               {summaries.map((summary, index) => (
                 <div key={index} className={styles.summaryBox}>
                   <p>{summary}</p>
-                  <button onClick={() => copySummary(summary)} style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(212, 175, 55, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Copy</button>
+                  <button onClick={() => copySummary(summary)} style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(139, 117, 0, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Copy</button>
                 </div>
               ))}
             </div>

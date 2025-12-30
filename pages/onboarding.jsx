@@ -61,12 +61,12 @@ export default function Onboarding() {
             <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Get full access to Lift Notes and Lift Career</div>
           </Link>
 
-          <Link href="/onboarding/beta" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'rgba(212, 175, 55, 0.08)', border: '1px solid rgba(212, 175, 55, 0.25)' }}>
+          <Link href="/onboarding/beta" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'rgba(147, 51, 234, 0.08)', border: '1px solid rgba(147, 51, 234, 0.25)' }}>
             Beta Program
             <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-4 days free trial (individual) or 14 days (school)</div>
           </Link>
 
-          <Link href="/subscription/plans" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1rem', background: 'linear-gradient(90deg, #1a1a1a 0%, #0d0d0d 100%)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+          <Link href="/subscription/plans" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1rem', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', color: '#1f003bff', border: '1px solid rgba(31, 0, 59, 0.5)' }}>
             Individual Subscription
             <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
           </Link>

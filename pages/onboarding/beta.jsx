@@ -98,14 +98,14 @@ export default function BetaOnboarding() {
                   padding: "0.75rem",
                   border:
                     betaType === "social"
-                      ? "2px solid #D4AF37"
+                      ? "2px solid #1f003bff"
                       : "1px solid var(--card-border)",
                   borderRadius: "6px",
                   cursor: "pointer",
                   textAlign: "center",
                   backgroundColor:
                     betaType === "social"
-                      ? "rgba(212, 175, 55, 0.12)"
+                      ? "rgba(31, 0, 59, 0.12)"
                       : "transparent",
                 }}
               >

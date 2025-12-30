@@ -9,7 +9,7 @@
 
 :root {
     /* --- Dark Mode Variables (Default) - Gold, Dark Purple, White --- */
-    --bg-top-dark: #0a0605; /* deep dark purple-black */
+    --bg-top-dark: #000000; /* pure black */
     --bg-bottom-dark: #1a0f15; /* dark purple */
     --text-color-dark: rgba(255,255,255,0.98); /* near-white text */
     --card-bg-dark: linear-gradient(180deg, rgba(212,175,55,0.04), rgba(255,255,255,0.01));
@@ -24,12 +24,12 @@
     --glass-shadow-light: 0 10px 40px rgba(212,175,55,0.08);
     
     /* --- Shared Variables --- */
-    --accent: #D4AF37; /* gold-ish */
+    --accent: #9333EA; /* dark purple */
     --accent-contrast: #0b0b0b; /* black for text on gold */
     --inter: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    --accent-rgb: 212,175,55;
-    --accent-weak: rgba(212,175,55,0.12);
-    --accent-weak-2: rgba(212,175,55,0.08);
+    --accent-rgb: 147,51,234;
+    --accent-weak: rgba(147,51,234,0.12);
+    --accent-weak-2: rgba(147,51,234,0.08);
     --font-heading: Poppins, var(--inter);
     --font-script: 'Great Vibes', cursive;
     --easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* ease-in-out */
