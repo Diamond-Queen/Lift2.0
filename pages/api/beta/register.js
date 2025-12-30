@@ -111,10 +111,16 @@ async function handler(req, res) {
     logger.info('beta_register_created', { betaTesterId: betaTester.id });
 
     // Mark user as onboarded
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { onboarded: true },
     });
+    
+    if (!updatedUser) {
+      throw new Error('Failed to mark user as onboarded');
+    }
+
+    logger.info('beta_register_user_updated', { userId, onboarded: updatedUser.onboarded });
 
     auditLog('beta_register_success', userId, {
       email: normalizedEmail,
@@ -128,7 +134,7 @@ async function handler(req, res) {
         betaTester: {
           id: betaTester.id,
           trialType: betaTester.trialType,
-          trialEndsAt: betaTester.trialEndsAt.toISOString(),
+          trialEndsAt: betaTester.trialEndsAt instanceof Date ? betaTester.trialEndsAt.toISOString() : betaTester.trialEndsAt,
           daysRemaining: Math.ceil((new Date(betaTester.trialEndsAt).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)),
         },
       },
