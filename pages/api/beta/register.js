@@ -58,6 +58,15 @@ async function handler(req, res) {
   const normalizedEmail = String(email).trim().toLowerCase();
 
   try {
+    // Verify user exists in database
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(401).json({ ok: false, error: 'User not found. Please sign in again.' });
+    }
+
     // Check if user already exists as a beta tester
     const existingBeta = await prisma.betaTester.findUnique({
       where: { userId: userId }
@@ -80,16 +89,26 @@ async function handler(req, res) {
     }
 
     // Create beta tester record
+    const betaTesterData = {
+      userId: userId,
+      trialType,
+      schoolName: trialType === 'school' ? String(schoolName).slice(0, 200) : null,
+      organizationName: organizationName && organizationName.trim() ? String(organizationName).slice(0, 200) : null,
+      trialEndsAt,
+      status: 'active',
+    };
+    
+    logger.info('beta_register_creating', { userId, data: betaTesterData });
+    
     const betaTester = await prisma.betaTester.create({
-      data: {
-        userId: userId,
-        trialType,
-        schoolName: trialType === 'school' ? String(schoolName).slice(0, 200) : null,
-        organizationName: organizationName && organizationName.trim() ? String(organizationName).slice(0, 200) : null,
-        trialEndsAt,
-        status: 'active',
-      },
+      data: betaTesterData,
     });
+    
+    if (!betaTester) {
+      throw new Error('BetaTester create returned null');
+    }
+    
+    logger.info('beta_register_created', { betaTesterId: betaTester.id });
 
     // Mark user as onboarded
     await prisma.user.update({
