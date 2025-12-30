@@ -10,6 +10,7 @@ const { extractClientIp } = require('../../lib/ip');
 const { getServerSession } = require('next-auth/next');
 const prisma = require('../../lib/prisma');
 const { pool } = require('../../lib/db');
+const cache = require('../../lib/cache');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -28,22 +29,33 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
-  // Load user preferences for AI tone (if authenticated)
+  // Load user preferences for AI tone (if authenticated) - USE CACHE FIRST
   let aiTone = 'professional'; // Default tone
   try {
     const { authOptions } = await import('./auth/[...nextauth]');
     const session = await getServerSession(req, res, authOptions);
     if (session?.user?.id) {
-      if (prisma) {
-        const user = await prisma.user.findUnique({ 
-          where: { id: session.user.id }, 
-          select: { preferences: true } 
-        });
-        aiTone = user?.preferences?.aiTone || 'professional';
-      } else {
-        const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
-        aiTone = rows[0]?.preferences?.aiTone || 'professional';
+      // Try cache first (5 minute TTL)
+      const cacheKey = `user_prefs_${session.user.id}`;
+      let userPrefs = cache.get(cacheKey);
+      
+      if (!userPrefs) {
+        // Cache miss - fetch from DB
+        if (prisma) {
+          const user = await prisma.user.findUnique({ 
+            where: { id: session.user.id }, 
+            select: { preferences: true } 
+          });
+          userPrefs = user?.preferences;
+        } else {
+          const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
+          userPrefs = rows[0]?.preferences;
+        }
+        // Cache the result for 5 minutes
+        if (userPrefs) cache.set(cacheKey, userPrefs, 5 * 60 * 1000);
       }
+      
+      aiTone = userPrefs?.aiTone || 'professional';
     }
   } catch (err) {
     // If preference load fails, continue with default

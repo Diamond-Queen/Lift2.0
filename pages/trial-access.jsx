@@ -33,8 +33,20 @@ export default function TrialAccessGate() {
             const trial = data?.data?.trial;
 
             if (!trial) {
-              // User is not in beta program and has no subscription - show join beta option
-              setAccessStatus('not-enrolled');
+              // User is not in beta program - check for paid subscription
+              const subRes = await fetch('/api/user');
+              if (subRes.ok) {
+                const userData = await subRes.json();
+                if (userData?.data?.user?.preferences?.subscriptionPlan) {
+                  // Has paid subscription - allow access
+                  router.push('/dashboard');
+                } else {
+                  // No subscription - show enrollment option
+                  setAccessStatus('not-enrolled');
+                }
+              } else {
+                setAccessStatus('not-enrolled');
+              }
             } else if (trial.status === 'trial-active') {
               // User has active trial - allow access
               router.push('/dashboard');
@@ -42,19 +54,23 @@ export default function TrialAccessGate() {
               // Trial expired - require upgrade
               setAccessStatus('trial-expired');
             } else if (trial.status === 'converted') {
-              // User converted to paid subscription
+              // User converted to paid subscription - allow access
               router.push('/dashboard');
             } else {
-              // Check for paid subscription
-              const subRes = await fetch('/api/user');
-              if (subRes.ok) {
-                const userData = await subRes.json();
-                if (userData?.data?.user?.preferences?.subscriptionPlan) {
-                  router.push('/dashboard');
-                } else {
-                  setAccessStatus('not-enrolled');
-                }
+              setAccessStatus('not-enrolled');
+            }
+          } else {
+            // API error - check for paid subscription
+            const subRes = await fetch('/api/user');
+            if (subRes.ok) {
+              const userData = await subRes.json();
+              if (userData?.data?.user?.preferences?.subscriptionPlan) {
+                router.push('/dashboard');
+              } else {
+                setAccessStatus('not-enrolled');
               }
+            } else {
+              setAccessStatus('error');
             }
           }
         } catch (err) {

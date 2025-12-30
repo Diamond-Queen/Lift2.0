@@ -28,8 +28,8 @@ export default function SchoolCodeOnboarding() {
         setLoading(false);
         return;
       }
-      // Success - redirect to account
-      router.push('/account');
+      // Success - mark onboarded and redirect to dashboard
+      router.push('/dashboard');
     } catch (err) {
       setError('Network error. Please try again.');
       setLoading(false);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession, signIn, getSession } from "next-auth/react";
 import Link from "next/link";
@@ -18,11 +18,37 @@ export default function BetaSignup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const isNewUser = status === 'unauthenticated';
   const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || '';
 
+  // Check if authenticated user is already onboarded
+  useEffect(() => {
+    if (status === 'authenticated') {
+      (async () => {
+        try {
+          const res = await fetch('/api/user');
+          if (res.ok) {
+            const data = await res.json();
+            const user = data?.data?.user;
+            // If already onboarded, redirect to dashboard
+            if (user?.onboarded) {
+              router.push('/dashboard');
+              return;
+            }
+          }
+        } catch (e) {
+          // Continue to form
+        }
+        setInitialized(true);
+      })();
+    } else {
+      setInitialized(true);
+    }
+  }, [status, router]);
+
   // Wait for NextAuth session to be available after signIn.
-  const waitForSession = async (tries = 6, delayMs = 300) => {
+  const waitForSession = async (tries = 10, delayMs = 300) => {
     for (let i = 0; i < tries; i++) {
       const s = await getSession();
       if (s && s.user) return s;
@@ -32,7 +58,7 @@ export default function BetaSignup() {
   };
 
   // If user is not authenticated, redirect to signup
-  if (status === "loading") {
+  if (status === "loading" || !initialized) {
     return (
       <div className={styles.signupContainer}>
         <div className={styles.signupCard}>

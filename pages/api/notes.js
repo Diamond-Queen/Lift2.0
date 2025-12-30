@@ -10,6 +10,7 @@ const { extractClientIp } = require('../../lib/ip');
 const { getServerSession } = require('next-auth/next');
 const prisma = require('../../lib/prisma');
 const { pool } = require('../../lib/db');
+const cache = require('../../lib/cache');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -29,25 +30,35 @@ async function handler(req, res) {
       return res.status(429).json({ error: 'Too many requests. Try again later.' });
     }
 
-    // Load user preferences for AI tone and note preferences (if authenticated)
+    // Load user preferences for AI tone and note preferences (if authenticated) - USE CACHE FIRST
     let summaryLength = 'medium'; // short, medium, long
     let flashcardDifficulty = 'medium'; // easy, medium, hard
     try {
       const { authOptions } = require('../../lib/authOptions');
       const session = await getServerSession(req, res, authOptions);
       if (session?.user?.id) {
-        if (prisma) {
-          const user = await prisma.user.findUnique({ 
-            where: { id: session.user.id }, 
-            select: { preferences: true } 
-          });
-          summaryLength = user?.preferences?.summaryLength || 'medium';
-          flashcardDifficulty = user?.preferences?.flashcardDifficulty || 'medium';
-        } else {
-          const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
-          summaryLength = rows[0]?.preferences?.summaryLength || 'medium';
-          flashcardDifficulty = rows[0]?.preferences?.flashcardDifficulty || 'medium';
+        // Try cache first (5 minute TTL)
+        const cacheKey = `user_prefs_${session.user.id}`;
+        let userPrefs = cache.get(cacheKey);
+        
+        if (!userPrefs) {
+          // Cache miss - fetch from DB
+          if (prisma) {
+            const user = await prisma.user.findUnique({ 
+              where: { id: session.user.id }, 
+              select: { preferences: true } 
+            });
+            userPrefs = user?.preferences;
+          } else {
+            const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
+            userPrefs = rows[0]?.preferences;
+          }
+          // Cache the result for 5 minutes
+          if (userPrefs) cache.set(cacheKey, userPrefs, 5 * 60 * 1000);
         }
+        
+        summaryLength = userPrefs?.summaryLength || 'medium';
+        flashcardDifficulty = userPrefs?.flashcardDifficulty || 'medium';
       }
     } catch (err) {
       // If preference load fails, continue with defaults
@@ -58,9 +69,10 @@ async function handler(req, res) {
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
 
-    // --- Generate summary and flashcards in parallel with resilient adapter (max 30 seconds) ---
+    // --- Generate summary and flashcards in parallel with resilient adapter (25 second overall timeout) ---
+    // Each AI provider has 10s timeout internally, so this gives them reasonable time
     const timeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Generation timeout - try shorter notes')), 30000)
+      setTimeout(() => reject(new Error('Generation timeout - try shorter notes or split them')), 25000)
     );
 
     // Adjust summary prompt based on user preference

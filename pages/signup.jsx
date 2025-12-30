@@ -38,13 +38,24 @@ export default function Signup() {
         setLoading(false);
         return;
       }
-      const signin = await signIn('credentials', { redirect: false, email: trimmedEmail, password });
+      
+      // Sign in the newly registered user
+      const signin = await signIn('credentials', { 
+        redirect: false, 
+        email: trimmedEmail, 
+        password 
+      });
       if (signin?.error) {
         setError(signin.error || 'Sign-in after registration failed');
         setLoading(false);
         return;
       }
-      // Redirect to beta signup to let user choose if they want to join beta testing
+      
+      // Give session time to stabilize before redirecting
+      // This ensures the session cookie is properly set
+      await new Promise(r => setTimeout(r, 500));
+      
+      // Redirect to beta signup (user is now authenticated)
       router.push('/beta-signup');
     } catch (err) {
       setError("Network error. Please try again.");

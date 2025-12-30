@@ -12,6 +12,8 @@ export default function Dashboard() {
   const [plan, setPlan] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [denyReason, setDenyReason] = useState('');
   const [studyMode, setStudyMode] = useState(false);
   const [studyMusic, setStudyMusic] = useState('none');
   const [error, setError] = useState("");
@@ -104,26 +106,55 @@ export default function Dashboard() {
     if (status === 'authenticated') {
       (async () => {
         try {
-          const res = await fetch('/api/user');
-          if (res.ok) {
-            const data = await res.json();
+          // OPTIMIZATION: Fetch user and trial data in parallel instead of sequentially
+          const [userRes, trialRes] = await Promise.all([
+            fetch('/api/user'),
+            fetch('/api/beta/status')
+          ]);
+          
+          // Process user data
+          if (userRes.ok) {
+            const data = await userRes.json();
             const u = data?.data?.user;
             setUser(u);
             const p = u?.preferences?.subscriptionPlan || null;
             setPlan(p);
-          }
-
-          // Fetch trial info
-          try {
-            const trialRes = await fetch('/api/beta/status');
-            if (trialRes.ok) {
-              const trialData = await trialRes.json();
-              setTrialInfo(trialData?.data?.trial || null);
+            
+            // Check if user is onboarded - if not, redirect to onboarding
+            if (!u?.onboarded) {
+              router.push('/onboarding');
+              return;
             }
-          } catch (err) {
-            console.error('Failed to fetch trial info:', err);
           }
-        } catch (_) {}
+          
+          // Process trial data
+          if (trialRes.ok) {
+            const trialData = await trialRes.json();
+            const trial = trialData?.data?.trial;
+            setTrialInfo(trial);
+            
+            // Check trial/subscription access
+            if (trial?.status === 'trial-expired') {
+              setAccessDenied(true);
+              setDenyReason('trial-expired');
+              return;
+            }
+          } else if (trialRes.status === 401) {
+            // Not in beta program
+            const subRes = await fetch('/api/user');
+            if (subRes.ok) {
+              const userData = await subRes.json();
+              const hasPaidSub = userData?.data?.user?.preferences?.subscriptionPlan;
+              if (!hasPaidSub) {
+                setAccessDenied(true);
+                setDenyReason('not-enrolled');
+                return;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch dashboard data:', err);
+        }
         setLoadingUser(false);
       })();
     }
@@ -142,6 +173,65 @@ export default function Dashboard() {
 
   if (status === 'unauthenticated') {
     return null;
+  }
+
+  // Check if access is denied
+  if (accessDenied) {
+    if (denyReason === 'trial-expired') {
+      return (
+        <div className={styles.signupContainer}>
+          <div className={styles.signupCard} style={{ maxWidth: '500px' }}>
+            <h1 className={styles.pageTitle}>Trial Period Ended</h1>
+            <p style={{ 
+              textAlign: 'center', 
+              color: '#d97706', 
+              marginBottom: '20px',
+              padding: '15px',
+              borderRadius: '8px',
+              border: '1px solid #d97706',
+              backgroundColor: 'rgba(217, 119, 6, 0.1)'
+            }}>
+              ⏰ Your beta trial has ended. Subscribe to continue using Lift.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <Link href="/subscription/plans" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+                View Subscription Plans
+              </Link>
+              <p style={{ textAlign: 'center', fontSize: '0.9em', color: 'var(--text-muted)' }}>
+                We hope you enjoyed testing Lift! Subscribe to your preferred plan to keep using it.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    } else if (denyReason === 'not-enrolled') {
+      return (
+        <div className={styles.signupContainer}>
+          <div className={styles.signupCard} style={{ maxWidth: '500px' }}>
+            <h1 className={styles.pageTitle}>Welcome to Lift</h1>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              You're not yet enrolled in our beta program. Join now to get started!
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <Link href="/beta-signup" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+                Join Beta Program
+              </Link>
+              <div style={{ textAlign: 'center', fontSize: '0.9em', color: 'var(--text-muted)' }}>or</div>
+              <Link href="/subscription/plans" className={styles.submitButton} style={{ 
+                textDecoration: 'none', 
+                display: 'block', 
+                textAlign: 'center',
+                backgroundColor: 'rgba(var(--accent-rgb), 0.1)',
+                color: 'var(--accent)',
+                border: '1px solid var(--accent)'
+              }}>
+                Subscribe Now
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   if (loadingUser) {

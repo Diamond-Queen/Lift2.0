@@ -1,6 +1,8 @@
 const prisma = require('../../../lib/prisma');
-const { getSession } = require('next-auth/react');
-const { setSecureHeaders } = require('../../../lib/security');
+const { getServerSession } = require('next-auth/next');
+const { setSecureHeaders, auditLog } = require('../../../lib/security');
+const logger = require('../../../lib/logger');
+const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -9,8 +11,8 @@ async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const session = await getSession({ req });
-  if (!session || !session.user) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session || !session.user?.id) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
@@ -38,6 +40,15 @@ async function handler(req, res) {
       status = betaTester.status;
     } else if (betaTester.trialEndsAt <= now) {
       status = 'trial-expired';
+      // Auto-mark as expired if trial ended
+      try {
+        await prisma.betaTester.update({
+          where: { id: betaTester.id },
+          data: { status: 'expired' }
+        });
+      } catch (e) {
+        logger.warn('failed_to_mark_beta_expired', { betaTester: betaTester.id });
+      }
     } else {
       status = 'trial-active';
     }
@@ -58,7 +69,8 @@ async function handler(req, res) {
       },
     });
   } catch (err) {
-    console.error('Error fetching beta status:', err);
+    logger.error('beta_status_error', { message: err.message, userId: session.user.id });
+    auditLog('beta_status_error', session.user.id, { message: err.message }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
