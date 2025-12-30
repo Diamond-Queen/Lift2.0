@@ -4,11 +4,11 @@ const {
   trackIpRateLimit,
   validateRequest,
   auditLog,
+  trackUserRateLimit,
 } = require('../../../lib/security');
 const logger = require('../../../lib/logger');
 const { extractClientIp } = require('../../../lib/ip');
 const { getServerSession } = require('next-auth/next');
-const { authOptions } = require('../../../lib/authOptions');
 const { sanitizeName } = require('../../../lib/sanitize');
 
 async function handler(req, res) {
@@ -33,6 +33,9 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
+  // Get authOptions dynamically to ensure proper initialization
+  const { authOptions } = await import('../auth/[...nextauth]');
+  
   // Check session - user must be logged in
   const session = await getServerSession(req, res, authOptions);
   if (!session?.user?.id) {
@@ -41,6 +44,12 @@ async function handler(req, res) {
 
   const userId = session.user.id;
   const sessionEmail = session.user.email;
+  
+  const userLimit = trackUserRateLimit(userId, '/api/beta/register');
+  if (!userLimit.allowed) {
+    auditLog('beta_register_rate_limited_user', userId, { ip });
+    return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
+  }
 
   const { trialType, schoolName, organizationName } = req.body || {};
 
@@ -100,18 +109,25 @@ async function handler(req, res) {
       status: 'active',
     };
 
-    // Create beta tester record and mark user as onboarded in same transaction
-    const [betaTester, updatedUser] = await Promise.all([
-      prisma.betaTester.create({ data: betaTesterData }),
-      prisma.user.update({
-        where: { id: userId },
-        data: { onboarded: true },
-        select: { id: true, email: true, onboarded: true }
-      })
-    ]);
+    // Create beta tester record and mark user as onboarded
+    // Do this sequentially to ensure atomicity
+    const betaTester = await prisma.betaTester.create({ 
+      data: betaTesterData,
+      select: { id: true, trialType: true, trialEndsAt: true }
+    });
 
-    if (!betaTester || !updatedUser) {
-      throw new Error('Failed to create beta tester record or update user');
+    if (!betaTester) {
+      throw new Error('Failed to create beta tester record');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { onboarded: true },
+      select: { id: true, email: true, onboarded: true }
+    });
+
+    if (!updatedUser) {
+      throw new Error('Failed to update user onboarded status');
     }
 
     logger.info('beta_register_success', {
@@ -134,7 +150,7 @@ async function handler(req, res) {
         betaTester: {
           id: betaTester.id,
           trialType: betaTester.trialType,
-          trialEndsAt: trialEndsAt.toISOString(),
+          trialEndsAt: betaTester.trialEndsAt.toISOString(),
           daysRemaining: daysToAdd,
         },
       },

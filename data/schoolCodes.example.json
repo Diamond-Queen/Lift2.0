@@ -1,12 +1,12 @@
 [
   {
-    "code": "ABC123",
-    "schoolId": 1,
-    "notes": "Example code for University A"
+    "code": "REPLACE_WITH_REAL_CODE_1",
+    "schoolName": "Your School Name Here",
+    "plan": "standard"
   },
   {
-    "code": "XYZ789",
-    "schoolId": 2,
-    "notes": "Example code for College B"
+    "code": "REPLACE_WITH_REAL_CODE_2",
+    "schoolName": "Another School Name",
+    "plan": "premium"
   }
 ]

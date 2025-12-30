@@ -210,22 +210,32 @@ export default function Dashboard() {
           <div className={styles.signupCard} style={{ maxWidth: '500px' }}>
             <h1 className={styles.pageTitle}>Welcome to Lift</h1>
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              You're not yet enrolled in our beta program. Join now to get started!
+              Choose how you'd like to get started
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <Link href="/beta-signup" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
-                Join Beta Program
+              <Link href="/onboarding/school" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+                School Code
+                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Get full access to Lift</div>
               </Link>
-              <div style={{ textAlign: 'center', fontSize: '0.9em', color: 'var(--text-muted)' }}>or</div>
+              <Link href="/onboarding/beta" className={styles.submitButton} style={{ 
+                textDecoration: 'none', 
+                display: 'block', 
+                textAlign: 'center',
+                background: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                color: 'inherit'
+              }}>
+                Beta Program
+                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Free trial: 3-4 days or 14 days</div>
+              </Link>
               <Link href="/subscription/plans" className={styles.submitButton} style={{ 
                 textDecoration: 'none', 
                 display: 'block', 
                 textAlign: 'center',
-                backgroundColor: 'rgba(var(--accent-rgb), 0.1)',
-                color: 'var(--accent)',
-                border: '1px solid var(--accent)'
+                background: 'linear-gradient(90deg, rgba(99, 102, 241, 1) 0%, rgba(139, 92, 246, 0.95) 100%)'
               }}>
-                Subscribe Now
+                Individual Subscription
+                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
               </Link>
             </div>
           </div>

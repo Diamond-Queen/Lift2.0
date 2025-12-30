@@ -27,56 +27,53 @@ export default function TrialAccessGate() {
     if (status === 'authenticated') {
       (async () => {
         try {
-          const res = await fetch('/api/beta/status');
-          if (res.ok) {
-            const data = await res.json();
-            const trial = data?.data?.trial;
-
-            if (!trial) {
-              // User is not in beta program - check for paid subscription
-              const subRes = await fetch('/api/user');
-              if (subRes.ok) {
-                const userData = await subRes.json();
-                if (userData?.data?.user?.preferences?.subscriptionPlan) {
-                  // Has paid subscription - allow access
-                  router.push('/dashboard');
-                } else {
-                  // No subscription - show enrollment option
-                  setAccessStatus('not-enrolled');
-                }
-              } else {
-                setAccessStatus('not-enrolled');
-              }
-            } else if (trial.status === 'trial-active') {
-              // User has active trial - allow access
+          // Check user data first (covers all access types: school, beta, subscription)
+          const userRes = await fetch('/api/user');
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            const user = userData?.data?.user;
+            
+            // Check if user has school access
+            if (user?.schoolId) {
               router.push('/dashboard');
-            } else if (trial.status === 'trial-expired') {
-              // Trial expired - require upgrade
-              setAccessStatus('trial-expired');
-            } else if (trial.status === 'converted') {
-              // User converted to paid subscription - allow access
-              router.push('/dashboard');
-            } else {
-              setAccessStatus('not-enrolled');
+              return;
             }
-          } else {
-            // API error - check for paid subscription
-            const subRes = await fetch('/api/user');
-            if (subRes.ok) {
-              const userData = await subRes.json();
-              if (userData?.data?.user?.preferences?.subscriptionPlan) {
-                router.push('/dashboard');
-              } else {
-                setAccessStatus('not-enrolled');
-              }
-            } else {
-              setAccessStatus('error');
+            
+            // Check for active subscription
+            if (user?.preferences?.subscriptionPlan) {
+              router.push('/dashboard');
+              return;
             }
           }
+          
+          // Check beta status
+          const betaRes = await fetch('/api/beta/status');
+          if (betaRes.ok) {
+            const data = await betaRes.json();
+            const trial = data?.data?.trial;
+
+            if (trial?.status === 'trial-active') {
+              // User has active beta trial - allow access
+              router.push('/dashboard');
+              return;
+            } else if (trial?.status === 'trial-expired') {
+              // Trial expired - require upgrade
+              setAccessStatus('trial-expired');
+              setLoading(false);
+              return;
+            } else if (trial?.status === 'converted') {
+              // User converted to paid subscription - allow access
+              router.push('/dashboard');
+              return;
+            }
+          }
+          
+          // No access - show enrollment option
+          setAccessStatus('not-enrolled');
+          setLoading(false);
         } catch (err) {
           console.error('Error checking access:', err);
           setAccessStatus('error');
-        } finally {
           setLoading(false);
         }
       })();
@@ -102,33 +99,37 @@ export default function TrialAccessGate() {
         <div className={styles.signupCard} style={{ maxWidth: '500px' }}>
           <h1 className={styles.pageTitle}>Welcome to Lift</h1>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '20px' }}>
-            You're not yet enrolled in our beta program. Join now to get started!
+            Choose how you'd like to get started
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <Link href="/beta-signup" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
-              Join Beta Program
+            <Link href="/onboarding/school" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+              School Code
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Get full access to Lift</div>
             </Link>
 
-            <div style={{ textAlign: 'center', fontSize: '0.9em', color: 'var(--text-muted)' }}>
-              or
-            </div>
+            <Link href="/onboarding/beta" className={styles.submitButton} style={{ 
+              textDecoration: 'none', 
+              display: 'block', 
+              textAlign: 'center',
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              color: 'inherit'
+            }}>
+              Beta Program
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Free trial: 3-4 days (individual) or 14 days (school)</div>
+            </Link>
 
             <Link href="/subscription/plans" className={styles.submitButton} style={{ 
               textDecoration: 'none', 
               display: 'block', 
               textAlign: 'center',
-              backgroundColor: 'rgba(var(--accent-rgb), 0.1)',
-              color: 'var(--accent)',
-              border: '1px solid var(--accent)'
+              background: 'linear-gradient(90deg, rgba(99, 102, 241, 1) 0%, rgba(139, 92, 246, 0.95) 100%)'
             }}>
-              Subscribe Now
+              Individual Subscription
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
             </Link>
           </div>
-
-          <p style={{ textAlign: 'center', fontSize: '0.85em', color: 'var(--text-muted)', marginTop: '20px' }}>
-            Beta access is free for 3-4 days (individuals) or 14 days (schools).
-          </p>
         </div>
       </div>
     );
