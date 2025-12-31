@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import styles from "../styles/SignUp.module.css";
 import { useSession, signOut } from 'next-auth/react';
 import TemplatePicker from "../components/TemplatePicker";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
@@ -12,14 +11,13 @@ export default function Account() {
   const [user, setUser] = useState(null);
   const [uiStatus, setUiStatus] = useState({ type: null, text: '' });
   const [theme, setTheme] = useState(null);
-  const [studyMode, setStudyMode] = useState(null);
   const [formatTemplate, setFormatTemplate] = useState('');
   const [resumeTemplate, setResumeTemplate] = useState('professional');
   const [coverLetterTemplate, setCoverLetterTemplate] = useState('formal');
   const [studyMusic, setStudyMusic] = useState('none');
   const [mounted, setMounted] = useState(false);
-  const [preferencesSaved, setPreferencesSaved] = useState(true);
   const [showSensitive, setShowSensitive] = useState(false);
+
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
     if (!showSensitive) return;
@@ -27,7 +25,6 @@ export default function Account() {
     return () => clearTimeout(t);
   }, [showSensitive]);
 
-  // helpers
   const maskEmail = (email) => {
     if (!email || typeof email !== 'string' || !email.includes('@')) return '';
     const [local, domain] = email.split('@');
@@ -40,52 +37,32 @@ export default function Account() {
     return `${maskedLocal}@${maskedDomain}`;
   };
 
-  // Apply theme to DOM
   useEffect(() => {
     if (theme && mounted) {
-      // Save current scroll position
       const scrollPos = window.scrollY || document.documentElement.scrollTop;
-      
       requestAnimationFrame(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        
-        // Restore scroll position
         window.scrollTo(0, scrollPos);
       });
     }
   }, [theme, mounted]);
 
-  // Track changes to all preferences and templates
-  useEffect(() => {
-    if (mounted && (theme !== null || studyMode !== null || formatTemplate || resumeTemplate || coverLetterTemplate || studyMusic)) {
-      setPreferencesSaved(false);
-    }
-  }, [theme, studyMode, formatTemplate, resumeTemplate, coverLetterTemplate, studyMusic, mounted]);
-
-  // Reflect study mode globally for CSS overrides only when active
-  useEffect(() => {
-    if (!mounted) return;
-    document.documentElement.dataset.study = studyMode ? 'on' : 'off';
-  }, [studyMode, mounted]);
-
   useEffect(() => {
     setMounted(true);
-  
-    // fetch user from server if authenticated
+    
     (async () => {
       try {
         const res = await fetch('/api/user');
         if (!res.ok) return;
         const data = await res.json();
         const userData = (data && data.data && data.data.user) || null;
-        // Redirect to onboarding if not onboarded
         if (userData && !userData.onboarded) {
           router.push('/onboarding');
           return;
         }
         setUser(userData);
-        // load saved format template/preferences from server (source of truth)
+        
         try {
           const p = await fetch('/api/user/preferences');
           if (p.ok) {
@@ -93,171 +70,118 @@ export default function Account() {
             setFormatTemplate(pd.data?.formatTemplate || '');
             setResumeTemplate(pd.data?.resumeTemplate || 'professional');
             setCoverLetterTemplate(pd.data?.coverLetterTemplate || 'formal');
-            // Apply server preferences
             if (pd.data?.preferences) {
               const prefs = pd.data.preferences;
               setTheme(prefs.theme || 'dark');
-              setStudyMode(typeof prefs.studyMode === 'boolean' ? prefs.studyMode : false);
               setStudyMusic(prefs.studyMusic || 'none');
-              // Sync to localStorage for theme
-              if (prefs.theme) localStorage.setItem('theme', prefs.theme);
-              // Mark as saved since we just loaded from server
-              setPreferencesSaved(true);
-            } else {
-              // No server preferences, use defaults
-              setTheme('dark');
-              setStudyMode(false);
-              setStudyMusic('none');
-              setPreferencesSaved(true);
             }
-            // Mark as saved after loading
-            setPreferencesSaved(true);
           }
         } catch (e) {
-          // fallback to defaults
-          setTheme('dark');
-          setStudyMode(false);
-          setStudyMusic('none');
-          setPreferencesSaved(true);
+          console.error('Error loading preferences:', e);
         }
-      } catch (e) {
-        // ignore
-      }
-    })();
-  }, []);
-
-  const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
-  };
-
-
-
-  const saveAllSettings = () => {
-    // Persist locally and to server preferences endpoint
-    localStorage.setItem("theme", theme);
-    localStorage.setItem("studyMode", studyMode ? "true" : "false");
-    try { localStorage.setItem('studyMusicType', studyMusic || 'none'); } catch(e){}
-    (async () => {
-      try {
-        const res = await fetch('/api/user/preferences', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            preferences: { theme, studyMode, studyMusic },
-            formatTemplate,
-            resumeTemplate,
-            coverLetterTemplate
-          }),
-        });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          setUiStatus({ type: 'error', text: d.error || 'Failed to save settings' });
-          setTimeout(() => setUiStatus({ type: null, text: '' }), 2000);
-          return;
-        }
-        setUiStatus({ type: 'success', text: '✅ All settings saved successfully' });
-        setPreferencesSaved(true);
-        setTimeout(() => setUiStatus({ type: null, text: '' }), 1500);
       } catch (err) {
-        setUiStatus({ type: 'error', text: 'Network error.' });
-        setTimeout(() => setUiStatus({ type: null, text: '' }), 2000);
+        console.error('Account error:', err);
       }
     })();
-  };
+  }, [router]);
 
-  const handleDone = () => {
-    if (!preferencesSaved) {
-      setUiStatus({ type: 'error', text: 'Remember to save your settings' });
-      setTimeout(() => setUiStatus({ type: null, text: '' }), 3000);
-      return;
+  async function saveAllSettings() {
+    setUiStatus({ type: 'loading', text: 'Saving...' });
+    try {
+      const res = await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          preferences: {
+            theme: theme || 'dark',
+            studyMusic: studyMusic || 'none',
+          },
+          formatTemplate,
+          resumeTemplate,
+          coverLetterTemplate,
+        })
+      });
+      if (res.ok) {
+        setUiStatus({ type: 'success', text: 'Settings saved!' });
+        setTimeout(() => setUiStatus({ type: null, text: '' }), 3000);
+      } else {
+        setUiStatus({ type: 'error', text: 'Failed to save' });
+      }
+    } catch (err) {
+      setUiStatus({ type: 'error', text: 'Error saving settings' });
     }
-    router.push('/dashboard');
+  }
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/' });
   };
-
-  if (status === 'loading') {
-    return (
-      <div className={styles.signupContainer}>
-        <div className={styles.signupCard}>
-          <h1 className={styles.pageTitle}>Account</h1>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated' && !user) {
-    return (
-      <div className={styles.signupContainer}>
-        <div className={styles.signupCard}>
-          <h1 className={styles.pageTitle}>Account</h1>
-          <p style={{ textAlign: 'center', marginBottom: '1rem' }}>You are not signed in.</p>
-          <Link href="/signup" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', marginBottom: '0.75rem', textDecoration: 'none' }}>Create account</Link>
-          <Link href="/login" className={styles.loginLink}>Already have an account? Sign in</Link>
-        </div>
-      </div>
-    );
-  }
 
   if (!user) {
     return (
-      <div className={styles.signupContainer}>
-        <div className={styles.signupCard}>
-          <h1 className={styles.pageTitle}>Account</h1>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading your account…</p>
-        </div>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+        <p>Loading your account…</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.signupContainer}>
-      <div className={styles.signupCard} style={{ maxWidth: '600px' }}>
-        <h1 className={styles.pageTitle}>Account</h1>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fff' }}>
+      {/* Scrollable Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 1rem' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '2rem' }}>Account</h1>
 
-        {/* Status Message */}
-        {uiStatus.text && (
-          <div style={{
-            marginBottom: '1rem',
-            padding: '0.75rem 1rem',
-            borderRadius: '8px',
-            background: 'rgba(31, 0, 59, 0.1)',
-            border: '1px solid rgba(31, 0, 59, 0.3)',
-            color: '#1f003bff',
-            fontSize: '0.95rem',
-            fontWeight: 600,
-            textAlign: 'center'
-          }}>
-            {uiStatus.text}
-          </div>
-        )}
+          {/* Status Message */}
+          {uiStatus.text && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              background: uiStatus.type === 'success' ? '#e8f5e9' : '#ffebee',
+              border: `1px solid ${uiStatus.type === 'success' ? '#4caf50' : '#f44336'}`,
+              color: uiStatus.type === 'success' ? '#2e7d32' : '#c62828',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textAlign: 'center'
+            }}>
+              {uiStatus.text}
+            </div>
+          )}
 
-        <div style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--card-border)' }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{user.name || user.email}</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>{showSensitive ? user.email : maskEmail(user.email)}</span>
-            <button
-              type="button"
-              onClick={() => setShowSensitive(s => !s)}
-              aria-label={showSensitive ? 'Hide email' : 'Show email'}
-              style={{
-                fontSize: '0.8rem',
-                padding: '0.2rem 0.5rem',
-                borderRadius: '6px',
-                border: '1px solid var(--card-border)',
-                background: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-color)',
-                cursor: 'pointer'
-              }}
-            >
-              {showSensitive ? 'Hide' : 'Show'}
-            </button>
+          {/* Profile Section */}
+          <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #eee' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Profile</h2>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{user.name || user.email}</div>
+              <div style={{ color: '#999', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>{showSensitive ? user.email : maskEmail(user.email)}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowSensitive(s => !s)}
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '0.2rem 0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    background: '#f5f5f5',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showSensitive ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            {user.school && (
+              <div style={{ padding: '0.6rem', background: '#f0f0f0', borderRadius: '6px', fontSize: '0.9rem' }}>
+                School: <strong>{user.school.name}</strong>
+              </div>
+            )}
           </div>
-          {user.school && <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: 'rgba(var(--accent-rgb), 0.08)', borderRadius: '6px', fontSize: '0.95rem' }}>School: <strong>{user.school.name}</strong></div>}
-          
-          {/* Subscription Info */}
+
+          {/* Subscription */}
           {user.subscriptions && user.subscriptions.length > 0 && (
-            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(var(--accent-rgb), 0.12)', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.5rem', color: 'var(--accent-color)' }}>Subscription</div>
+            <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #eee' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Subscription</h2>
               {(() => {
                 const sub = user.subscriptions[0];
                 const planName = sub.plan === 'career' ? 'Career Only' : sub.plan === 'full' ? 'Full Access' : sub.plan;
@@ -268,167 +192,161 @@ export default function Account() {
                 const isTrialing = sub.status === 'trialing' && trialEnd && trialEnd > now;
                 
                 return (
-                  <>
-                    <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{planName} {price && `• ${price}`}</div>
-                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Status: <strong>{statusText}</strong></div>
+                  <div style={{ padding: '1rem', background: '#f9f9f9', borderRadius: '6px' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                      {planName} {price && `• ${price}`}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                      Status: <strong>{statusText}</strong>
+                    </div>
                     {isTrialing && trialEnd && (
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#666' }}>
                         Trial ends: {trialEnd.toLocaleDateString()}
                       </div>
                     )}
                     {sub.plan === 'career' && (
-                      <Link href="/subscription/plans" style={{ display: 'inline-block', marginTop: '0.5rem', padding: '0.4rem 0.75rem', background: 'var(--accent-color)', color: 'white', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
-                        Upgrade to Full Access
+                      <Link href="/subscription/plans" style={{ display: 'inline-block', marginTop: '0.75rem', padding: '0.5rem 1rem', background: '#8b7500', color: 'white', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '600', textDecoration: 'none' }}>
+                        Upgrade
                       </Link>
                     )}
-                  </>
+                  </div>
                 );
               })()}
             </div>
           )}
-        </div>
 
-        <div className={styles.formGroup}>
-          <label>Theme</label>
-          <select value={theme || 'dark'} onChange={(e) => setTheme(e.target.value)} style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem' }}>
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>Study Music</label>
-          <small style={{ display: 'block', marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            💡 Music plays automatically when Study Mode is enabled on Dashboard, Career, or Notes pages
-          </small>
-          <div className={styles.pillGroup}>
-            {[
-              { key: 'none', label: 'None', enabled: true },
-              { key: 'lofi', label: 'Lo-fi Beats', enabled: true },
-              { key: 'classical', label: 'Classical Focus', enabled: true },
-              { key: 'ambient', label: 'Ambient', enabled: true },
-              { key: 'rain', label: 'Rain & Thunder', enabled: true },
-              { key: 'rap', label: 'Rap / Hip-Hop', enabled: true },
-              { key: 'rnb', label: 'R&B Soul', enabled: true }
-            ].map(({ key, label, enabled }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => enabled && setStudyMusic(key)}
-                className={`${styles.pill} ${studyMusic === key ? styles.pillActive : ''}`}
-                disabled={!enabled}
-              >
-                {label}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={async () => {
-                if (studyMusic === 'none') {
-                  alert('Please select a music track first');
-                  return;
-                }
-                const el = document.getElementById('musicPreviewAudio');
-                if (!el) return;
-                
-                if (el.paused) {
-                  try {
-                    // Get stream URL
-                    const primaryUrl = musicUrls[studyMusic]?.primary;
-                    const fallbackUrl = musicUrls[studyMusic]?.fallback;
-                    
-                    let streamUrl = await getAudioStreamUrl(primaryUrl);
-                    if (!streamUrl && fallbackUrl) {
-                      streamUrl = await getAudioStreamUrl(fallbackUrl);
-                    }
-                    
-                    if (streamUrl) {
-                      el.src = streamUrl;
-                      el.load();
-                      el.play().catch(() => {});
-                    }
-                  } catch (err) {
-                    console.error('Preview failed:', err);
-                  }
-                } else {
-                  el.pause();
-                }
-              }}
-              className={styles.previewPill}
-              title="Preview selected music"
+          {/* Appearance */}
+          <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #eee' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Appearance</h2>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Theme</label>
+            <select 
+              value={theme || 'dark'} 
+              onChange={(e) => setTheme(e.target.value)} 
+              style={{ width: '100%', padding: '0.6rem', border: '1px solid #ddd', borderRadius: '6px', background: '#fff', fontSize: '0.95rem' }}
             >
-              Preview Music
-            </button>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
           </div>
-          {(() => {
-            return (
-              <audio id="musicPreviewAudio" style={{ display: 'none' }} onError={(e) => {
-                console.error('Audio playback failed');
-              }} />
-            );
-          })()}
-        </div>
 
-        <div className={styles.formGroup}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>Study Mode</label>
-          <button 
-            onClick={() => setStudyMode(!studyMode)}
-            style={{
-              background: studyMode ? 'linear-gradient(135deg, #000000 0%, #000000 100%)' : 'rgba(255,255,255,0.06)',
-              color: studyMode ? '#1f003bff' : 'var(--text-color)',
-              border: studyMode ? '1px solid rgba(147, 51, 234, 0.4)' : '1px solid var(--input-border)',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '25px',
-              fontSize: '1rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: studyMode ? '0 4px 15px rgba(147, 51, 234, 0.4)' : 'none',
-              transition: 'all 0.3s ease',
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            {studyMode ? 'Study Mode ON' : 'Study Mode OFF'}
-          </button>
-          <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-muted)' }}>
-            {studyMode ? 'Focus mode with fullscreen and music enabled' : 'Enable for immersive study experience'}
-          </small>
-        </div>
-
-        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)' }}>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontWeight: 600 }}>Resume & Cover Letter Templates</h3>
-          <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Choose your preferred templates for generating resumes and cover letters.</p>
-          
-          <TemplatePicker 
-            type="resume" 
-            currentTemplate={resumeTemplate}
-            onSelect={(template) => setResumeTemplate(template.id)}
-          />
-          
-          <TemplatePicker 
-            type="cover-letter" 
-            currentTemplate={coverLetterTemplate}
-            onSelect={(template) => setCoverLetterTemplate(template.id)}
-          />
-          
-          <div className={styles.formGroup} style={{ marginTop: '1.5rem' }}>
-            <label>Custom Format Instructions (Optional)</label>
-            <small style={{ display: 'block', marginTop: '-0.25rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Add any additional formatting instructions for your documents.</small>
-            <textarea value={formatTemplate} onChange={(e) => setFormatTemplate(e.target.value)} rows={4} placeholder="e.g. Two-column resume: left=contact, right=experience; compact font" style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1px solid var(--input-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}></textarea>
+          {/* Study Music */}
+          <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #eee' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Study Music</h2>
+            <p style={{ color: '#999', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Plays automatically when Study Mode is enabled.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+              {[
+                { key: 'none', label: 'None' },
+                { key: 'lofi', label: 'Lo-fi' },
+                { key: 'classical', label: 'Classical' },
+                { key: 'ambient', label: 'Ambient' },
+                { key: 'rain', label: 'Rain' },
+                { key: 'rap', label: 'Rap' },
+                { key: 'rnb', label: 'R&B' }
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setStudyMusic(key)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '20px',
+                    border: '1px solid #ddd',
+                    background: studyMusic === key ? '#8b7500' : '#f5f5f5',
+                    color: studyMusic === key ? '#fff' : '#333',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-          
-          <button className={styles.submitButton} onClick={saveAllSettings} style={{ marginBottom: '1rem' }}>Save All Settings</button>
-          
-          <button className={styles.submitButton} onClick={handleDone} style={{ marginTop: '0.5rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.06)', color: 'var(--text-color)' }}>Done</button>
-        </div>
 
-        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--card-border)', textAlign: 'center' }}>
-          <button onClick={handleLogout} className={styles.loginLink} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', fontWeight: 600 }}>Sign out</button>
+          {/* Resume & Cover Letter Templates */}
+          <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid #eee' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Templates</h2>
+            <p style={{ color: '#999', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Choose your preferred templates for resumes and cover letters.</p>
+            
+            <TemplatePicker 
+              type="resume" 
+              currentTemplate={resumeTemplate}
+              onSelect={(template) => setResumeTemplate(template.id)}
+            />
+            
+            <TemplatePicker 
+              type="cover-letter" 
+              currentTemplate={coverLetterTemplate}
+              onSelect={(template) => setCoverLetterTemplate(template.id)}
+            />
+          </div>
+
+          {/* Custom Format Instructions */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>Custom Format (Optional)</h2>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem' }}>Instructions</label>
+            <small style={{ display: 'block', marginBottom: '0.6rem', color: '#999', fontSize: '0.85rem' }}>Add any additional formatting instructions for your documents.</small>
+            <textarea 
+              value={formatTemplate} 
+              onChange={(e) => setFormatTemplate(e.target.value)} 
+              rows={3}
+              placeholder="e.g. Two-column layout, compact font, etc."
+              style={{ 
+                width: '100%', 
+                padding: '0.6rem', 
+                border: '1px solid #ddd', 
+                borderRadius: '6px', 
+                background: '#fff', 
+                color: '#333', 
+                fontSize: '0.95rem', 
+                fontFamily: 'inherit', 
+                resize: 'vertical',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Fixed Footer */}
+      <div style={{ padding: '1rem', borderTop: '1px solid #eee', background: '#f9f9f9', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <button 
+          onClick={saveAllSettings}
+          style={{ 
+            padding: '0.7rem 1.5rem', 
+            background: '#8b7500', 
+            color: '#fff', 
+            border: 'none', 
+            borderRadius: '6px', 
+            fontSize: '0.95rem', 
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Save Settings
+        </button>
+        
+        <button 
+          onClick={handleLogout}
+          style={{ 
+            padding: '0.7rem 1.5rem', 
+            background: '#f5f5f5', 
+            color: '#333', 
+            border: '1px solid #ddd', 
+            borderRadius: '6px', 
+            fontSize: '0.95rem', 
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Sign Out
+        </button>
+      </div>
+
+      <audio id="musicPreviewAudio" style={{ display: 'none' }} />
     </div>
   );
 }
