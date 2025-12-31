@@ -1,4 +1,5 @@
 const prisma = require('../../../lib/prisma');
+const dbFallback = require('../../../lib/db-fallback');
 const {
   setSecureHeaders,
   trackIpRateLimit,
@@ -14,9 +15,10 @@ const { sanitizeName } = require('../../../lib/sanitize');
 async function handler(req, res) {
   setSecureHeaders(res);
   
-  // Check if Prisma client is available
-  if (!prisma) {
-    logger.error('prisma_client_unavailable', { error: 'Prisma client failed to initialize' });
+  // Check if Prisma client is available, use fallback if not
+  const db = prisma || dbFallback;
+  if (!db) {
+    logger.error('database_unavailable', { error: 'Neither Prisma nor fallback database available' });
     return res.status(500).json({ ok: false, error: 'Database connection error. Please try again.' });
   }
   
@@ -99,12 +101,16 @@ async function handler(req, res) {
     // Fetch complete user data from database
     let user;
     try {
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, email: true, name: true, onboarded: true }
-      });
-    } catch (prismaErr) {
-      logger.error('user_fetch_error', { userId, message: prismaErr.message });
+      if (prisma) {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, name: true, onboarded: true }
+        });
+      } else {
+        user = await dbFallback.findUserById(userId);
+      }
+    } catch (dbErr) {
+      logger.error('user_fetch_error', { userId, message: dbErr.message });
       throw new Error('Failed to fetch user data');
     }
 
@@ -150,12 +156,16 @@ async function handler(req, res) {
     // Do this sequentially to ensure atomicity
     let betaTester;
     try {
-      betaTester = await prisma.betaTester.create({ 
-        data: betaTesterData,
-        select: { id: true, trialType: true, trialEndsAt: true }
-      });
-    } catch (prismaErr) {
-      logger.error('beta_tester_create_error', { userId, message: prismaErr.message });
+      if (prisma) {
+        betaTester = await prisma.betaTester.create({ 
+          data: betaTesterData,
+          select: { id: true, trialType: true, trialEndsAt: true }
+        });
+      } else {
+        betaTester = await dbFallback.createBetaTester(betaTesterData);
+      }
+    } catch (dbErr) {
+      logger.error('beta_tester_create_error', { userId, message: dbErr.message });
       throw new Error('Failed to create beta tester record');
     }
 

@@ -1,4 +1,5 @@
 const prisma = require('../../../lib/prisma');
+const dbFallback = require('../../../lib/db-fallback');
 const { getServerSession } = require('next-auth/next');
 const { pool } = require('../../../lib/db');
 const logger = require('../../../lib/logger');
@@ -14,9 +15,10 @@ const { extractClientIp } = require('../../../lib/ip');
 async function handler(req, res) {
   setSecureHeaders(res);
 
-  // Check if Prisma client is available
-  if (!prisma) {
-    logger.error('prisma_client_unavailable', { error: 'Prisma client failed to initialize' });
+  // Check if Prisma client is available, use fallback if not
+  const db = prisma || dbFallback;
+  if (!db) {
+    logger.error('database_unavailable', { error: 'Neither Prisma nor fallback database available' });
     return res.status(500).json({ ok: false, error: 'Database connection error. Please try again.' });
   }
 
