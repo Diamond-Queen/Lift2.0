@@ -67,7 +67,9 @@ export default function Account() {
         setUser(userData);
         
         // Determine account type and check subscription status
-        if (userData?.subscriptions && userData.subscriptions.length > 0) {
+        if (userData?.isBetaTester) {
+          setAccountType('Beta Tester');
+        } else if (userData?.subscriptions && userData.subscriptions.length > 0) {
           const sub = userData.subscriptions[0];
           if (sub.status === 'trialing') {
             setAccountType('Beta Tester');
