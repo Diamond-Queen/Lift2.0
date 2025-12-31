@@ -10,8 +10,21 @@ async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  // Get authOptions dynamically to ensure proper initialization
-  const { authOptions } = await import('../auth/[...nextauth]');
+  // Get authOptions - try static import first, fall back to dynamic
+  let authOptions;
+  try {
+    const imported = require('../../../lib/authOptions');
+    authOptions = imported.authOptions || imported.default || imported;
+  } catch (e) {
+    // Fall back to dynamic import from NextAuth handler
+    const { authOptions: dynamicAuthOptions } = await import('../auth/[...nextauth]');
+    authOptions = dynamicAuthOptions;
+  }
+
+  if (!authOptions) {
+    logger.error('beta_status_no_auth_options', { error: 'Failed to load authOptions' });
+    return res.status(500).json({ ok: false, error: 'Server configuration error' });
+  }
 
   const session = await getServerSession(req, res, authOptions);
   if (!session?.user?.id) {
