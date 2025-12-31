@@ -8,6 +8,9 @@ export default function SubscriptionPlans() {
   const { status } = useSession();
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const devMode = String(process.env.NEXT_PUBLIC_STRIPE_DEV_MODE || "").toLowerCase() === 'true';
 
   if (status === 'loading') {
     return (
@@ -24,9 +27,6 @@ export default function SubscriptionPlans() {
     router.push('/signup');
     return null;
   }
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const devMode = String(process.env.NEXT_PUBLIC_STRIPE_DEV_MODE || "").toLowerCase() === 'true';
 
   const handleSelectPlan = async (plan) => {

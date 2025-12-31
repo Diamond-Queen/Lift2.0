@@ -69,6 +69,7 @@ export default function Account() {
         // Determine account type and check subscription status
         if (userData?.betaTester) {
           setAccountType('Beta Tester');
+          setSubscriptionWarning('Upgrade to a paid plan to keep access after your trial ends.');
         } else if (userData?.subscriptions && userData.subscriptions.length > 0) {
           const sub = userData.subscriptions[0];
           if (sub.status === 'trialing') {
