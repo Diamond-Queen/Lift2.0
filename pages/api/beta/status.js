@@ -2,7 +2,6 @@ const prisma = require('../../../lib/prisma');
 const { getServerSession } = require('next-auth/next');
 const { setSecureHeaders, auditLog } = require('../../../lib/security');
 const logger = require('../../../lib/logger');
-const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -10,6 +9,9 @@ async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
+
+  // Get authOptions dynamically to ensure proper initialization
+  const { authOptions } = await import('../auth/[...nextauth]');
 
   const session = await getServerSession(req, res, authOptions);
   if (!session?.user?.id) {
