@@ -27,7 +27,6 @@ export default function SubscriptionPlans() {
     router.push('/signup');
     return null;
   }
-  const devMode = String(process.env.NEXT_PUBLIC_STRIPE_DEV_MODE || "").toLowerCase() === 'true';
 
   const handleSelectPlan = async (plan) => {
     setSelectedPlan(plan);
