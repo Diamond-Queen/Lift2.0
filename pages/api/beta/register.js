@@ -14,6 +14,12 @@ const { sanitizeName } = require('../../../lib/sanitize');
 async function handler(req, res) {
   setSecureHeaders(res);
   
+  // Check if Prisma client is available
+  if (!prisma) {
+    logger.error('prisma_client_unavailable', { error: 'Prisma client failed to initialize' });
+    return res.status(500).json({ ok: false, error: 'Database connection error. Please try again.' });
+  }
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
