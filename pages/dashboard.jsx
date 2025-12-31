@@ -337,7 +337,7 @@ export default function Dashboard() {
             padding: '1rem',
             borderRadius: '8px',
             border: '2px solid #1f003bff',
-            background: 'rgba(0, 0, 0, 0)',
+            background: 'rgba(31, 0, 59, 0.1)',
             color: '#1f003bff'
           }}>
             <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>

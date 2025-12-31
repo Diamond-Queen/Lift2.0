@@ -817,7 +817,7 @@ Sincerely,
           </button>
           <button
             style={{ background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)', color: '#8b7500', border: '2px solid #8b7500', padding: '0.9rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: (loading || !selectedJobId) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedJobId) ? 0.6 : 1, width: '100%', fontSize: '1rem', marginTop: '0.75rem' }}
-            onClick={handleSaveDocument}}
+            onClick={handleSaveDocument}
             disabled={loading || !selectedJobId}
             aria-label="Save cover letter"
           >
