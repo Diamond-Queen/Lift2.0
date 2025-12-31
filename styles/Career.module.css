@@ -5,6 +5,8 @@
   margin: 0 auto;
   font-family: 'Inter', 'Helvetica', sans-serif;
   background: #f9f9f9;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .pageTitle {
