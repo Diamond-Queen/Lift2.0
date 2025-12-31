@@ -51,6 +51,7 @@ dist/
 .vscode/
 
 # Prisma local artifacts
+.prisma/
 prisma/*.db
 
 # Coverage / reports
