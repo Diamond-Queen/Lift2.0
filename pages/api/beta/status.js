@@ -10,15 +10,14 @@ async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  // Get authOptions - try static import first, fall back to dynamic
+  // Get authOptions - try static import first, fall back if needed
   let authOptions;
   try {
-    const imported = require('../../../lib/authOptions');
-    authOptions = imported.authOptions || imported.default || imported;
+    const { authOptions: staticAuthOptions } = await import('../../../lib/authOptions');
+    authOptions = staticAuthOptions;
   } catch (e) {
-    // Fall back to dynamic import from NextAuth handler
-    const { authOptions: dynamicAuthOptions } = await import('../auth/[...nextauth]');
-    authOptions = dynamicAuthOptions;
+    logger.warn('failed_to_import_auth_options_statically', { error: e.message });
+    return res.status(500).json({ ok: false, error: 'Server configuration error' });
   }
 
   if (!authOptions) {

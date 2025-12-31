@@ -33,8 +33,16 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
-  // Get authOptions dynamically to ensure proper initialization
-  const { authOptions } = await import('../auth/[...nextauth]');
+  // Get authOptions - try static import first, fall back to dynamic if needed
+  let authOptions;
+  try {
+    const { authOptions: staticAuthOptions } = await import('../../../lib/authOptions');
+    authOptions = staticAuthOptions;
+  } catch (e) {
+    logger.warn('failed_to_import_auth_options_statically', { error: e.message });
+    // This shouldn't happen, but provide a fallback
+    return res.status(500).json({ ok: false, error: 'Server configuration error' });
+  }
   
   // Check session - user must be logged in
   const session = await getServerSession(req, res, authOptions);
