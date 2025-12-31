@@ -6,6 +6,23 @@ import TemplatePicker from "../components/TemplatePicker";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 
 export default function Account() {
+    // For immediate UI feedback on Study Mode toggle
+    const [immediateStudyMode, setImmediateStudyMode] = useState(() => {
+      if (typeof window !== 'undefined') {
+        return localStorage.getItem('studyMode') === 'true';
+      }
+      return false;
+    });
+
+    useEffect(() => {
+      const handleStorage = (e) => {
+        if (e.key === 'studyMode') {
+          setImmediateStudyMode(e.newValue === 'true');
+        }
+      };
+      window.addEventListener('storage', handleStorage);
+      return () => window.removeEventListener('storage', handleStorage);
+    }, []);
   const { status } = useSession();
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -326,17 +343,18 @@ export default function Account() {
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
                 <input 
                   type="checkbox" 
-                  checked={typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true'}
+                  checked={immediateStudyMode}
                   onChange={(e) => {
                     localStorage.setItem('studyMode', e.target.checked ? 'true' : 'false');
-                    window.dispatchEvent(new Event('storage'));
+                    setTimeout(() => window.dispatchEvent(new Event('storage')), 0);
+                    setImmediateStudyMode(e.target.checked);
                   }}
                   style={{ display: 'none' }}
                 />
                 <div style={{
                   width: '50px',
                   height: '26px',
-                  backgroundColor: typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true' ? '#8b7500' : '#444',
+                  backgroundColor: immediateStudyMode ? '#8b7500' : '#444',
                   borderRadius: '13px',
                   padding: '2px',
                   transition: 'background-color 0.3s',
@@ -350,11 +368,11 @@ export default function Account() {
                     backgroundColor: '#fff',
                     borderRadius: '50%',
                     transition: 'transform 0.3s',
-                    transform: typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true' ? 'translateX(24px)' : 'translateX(0)'
+                    transform: immediateStudyMode ? 'translateX(24px)' : 'translateX(0)'
                   }} />
                 </div>
                 <span style={{ color: '#fff', fontWeight: '600', minWidth: '35px' }}>
-                  {typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true' ? 'On' : 'Off'}
+                  {immediateStudyMode ? 'On' : 'Off'}
                 </span>
               </label>
             </div>

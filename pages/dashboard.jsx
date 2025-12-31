@@ -35,8 +35,19 @@ export default function Dashboard() {
         console.error('Failed to fetch preferences:', err);
       }
     };
-    
     fetchPreferences();
+
+    // Listen for localStorage changes (studyMode, studyMusic)
+    const handleStorage = (e) => {
+      if (e.key === 'studyMode') {
+        setStudyMode(e.newValue === 'true');
+      }
+      if (e.key === 'studyMusic') {
+        setStudyMusic(e.newValue || 'none');
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   // Enter/exit fullscreen based on studyMode and handle music playback
