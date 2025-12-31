@@ -323,18 +323,38 @@ export default function Account() {
                 <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.3rem', color: '#fff' }}>Study Mode</h2>
                 <p style={{ fontSize: '0.85rem', color: '#aaa', margin: 0 }}>Enable focus-friendly interface</p>
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
                 <input 
                   type="checkbox" 
-                  checked={localStorage?.getItem('studyMode') === 'true' || false}
+                  checked={typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true'}
                   onChange={(e) => {
                     localStorage.setItem('studyMode', e.target.checked ? 'true' : 'false');
                     window.dispatchEvent(new Event('storage'));
                   }}
-                  style={{ marginRight: '0.5rem', width: '18px', height: '18px', cursor: 'pointer' }}
+                  style={{ display: 'none' }}
                 />
-                <span style={{ color: '#fff', fontWeight: '600' }}>
-                  {localStorage?.getItem('studyMode') === 'true' ? 'On' : 'Off'}
+                <div style={{
+                  width: '50px',
+                  height: '26px',
+                  backgroundColor: typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true' ? '#8b7500' : '#444',
+                  borderRadius: '13px',
+                  padding: '2px',
+                  transition: 'background-color 0.3s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '0.75rem'
+                }}>
+                  <div style={{
+                    width: '22px',
+                    height: '22px',
+                    backgroundColor: '#fff',
+                    borderRadius: '50%',
+                    transition: 'transform 0.3s',
+                    transform: typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true' ? 'translateX(24px)' : 'translateX(0)'
+                  }} />
+                </div>
+                <span style={{ color: '#fff', fontWeight: '600', minWidth: '35px' }}>
+                  {typeof window !== 'undefined' && localStorage?.getItem('studyMode') === 'true' ? 'On' : 'Off'}
                 </span>
               </label>
             </div>
