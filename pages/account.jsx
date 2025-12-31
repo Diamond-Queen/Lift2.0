@@ -417,6 +417,24 @@ export default function Account() {
             Save Settings
           </button>
           
+          <Link 
+            href="/dashboard"
+            style={{ 
+              padding: '0.7rem 1.5rem', 
+              background: '#1a1a1a', 
+              color: '#fff', 
+              border: '2px solid #fff', 
+              borderRadius: '6px', 
+              fontSize: '0.95rem', 
+              fontWeight: '600',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              display: 'inline-block'
+            }}
+          >
+            Done
+          </Link>
+          
           <button 
             onClick={handleLogout}
             style={{ 
