@@ -183,9 +183,9 @@ export default function Account() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#000' }}>
-      {/* Scrollable Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0.75rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#000' }}>
+      {/* Content */}
+      <div style={{ flex: 1, padding: '1rem 0.75rem' }}>
         <div style={{ maxWidth: '500px', margin: '0 auto', width: '100%' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', margin: 0 }}>Account</h1>
