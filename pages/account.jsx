@@ -151,7 +151,7 @@ export default function Account() {
 
   if (!user) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff' }}>
         <p>Loading your account…</p>
       </div>
     );
@@ -160,17 +160,17 @@ export default function Account() {
   // Trial expired modal
   if (showTrialExpiredModal) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
-        <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#000' }}>Your time has come to an end.</h2>
-          <p style={{ color: '#666', marginBottom: '2rem', lineHeight: '1.6' }}>Your trial period has expired. Upgrade your account to continue using Lift.</p>
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', zIndex: 9999 }}>
+        <div style={{ background: '#1a1a1a', padding: '2rem', borderRadius: '12px', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '2px solid #8b7500' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#fff' }}>Your time has come to an end.</h2>
+          <p style={{ color: '#aaa', marginBottom: '2rem', lineHeight: '1.6' }}>Your trial period has expired. Upgrade your account to continue using Lift.</p>
           <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
             <Link href="/subscription/plans" style={{ padding: '0.8rem 1.5rem', background: '#8b7500', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', textDecoration: 'none', textAlign: 'center', display: 'inline-block' }}>
               Upgrade Plan
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
-              style={{ padding: '0.8rem 1.5rem', background: '#fff', color: '#8b7500', border: '2px solid #8b7500', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
+              style={{ padding: '0.8rem 1.5rem', background: '#1a1a1a', color: '#8b7500', border: '2px solid #8b7500', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
             >
               Sign Out
             </button>
@@ -181,13 +181,13 @@ export default function Account() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#000' }}>
       {/* Scrollable Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0.75rem' }}>
         <div style={{ maxWidth: '500px', margin: '0 auto', width: '100%' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#000', margin: 0 }}>Account</h1>
-            <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#8b7500', background: '#fffbf0', padding: '0.4rem 0.8rem', borderRadius: '20px', border: '1px solid #8b7500' }}>{accountType}</span>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', margin: 0 }}>Account</h1>
+            <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#8b7500', background: 'rgba(139, 117, 0, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '20px', border: '1px solid #8b7500' }}>{accountType}</span>
           </div>
 
           {/* Status Message */}
@@ -196,9 +196,9 @@ export default function Account() {
               marginBottom: '1.5rem',
               padding: '0.75rem 1rem',
               borderRadius: '8px',
-              background: uiStatus.type === 'success' ? '#f0f8e8' : '#ffe8e8',
+              background: uiStatus.type === 'success' ? 'rgba(139, 117, 0, 0.15)' : 'rgba(244, 67, 54, 0.15)',
               border: `2px solid ${uiStatus.type === 'success' ? '#8b7500' : '#f44336'}`,
-              color: uiStatus.type === 'success' ? '#8b7500' : '#c62828',
+              color: uiStatus.type === 'success' ? '#8b7500' : '#ff6b6b',
               fontSize: '0.9rem',
               fontWeight: '600',
               textAlign: 'center'
@@ -213,9 +213,9 @@ export default function Account() {
               marginBottom: '1.5rem',
               padding: '1rem',
               borderRadius: '8px',
-              background: '#fff3cd',
+              background: 'rgba(255, 152, 0, 0.15)',
               border: '2px solid #ff9800',
-              color: '#d97706',
+              color: '#ffb74d',
               fontSize: '0.9rem',
               fontWeight: '600',
               textAlign: 'center',
@@ -224,7 +224,7 @@ export default function Account() {
               gap: '0.75rem'
             }}>
               <div>{subscriptionWarning}</div>
-              <Link href="/subscription/plans" style={{ color: '#ff9800', textDecoration: 'underline', fontWeight: '700' }}>
+              <Link href="/subscription/plans" style={{ color: '#ffb74d', textDecoration: 'underline', fontWeight: '700' }}>
                 View Plans
               </Link>
             </div>
@@ -232,10 +232,10 @@ export default function Account() {
 
           {/* Profile Section */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#000' }}>Profile</h2>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Profile</h2>
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontWeight: '600', marginBottom: '0.25rem', color: '#000' }}>{user.name || user.email}</div>
-              <div style={{ color: '#666', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ fontWeight: '600', marginBottom: '0.25rem', color: '#fff' }}>{user.name || user.email}</div>
+              <div style={{ color: '#aaa', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span>{showSensitive ? user.email : maskEmail(user.email)}</span>
                 <button
                   type="button"
@@ -245,7 +245,7 @@ export default function Account() {
                     padding: '0.2rem 0.5rem',
                     borderRadius: '4px',
                     border: '1px solid #8b7500',
-                    background: '#fff',
+                    background: '#1a1a1a',
                     color: '#8b7500',
                     cursor: 'pointer',
                     fontWeight: '600'
@@ -256,7 +256,7 @@ export default function Account() {
               </div>
             </div>
             {user.school && (
-              <div style={{ padding: '0.6rem', background: '#fffbf0', border: '1px solid #8b7500', borderRadius: '6px', fontSize: '0.9rem', color: '#000' }}>
+              <div style={{ padding: '0.6rem', background: 'rgba(139, 117, 0, 0.1)', border: '1px solid #8b7500', borderRadius: '6px', fontSize: '0.9rem', color: '#fff' }}>
                 School: <strong>{user.school.name}</strong>
               </div>
             )}
@@ -265,7 +265,7 @@ export default function Account() {
           {/* Subscription */}
           {user.subscriptions && user.subscriptions.length > 0 && (
             <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '2px solid #8b7500' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#000' }}>Subscription</h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>Subscription</h2>
               {(() => {
                 const sub = user.subscriptions[0];
                 const planName = sub.plan === 'career' ? 'Career Only' : sub.plan === 'full' ? 'Full Access' : sub.plan;
@@ -276,15 +276,15 @@ export default function Account() {
                 const isTrialing = sub.status === 'trialing' && trialEnd && trialEnd > now;
                 
                 return (
-                  <div style={{ padding: '1rem', background: '#fffbf0', border: '1px solid #8b7500', borderRadius: '6px' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: '#000' }}>
+                  <div style={{ padding: '1rem', background: 'rgba(139, 117, 0, 0.1)', border: '1px solid #8b7500', borderRadius: '6px' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem', color: '#fff' }}>
                       {planName} {price && `• ${price}`}
                     </div>
-                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                    <div style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '0.5rem' }}>
                       Status: <strong style={{ color: '#8b7500' }}>{statusText}</strong>
                     </div>
                     {isTrialing && trialEnd && (
-                      <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                      <div style={{ fontSize: '0.85rem', color: '#aaa' }}>
                         Trial ends: {trialEnd.toLocaleDateString()}
                       </div>
                     )}
@@ -301,12 +301,12 @@ export default function Account() {
 
           {/* Appearance */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#000' }}>Appearance</h2>
-            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem', color: '#000' }}>Theme</label>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Appearance</h2>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem', color: '#fff' }}>Theme</label>
             <select 
               value={theme || 'dark'} 
               onChange={(e) => setTheme(e.target.value)} 
-              style={{ width: '100%', padding: '0.6rem', border: '2px solid #8b7500', borderRadius: '6px', background: '#fff', fontSize: '0.95rem', color: '#000' }}
+              style={{ width: '100%', padding: '0.6rem', border: '2px solid #8b7500', borderRadius: '6px', background: '#1a1a1a', fontSize: '0.95rem', color: '#fff' }}
             >
               <option value="dark">Dark</option>
               <option value="light">Light</option>
@@ -315,8 +315,8 @@ export default function Account() {
 
           {/* Study Music */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#000' }}>Study Music</h2>
-            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Study Music</h2>
+            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
               Plays automatically when Study Mode is enabled.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -337,7 +337,7 @@ export default function Account() {
                     padding: '0.5rem 1rem',
                     borderRadius: '20px',
                     border: '2px solid #8b7500',
-                    background: studyMusic === key ? '#8b7500' : '#fff',
+                    background: studyMusic === key ? '#8b7500' : '#1a1a1a',
                     color: studyMusic === key ? '#fff' : '#8b7500',
                     fontSize: '0.85rem',
                     fontWeight: '600',
@@ -352,8 +352,8 @@ export default function Account() {
 
           {/* Resume & Cover Letter Templates */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#000' }}>Templates</h2>
-            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Choose your preferred templates for resumes and cover letters.</p>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Templates</h2>
+            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Choose your preferred templates for resumes and cover letters.</p>
             
             <TemplatePicker 
               type="resume" 
@@ -370,9 +370,9 @@ export default function Account() {
 
           {/* Custom Format Instructions */}
           <div style={{ marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#000' }}>Custom Format (Optional)</h2>
-            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem', color: '#000' }}>Instructions</label>
-            <small style={{ display: 'block', marginBottom: '0.6rem', color: '#666', fontSize: '0.85rem' }}>Add any additional formatting instructions for your documents.</small>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Custom Format (Optional)</h2>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.4rem', color: '#fff' }}>Instructions</label>
+            <small style={{ display: 'block', marginBottom: '0.6rem', color: '#aaa', fontSize: '0.85rem' }}>Add any additional formatting instructions for your documents.</small>
             <textarea 
               value={formatTemplate} 
               onChange={(e) => setFormatTemplate(e.target.value)} 
@@ -383,8 +383,8 @@ export default function Account() {
                 padding: '0.6rem', 
                 border: '2px solid #8b7500', 
                 borderRadius: '6px', 
-                background: '#fff', 
-                color: '#000', 
+                background: '#1a1a1a', 
+                color: '#fff', 
                 fontSize: '0.95rem', 
                 fontFamily: 'inherit', 
                 resize: 'vertical',
@@ -396,7 +396,7 @@ export default function Account() {
       </div>
 
       {/* Fixed Footer */}
-      <div style={{ padding: '1rem', borderTop: '2px solid #8b7500', background: '#fff', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ padding: '1rem', borderTop: '2px solid #8b7500', background: '#000', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button 
             onClick={saveAllSettings}
@@ -418,7 +418,7 @@ export default function Account() {
             onClick={handleLogout}
             style={{ 
               padding: '0.7rem 1.5rem', 
-              background: '#fff', 
+              background: '#1a1a1a', 
               color: '#8b7500', 
               border: '2px solid #8b7500', 
               borderRadius: '6px', 
@@ -431,7 +431,7 @@ export default function Account() {
           </button>
         </div>
 
-        <div style={{ fontSize: '0.8rem', color: '#666', lineHeight: '1.6' }}>
+        <div style={{ fontSize: '0.8rem', color: '#aaa', lineHeight: '1.6' }}>
           <div style={{ marginBottom: '0.5rem' }}>
             Questions? Email: <a href="mailto:williams.lift101@gmail.com" style={{ color: '#8b7500', textDecoration: 'none' }}>williams.lift101@gmail.com</a>
           </div>

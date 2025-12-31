@@ -11,7 +11,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
   const resumeTemplates = [
     {
       id: 'professional',
-      name: 'Professional',
+      name: '📄 Professional',
       preview: 'Document',
       description: 'Clean, traditional format for corporate roles',
       formatTemplate: `Professional Resume Format:
@@ -24,7 +24,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     },
     {
       id: 'modern',
-      name: 'Modern',
+      name: '✨ Modern',
       preview: 'Sparkle',
       description: 'Contemporary design with creative flair',
       formatTemplate: `Modern Resume Format:
@@ -37,7 +37,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     },
     {
       id: 'technical',
-      name: 'Technical',
+      name: '💻 Technical',
       preview: 'Code',
       description: 'Tech-focused with skills and projects emphasized',
       formatTemplate: `Technical Resume Format:
@@ -50,7 +50,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     },
     {
       id: 'minimalist',
-      name: 'Minimalist',
+      name: '➖ Minimalist',
       preview: 'Lines',
       description: 'Simple, focused on content over design',
       formatTemplate: `Minimalist Resume Format:
@@ -64,7 +64,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     },
     {
       id: 'executive',
-      name: 'Executive',
+      name: '🎯 Executive',
       preview: 'Target',
       description: 'Senior-level with leadership emphasis',
       formatTemplate: `Executive Resume Format:
@@ -79,7 +79,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     },
     {
       id: 'creative',
-      name: 'Creative',
+      name: '🎨 Creative',
       preview: 'Palette',
       description: 'Bold design for creative industries',
       formatTemplate: `Creative Resume Format:
@@ -97,7 +97,7 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
   const coverLetterTemplates = [
     {
       id: 'formal',
-      name: 'Formal',
+      name: '📩 Formal',
       preview: 'Letter',
       description: 'Traditional business letter format',
       formatTemplate: `Formal Cover Letter:
@@ -124,7 +124,7 @@ Sincerely,
     },
     {
       id: 'modern-letter',
-      name: 'Modern',
+      name: '💬 Modern',
       preview: 'Email',
       description: 'Contemporary, email-style approach',
       formatTemplate: `Modern Cover Letter:
@@ -146,7 +146,7 @@ Best regards,
     },
     {
       id: 'storytelling',
-      name: 'Storytelling',
+      name: '📖 Storytelling',
       preview: 'Story',
       description: 'Narrative approach highlighting journey',
       formatTemplate: `Storytelling Cover Letter:
@@ -167,7 +167,7 @@ Warm regards,
     },
     {
       id: 'bullet-points',
-      name: 'Bullet Points',
+      name: '📌 Bullet Points',
       preview: 'Highlights',
       description: 'Scannable format with key highlights',
       formatTemplate: `Bullet Point Cover Letter:
