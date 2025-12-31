@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { StudyModeProvider } from '../lib/StudyModeContext'
 import ShootingStars from '../components/ShootingStars'
 import SiteHeader from '../components/SiteHeader'
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts'
@@ -82,26 +83,28 @@ export default function App({ Component, pageProps }) {
   }, [router]);
 
   return (
-    <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-        <meta name="theme-color" content="#0b0b0b" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      </Head>
-      <SessionProvider session={pageProps.session}>
-        {/* Global shooting stars overlay */}
-        <ShootingStars />
-        {/* Top header with logo */}
-        <SiteHeader />
-        {/* Global Home button (fixed) - route based on auth state */}
-        <HomeFab />
-        {/* Trial expiration check */}
-        <TrialExpirationCheck />
-        <Component {...pageProps} />
-      </SessionProvider>
-    </>
+    <StudyModeProvider>
+      <>
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+          <meta name="theme-color" content="#0b0b0b" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        </Head>
+        <SessionProvider session={pageProps.session}>
+          {/* Global shooting stars overlay */}
+          <ShootingStars />
+          {/* Top header with logo */}
+          <SiteHeader />
+          {/* Global Home button (fixed) - route based on auth state */}
+          <HomeFab />
+          {/* Trial expiration check */}
+          <TrialExpirationCheck />
+          <Component {...pageProps} />
+        </SessionProvider>
+      </>
+    </StudyModeProvider>
   )
 }
 

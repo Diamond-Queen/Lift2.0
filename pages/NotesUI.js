@@ -4,17 +4,18 @@ import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import styles from "../styles/Notes.module.css";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
+import { useStudyMode } from "../lib/StudyModeContext";
 import UnlockModal from "../components/UnlockModal";
 
 export default function NotesUI() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   // Core state
   const [input, setInput] = useState("");
   const [summaries, setSummaries] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [studyMode, setStudyMode] = useState(false);
-  const [studyMusic, setStudyMusic] = useState('none');
+  const { studyMode, studyMusic } = useStudyMode();
   const [musicLoaded, setMusicLoaded] = useState(false);
   const audioRef = useRef(null);
 
@@ -161,44 +162,12 @@ export default function NotesUI() {
         setSelectedClassId(data.data.id);
         setNewClassName("");
         setNewClassColor("#8b7500");
-        setShowClassForm(false);
-        setError("✓ Class created!");
-        setTimeout(() => setError(""), 2000);
       }
     } catch (err) {
-      setError('Failed to create class');
+      console.error('Failed to create class:', err);
     } finally {
       setLoadingClasses(false);
     }
-  };
-
-  // Helper functions for localStorage persistence per class
-  const saveClassNotesToStorage = (classId, noteInput, noteSummaries, noteFlashcards) => {
-    if (!classId) return;
-    const key = `class_${classId}_notes`;
-    localStorage.setItem(key, JSON.stringify({
-      input: noteInput,
-      summaries: noteSummaries,
-      flashcards: noteFlashcards,
-      timestamp: Date.now()
-    }));
-  };
-
-  const clearClassNotesFromStorage = (classId) => {
-    if (!classId) return;
-    const key = `class_${classId}_notes`;
-    localStorage.removeItem(key);
-  };
-
-  // Auto-save notes to localStorage whenever input, summaries, or flashcards change
-  useEffect(() => {
-    if (selectedClassId && (input || summaries.length > 0 || flashcards.length > 0)) {
-      saveClassNotesToStorage(selectedClassId, input, summaries, flashcards);
-    }
-  }, [input, summaries, flashcards, selectedClassId]);
-  const handleRenameClass = async (classId) => {
-    if (!editingClassName.trim()) return;
-    setLoadingClasses(true);
     try {
       const res = await fetch('/api/content/classes', {
         method: 'PUT',
@@ -247,74 +216,93 @@ export default function NotesUI() {
   };
 
   const handleSaveNote = async () => {
-    if (!input.trim()) {
-      setError("Please add notes before saving.");
-      return;
-    }
-    if (!selectedClassId) {
-      setError("Please select or create a class first.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch('/api/content/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'note',
-          title: `Note - ${new Date().toLocaleDateString()}`,
-          originalInput: input,
-          classId: selectedClassId,
-          summaries: { summaries, flashcards }
-        })
-      });
-      if (res.ok) {
-        clearClassNotesFromStorage(selectedClassId);
-        setError("");
-        setSummaries([]);
-        setFlashcards([]);
-        setInput("");
-        await fetchSavedNotes(selectedClassId);
-        setError("✓ Note saved!");
-        setTimeout(() => setError(""), 2000);
-      }
-    } catch (err) {
-      setError("Error saving note");
-    } finally {
-      setLoading(false);
-    }
+    // ...existing code for saving note...
   };
 
-  const handleLoadNote = async (item) => {
-    setInput(item.originalInput);
-    if (item.summaries) {
-      setSummaries(item.summaries.summaries || []);
-      const cards = (item.summaries.flashcards || []).slice(0, 12).map((q) => ({ ...q, flipped: false }));
-      setFlashcards(cards);
-    }
-    setError("");
-  };
+  // Main component return
+  return (
+    <>
+      {studyMode && studyMusic !== 'none' && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          loop
+          style={{ display: 'none' }}
+          onError={() => {
+            setError(`⚠ Failed to load audio. Try another track.`);
+          }}
+        />
+      )}
 
-  const handleDeleteNote = async (itemId) => {
-    if (!confirm("Delete this note?")) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/content/items', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId })
-      });
-      if (res.ok) {
-        await fetchSavedNotes(selectedClassId);
-        clearClassNotesFromStorage(selectedClassId);
-      }
-    } catch (err) {
-      setError("Error deleting note");
-    } finally {
-      setLoading(false);
-    }
-  };
+      {/* Sidebar toggle button */}
+      <button
+        onClick={() => setSidebarOpen((v) => !v)}
+        style={{
+          position: 'fixed',
+          left: sidebarOpen ? 270 : 10,
+          top: 18,
+          zIndex: 20,
+          background: 'var(--accent)',
+          color: 'var(--accent-contrast)',
+          border: 'none',
+          borderRadius: '50%',
+          width: 38,
+          height: 38,
+          boxShadow: '0 2px 8px rgba(139,117,0,0.12)',
+          cursor: 'pointer',
+          transition: 'left 0.2s',
+          fontWeight: 900,
+          fontSize: '1.3rem',
+        }}
+        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+      >
+        {sidebarOpen ? '←' : '→'}
+      </button>
+
+      {sidebarOpen && (
+        <aside style={{ width: 260, minWidth: 200, maxWidth: 320, background: 'var(--sidebar-bg, #18140a)', borderRight: '2px solid var(--accent, #8b7500)', padding: '1rem 0.5rem', height: '100vh', position: 'fixed', left: 0, top: 0, zIndex: 10, display: 'flex', flexDirection: 'column', transition: 'left 0.2s, box-shadow 0.2s', boxShadow: '2px 0 12px 0 rgba(139,117,0,0.07)' }}>
+          <button onClick={() => setShowClassForm(true)} style={{ marginBottom: '1rem', padding: '0.7rem 1.2rem', background: 'var(--accent, #8b7500)', color: 'var(--accent-contrast, #fff)', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(139,117,0,0.08)' }}>+ New Class</button>
+          {showClassForm && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
+              <input type="text" placeholder="Class name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); }} autoFocus style={{ padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.95rem' }} />
+              <input type="color" value={newClassColor} onChange={(e) => setNewClassColor(e.target.value)} title="Choose class color" style={{ width: '100%', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }} />
+              <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
+                {loadingClasses ? '...' : 'Create'}
+              </button>
+              <button onClick={() => setShowClassForm(false)} style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.1)', color: 'var(--text-color)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+            </div>
+          )}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {classes.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '0.5rem 0' }}>No classes</p>
+            ) : (
+              classes.map((cls) => (
+                <div key={cls.id} onClick={() => !editingClassId && setSelectedClassId(cls.id)} style={{ padding: '0.75rem', background: selectedClassId === cls.id ? 'rgba(139, 117, 0, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${cls.color || '#8b7500'}`, border: selectedClassId === cls.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingClassId === cls.id ? 'default' : 'pointer', transition: 'all 0.2s', marginBottom: 2 }}>
+                  {editingClassId === cls.id ? (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                      <input type="text" value={editingClassName} onChange={(e) => setEditingClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleRenameClass(cls.id); if (e.key === 'Escape') setEditingClassId(null); }} autoFocus style={{ flex: 1, padding: '0.5rem', border: '1px solid var(--accent)', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.9rem' }} />
+                      <input type="color" value={editingClassColor} onChange={(e) => setEditingClassColor(e.target.value)} style={{ width: '40px', height: '32px', border: '1px solid var(--card-border)', borderRadius: '4px', cursor: 'pointer' }} />
+                      <button onClick={() => handleRenameClass(cls.id)} disabled={loadingClasses} style={{ padding: '0.5rem 0.75rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>✓</button>
+                      <button onClick={() => setEditingClassId(null)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-color)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600 }}>{cls.name}</span>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingClassId(cls.id); setEditingClassName(cls.name); setEditingClassColor(cls.color || '#8b7500'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClass(cls.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(255, 0, 0, 0.15)', color: '#ff6b6b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>🗑</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
+      {/* ...rest of the main content... */}
+    </>
+  );
 
   // Audio setup for study music
   useEffect(() => {
@@ -638,7 +626,7 @@ export default function NotesUI() {
                   </div>
                 );
               }
-            } catch {}
+            } catch (e) {}
             return null;
           })()}
 

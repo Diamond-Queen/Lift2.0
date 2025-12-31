@@ -4,25 +4,10 @@ import Link from "next/link";
 import { useSession, signOut } from 'next-auth/react';
 import TemplatePicker from "../components/TemplatePicker";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
+import { useStudyMode } from "../lib/StudyModeContext";
 
 export default function Account() {
-    // For immediate UI feedback on Study Mode toggle
-    const [immediateStudyMode, setImmediateStudyMode] = useState(() => {
-      if (typeof window !== 'undefined') {
-        return localStorage.getItem('studyMode') === 'true';
-      }
-      return false;
-    });
-
-    useEffect(() => {
-      const handleStorage = (e) => {
-        if (e.key === 'studyMode') {
-          setImmediateStudyMode(e.newValue === 'true');
-        }
-      };
-      window.addEventListener('storage', handleStorage);
-      return () => window.removeEventListener('storage', handleStorage);
-    }, []);
+    const { studyMode, setStudyMode, studyMusic, setStudyMusic } = useStudyMode();
   const { status } = useSession();
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -31,7 +16,6 @@ export default function Account() {
   const [formatTemplate, setFormatTemplate] = useState('');
   const [resumeTemplate, setResumeTemplate] = useState('professional');
   const [coverLetterTemplate, setCoverLetterTemplate] = useState('formal');
-  const [studyMusic, setStudyMusic] = useState('none');
   const [mounted, setMounted] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [accountType, setAccountType] = useState('');
@@ -126,7 +110,7 @@ export default function Account() {
             if (pd.data?.preferences) {
               const prefs = pd.data.preferences;
               setTheme(prefs.theme || 'dark');
-              setStudyMusic(prefs.studyMusic || 'none');
+              if (prefs.studyMusic) setStudyMusic(prefs.studyMusic);
             }
           }
         } catch (e) {
@@ -343,18 +327,14 @@ export default function Account() {
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' }}>
                 <input 
                   type="checkbox" 
-                  checked={immediateStudyMode}
-                  onChange={(e) => {
-                    localStorage.setItem('studyMode', e.target.checked ? 'true' : 'false');
-                    setTimeout(() => window.dispatchEvent(new Event('storage')), 0);
-                    setImmediateStudyMode(e.target.checked);
-                  }}
+                  checked={studyMode}
+                  onChange={(e) => setStudyMode(e.target.checked)}
                   style={{ display: 'none' }}
                 />
                 <div style={{
                   width: '50px',
                   height: '26px',
-                  backgroundColor: immediateStudyMode ? '#8b7500' : '#444',
+                  backgroundColor: studyMode ? '#8b7500' : '#444',
                   borderRadius: '13px',
                   padding: '2px',
                   transition: 'background-color 0.3s',
@@ -368,11 +348,11 @@ export default function Account() {
                     backgroundColor: '#fff',
                     borderRadius: '50%',
                     transition: 'transform 0.3s',
-                    transform: immediateStudyMode ? 'translateX(24px)' : 'translateX(0)'
+                    transform: studyMode ? 'translateX(24px)' : 'translateX(0)'
                   }} />
                 </div>
                 <span style={{ color: '#fff', fontWeight: '600', minWidth: '35px' }}>
-                  {immediateStudyMode ? 'On' : 'Off'}
+                  {studyMode ? 'On' : 'Off'}
                 </span>
               </label>
             </div>
