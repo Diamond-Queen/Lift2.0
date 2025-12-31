@@ -12,7 +12,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'professional',
       name: '📄 Professional',
-      preview: 'Document',
       description: 'Clean, traditional format for corporate roles',
       formatTemplate: `Professional Resume Format:
 - Contact info at top (Name, Email, Phone, Address)
@@ -25,7 +24,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'modern',
       name: '✨ Modern',
-      preview: 'Sparkle',
       description: 'Contemporary design with creative flair',
       formatTemplate: `Modern Resume Format:
 - Name prominently displayed with contact info below
@@ -38,7 +36,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'technical',
       name: '💻 Technical',
-      preview: 'Code',
       description: 'Tech-focused with skills and projects emphasized',
       formatTemplate: `Technical Resume Format:
 - Contact: Name, Email, Phone, LinkedIn, GitHub
@@ -51,7 +48,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'minimalist',
       name: '➖ Minimalist',
-      preview: 'Lines',
       description: 'Simple, focused on content over design',
       formatTemplate: `Minimalist Resume Format:
 - Name (large), Contact info (one line)
@@ -65,7 +61,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'executive',
       name: '🎯 Executive',
-      preview: 'Target',
       description: 'Senior-level with leadership emphasis',
       formatTemplate: `Executive Resume Format:
 - Name, Title/Brand Statement
@@ -80,7 +75,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'creative',
       name: '🎨 Creative',
-      preview: 'Palette',
       description: 'Bold design for creative industries',
       formatTemplate: `Creative Resume Format:
 - Name styled prominently with tagline
@@ -98,7 +92,6 @@ export default function TemplatePicker({ type, onSelect, currentTemplate }) {
     {
       id: 'formal',
       name: '📩 Formal',
-      preview: 'Letter',
       description: 'Traditional business letter format',
       formatTemplate: `Formal Cover Letter:
 [Your Name]
@@ -125,7 +118,6 @@ Sincerely,
     {
       id: 'modern-letter',
       name: '💬 Modern',
-      preview: 'Email',
       description: 'Contemporary, email-style approach',
       formatTemplate: `Modern Cover Letter:
 Subject: Application for [Position]
@@ -147,7 +139,6 @@ Best regards,
     {
       id: 'storytelling',
       name: '📖 Storytelling',
-      preview: 'Story',
       description: 'Narrative approach highlighting journey',
       formatTemplate: `Storytelling Cover Letter:
 Dear [Recipient],
@@ -168,7 +159,6 @@ Warm regards,
     {
       id: 'bullet-points',
       name: '📌 Bullet Points',
-      preview: 'Highlights',
       description: 'Scannable format with key highlights',
       formatTemplate: `Bullet Point Cover Letter:
 Re: [Position] Application
@@ -238,9 +228,6 @@ Best,
               }
             }}
           >
-            <div style={{ fontSize: 'clamp(36px, 8vw, 48px)', textAlign: 'center', marginBottom: 8 }}>
-              {template.preview}
-            </div>
             <div style={{ fontSize: 'clamp(14px, 3.5vw, 16px)', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
               {template.name}
             </div>
