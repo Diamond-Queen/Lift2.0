@@ -421,8 +421,8 @@ export default function Account() {
             href="/dashboard"
             style={{ 
               padding: '0.7rem 1.5rem', 
-              background: '#1a1a1a', 
-              color: '#fff', 
+              background: '#000000ff', 
+              color: '#8b7500', 
               border: '2px solid #8b7500', 
               borderRadius: '6px', 
               fontSize: '0.95rem', 
@@ -439,7 +439,7 @@ export default function Account() {
             onClick={handleLogout}
             style={{ 
               padding: '0.7rem 1.5rem', 
-              background: '#1a1a1a', 
+              background: '#000000ff', 
               color: '#8b7500', 
               border: '2px solid #8b7500', 
               borderRadius: '6px', 
