@@ -15,6 +15,8 @@ const nextConfig = {
       sizeLimit: '10mb'
     }
   },
+  // Optimize for serverless environments (Vercel)
+  output: 'standalone',
   // Webpack config for better compatibility
   webpack: (config, { isServer }) => {
     if (!isServer) {
