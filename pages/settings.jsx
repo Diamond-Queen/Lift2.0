@@ -4,6 +4,119 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import styles from '../styles/SignUp.module.css';
 
+const settingsStyles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    background: '#fff',
+    color: '#333'
+  },
+  scrollArea: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '2rem 1rem'
+  },
+  content: {
+    maxWidth: '600px',
+    margin: '0 auto',
+    width: '100%'
+  },
+  header: {
+    marginBottom: '2rem'
+  },
+  title: {
+    fontSize: '2rem',
+    fontWeight: '800',
+    marginBottom: '0.5rem'
+  },
+  subtitle: {
+    fontSize: '0.9rem',
+    color: '#666'
+  },
+  section: {
+    marginBottom: '2rem',
+    paddingBottom: '2rem',
+    borderBottom: '1px solid #eee'
+  },
+  sectionTitle: {
+    fontSize: '1.1rem',
+    fontWeight: '700',
+    marginBottom: '1rem',
+    color: '#000'
+  },
+  formGroup: {
+    marginBottom: '1.2rem'
+  },
+  label: {
+    display: 'block',
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    marginBottom: '0.4rem',
+    color: '#333'
+  },
+  input: {
+    width: '100%',
+    padding: '0.6rem',
+    fontSize: '0.95rem',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    boxSizing: 'border-box'
+  },
+  select: {
+    width: '100%',
+    padding: '0.6rem',
+    fontSize: '0.95rem',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    boxSizing: 'border-box',
+    background: '#fff'
+  },
+  checkbox: {
+    marginRight: '0.6rem',
+    width: '18px',
+    height: '18px',
+    cursor: 'pointer'
+  },
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    fontWeight: '600'
+  },
+  footer: {
+    padding: '1rem',
+    borderTop: '1px solid #eee',
+    background: '#f9f9f9',
+    display: 'flex',
+    gap: '1rem',
+    alignItems: 'center'
+  },
+  button: {
+    padding: '0.7rem 1.5rem',
+    fontSize: '0.95rem',
+    fontWeight: '600',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
+  primaryButton: {
+    background: '#8b7500',
+    color: '#fff'
+  },
+  secondaryButton: {
+    background: '#f5f5f5',
+    color: '#333',
+    border: '1px solid #ddd'
+  },
+  message: {
+    fontSize: '0.9rem',
+    marginLeft: 'auto'
+  }
+};
+
 export default function Settings() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -15,17 +128,12 @@ export default function Settings() {
     theme: 'light',
     accentColor: '#8b7500',
     fontSize: 'medium',
-    dashboardLayout: 'default',
     aiTone: 'professional',
     summaryLength: 'medium',
     flashcardDifficulty: 'medium',
     autoSaveInterval: 30,
     exportFormat: 'pdf',
-    notifications: {
-      email: false,
-      deadlines: false
-    },
-    quickActions: ['notes', 'career'],
+    notifications: { email: false, deadlines: false },
     keyboardShortcuts: true
   });
 
@@ -64,243 +172,240 @@ export default function Settings() {
         body: JSON.stringify({ preferences })
       });
       if (res.ok) {
-        setMessage('✅ Settings saved successfully');
-        applyTheme(preferences.theme, preferences.accentColor, preferences.fontSize);
+        setMessage('✅ Saved');
       } else {
-        setMessage('❌ Failed to save settings');
+        setMessage('❌ Failed');
       }
     } catch (err) {
-      setMessage('❌ Error saving settings');
+      setMessage('❌ Error');
     } finally {
       setSaving(false);
     }
   }
 
-  function applyTheme(theme, accent, fontSize) {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.setAttribute('data-font-size', fontSize);
-    document.documentElement.style.setProperty('--accent-color', accent);
-  }
-
   if (loading) {
     return (
-      <div className={styles.container} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p>Loading settings...</p>
+      <div style={{ ...settingsStyles.container, justifyContent: 'center', alignItems: 'center' }}>
+        <p>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.container} style={{ minHeight: '100vh', padding: '1rem', overflow: 'auto' }}>
+    <div style={settingsStyles.container}>
       <Head>
         <title>Settings - Lift</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
-      <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%', paddingBottom: '2rem' }}>
-        <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', marginBottom: '1.5rem' }}>Settings</h1>
-
-        {/* Appearance */}
-        <section style={{ marginBottom: '2rem', padding: 'clamp(1rem, 3vw, 1.5rem)', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', marginBottom: '1rem' }}>Appearance</h2>
-          
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Theme</label>
-            <select 
-              value={preferences.theme} 
-              onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto (system)</option>
-            </select>
+      <div style={settingsStyles.scrollArea}>
+        <div style={settingsStyles.content}>
+          <div style={settingsStyles.header}>
+            <h1 style={settingsStyles.title}>Settings</h1>
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Accent Color</label>
-            <input 
-              type="color" 
-              value={preferences.accentColor}
-              onChange={(e) => setPreferences({ ...preferences, accentColor: e.target.value })}
-              style={{ width: '100px', height: '40px', border: '1px solid #ddd', borderRadius: '4px' }}
-            />
-            <span style={{ marginLeft: '1rem', color: '#666' }}>{preferences.accentColor}</span>
-          </div>
+          {/* Appearance */}
+          <div style={settingsStyles.section}>
+            <h2 style={settingsStyles.sectionTitle}>Appearance</h2>
+            
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Theme</label>
+              <select 
+                value={preferences.theme}
+                onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
+                style={settingsStyles.select}
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="auto">Auto (System)</option>
+              </select>
+            </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Font Size</label>
-            <select 
-              value={preferences.fontSize} 
-              onChange={(e) => setPreferences({ ...preferences, fontSize: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-          </div>
-        </section>
-
-        {/* AI Preferences */}
-        <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>AI Preferences</h2>
-          
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Resume/Cover Letter Tone</label>
-            <select 
-              value={preferences.aiTone} 
-              onChange={(e) => setPreferences({ ...preferences, aiTone: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="professional">Professional</option>
-              <option value="friendly">Friendly</option>
-              <option value="technical">Technical</option>
-              <option value="creative">Creative</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Summary Length</label>
-            <select 
-              value={preferences.summaryLength} 
-              onChange={(e) => setPreferences({ ...preferences, summaryLength: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="short">Short</option>
-              <option value="medium">Medium</option>
-              <option value="long">Long</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Flashcard Difficulty</label>
-            <select 
-              value={preferences.flashcardDifficulty} 
-              onChange={(e) => setPreferences({ ...preferences, flashcardDifficulty: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </div>
-        </section>
-
-        {/* Workflow */}
-        <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Workflow</h2>
-          
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Auto-save Interval (seconds)</label>
-            <input 
-              type="number" 
-              min="10"
-              max="300"
-              value={preferences.autoSaveInterval}
-              onChange={(e) => setPreferences({ ...preferences, autoSaveInterval: parseInt(e.target.value) })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Default Export Format</label>
-            <select 
-              value={preferences.exportFormat} 
-              onChange={(e) => setPreferences({ ...preferences, exportFormat: e.target.value })}
-              style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="pdf">PDF</option>
-              <option value="docx">Word (DOCX)</option>
-              <option value="txt">Plain Text</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Accent Color</label>
               <input 
-                type="checkbox" 
-                checked={preferences.keyboardShortcuts}
-                onChange={(e) => setPreferences({ ...preferences, keyboardShortcuts: e.target.checked })}
-                style={{ marginRight: '0.5rem', width: '18px', height: '18px' }}
+                type="color"
+                value={preferences.accentColor}
+                onChange={(e) => setPreferences({ ...preferences, accentColor: e.target.value })}
+                style={{ ...settingsStyles.input, maxWidth: '100px', height: '40px', padding: '2px' }}
               />
-              <span style={{ fontWeight: '600' }}>Enable Keyboard Shortcuts</span>
-            </label>
-          </div>
-        </section>
+              <span style={{ fontSize: '0.85rem', color: '#999', marginTop: '0.3rem', display: 'block' }}>
+                {preferences.accentColor}
+              </span>
+            </div>
 
-        {/* Notifications */}
-        <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Notifications</h2>
-          
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Font Size</label>
+              <select 
+                value={preferences.fontSize}
+                onChange={(e) => setPreferences({ ...preferences, fontSize: e.target.value })}
+                style={settingsStyles.select}
+              >
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+
+          {/* AI Preferences */}
+          <div style={settingsStyles.section}>
+            <h2 style={settingsStyles.sectionTitle}>AI Preferences</h2>
+            
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Resume/Letter Tone</label>
+              <select 
+                value={preferences.aiTone}
+                onChange={(e) => setPreferences({ ...preferences, aiTone: e.target.value })}
+                style={settingsStyles.select}
+              >
+                <option value="professional">Professional</option>
+                <option value="friendly">Friendly</option>
+                <option value="technical">Technical</option>
+                <option value="creative">Creative</option>
+              </select>
+            </div>
+
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Summary Length</label>
+              <select 
+                value={preferences.summaryLength}
+                onChange={(e) => setPreferences({ ...preferences, summaryLength: e.target.value })}
+                style={settingsStyles.select}
+              >
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </div>
+
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Flashcard Difficulty</label>
+              <select 
+                value={preferences.flashcardDifficulty}
+                onChange={(e) => setPreferences({ ...preferences, flashcardDifficulty: e.target.value })}
+                style={settingsStyles.select}
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Workflow */}
+          <div style={settingsStyles.section}>
+            <h2 style={settingsStyles.sectionTitle}>Workflow</h2>
+            
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Auto-save Interval (seconds)</label>
               <input 
-                type="checkbox" 
-                checked={preferences.notifications?.email || false}
-                onChange={(e) => setPreferences({ 
-                  ...preferences, 
-                  notifications: { ...preferences.notifications, email: e.target.checked }
-                })}
-                style={{ marginRight: '0.5rem', width: '18px', height: '18px' }}
+                type="number"
+                min="10"
+                max="300"
+                value={preferences.autoSaveInterval}
+                onChange={(e) => setPreferences({ ...preferences, autoSaveInterval: parseInt(e.target.value) })}
+                style={settingsStyles.input}
               />
-              <span style={{ fontWeight: '600' }}>Email Activity Summaries</span>
-            </label>
+            </div>
+
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.label}>Default Export Format</label>
+              <select 
+                value={preferences.exportFormat}
+                onChange={(e) => setPreferences({ ...preferences, exportFormat: e.target.value })}
+                style={settingsStyles.select}
+              >
+                <option value="pdf">PDF</option>
+                <option value="docx">Word (DOCX)</option>
+                <option value="txt">Plain Text</option>
+              </select>
+            </div>
+
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.checkboxLabel}>
+                <input 
+                  type="checkbox"
+                  checked={preferences.keyboardShortcuts}
+                  onChange={(e) => setPreferences({ ...preferences, keyboardShortcuts: e.target.checked })}
+                  style={settingsStyles.checkbox}
+                />
+                Enable Keyboard Shortcuts
+              </label>
+            </div>
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={preferences.notifications?.deadlines || false}
-                onChange={(e) => setPreferences({ 
-                  ...preferences, 
-                  notifications: { ...preferences.notifications, deadlines: e.target.checked }
-                })}
-                style={{ marginRight: '0.5rem', width: '18px', height: '18px' }}
-              />
-              <span style={{ fontWeight: '600' }}>Deadline Reminders</span>
-            </label>
+          {/* Notifications */}
+          <div style={settingsStyles.section}>
+            <h2 style={settingsStyles.sectionTitle}>Notifications</h2>
+            
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.checkboxLabel}>
+                <input 
+                  type="checkbox"
+                  checked={preferences.notifications?.email || false}
+                  onChange={(e) => setPreferences({ 
+                    ...preferences, 
+                    notifications: { ...preferences.notifications, email: e.target.checked }
+                  })}
+                  style={settingsStyles.checkbox}
+                />
+                Email Activity Summaries
+              </label>
+            </div>
+
+            <div style={settingsStyles.formGroup}>
+              <label style={settingsStyles.checkboxLabel}>
+                <input 
+                  type="checkbox"
+                  checked={preferences.notifications?.deadlines || false}
+                  onChange={(e) => setPreferences({ 
+                    ...preferences, 
+                    notifications: { ...preferences.notifications, deadlines: e.target.checked }
+                  })}
+                  style={settingsStyles.checkbox}
+                />
+                Deadline Reminders
+              </label>
+            </div>
           </div>
-        </section>
-
-        {/* Save Button */}
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <button 
-            onClick={savePreferences}
-            disabled={saving}
-            style={{ 
-              padding: '0.75rem 2rem', 
-              background: 'var(--accent-color, #8b7500)', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: '4px', 
-              fontSize: '1rem', 
-              fontWeight: '600',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.6 : 1
-            }}
-          >
-            {saving ? 'Saving...' : 'Save Settings'}
-          </button>
-          
-          <button 
-            onClick={() => router.push('/dashboard')}
-            style={{ 
-              padding: '0.75rem 2rem', 
-              background: '#f5f5f5', 
-              color: '#333', 
-              border: '1px solid #ddd', 
-              borderRadius: '4px', 
-              fontSize: '1rem',
-              cursor: 'pointer'
-            }}
-          >
-            Cancel
-          </button>
-
-          {message && <span style={{ color: message.includes('✅') ? 'green' : 'red' }}>{message}</span>}
         </div>
+      </div>
+
+      {/* Footer with Save Button */}
+      <div style={settingsStyles.footer}>
+        <button 
+          onClick={savePreferences}
+          disabled={saving}
+          style={{ 
+            ...settingsStyles.button, 
+            ...settingsStyles.primaryButton,
+            opacity: saving ? 0.6 : 1,
+            cursor: saving ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        
+        <button 
+          onClick={() => router.push('/dashboard')}
+          style={{ 
+            ...settingsStyles.button, 
+            ...settingsStyles.secondaryButton
+          }}
+        >
+          Cancel
+        </button>
+
+        {message && (
+          <span style={{
+            ...settingsStyles.message,
+            color: message.includes('✅') ? '#4caf50' : '#f44336',
+            fontSize: '0.85rem'
+          }}>
+            {message}
+          </span>
+        )}
       </div>
     </div>
   );
