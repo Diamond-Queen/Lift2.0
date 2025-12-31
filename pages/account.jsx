@@ -316,6 +316,30 @@ export default function Account() {
             </select>
           </div>
 
+          {/* Study Mode Toggle */}
+          <div style={ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.3rem', color: '#fff' }}>Study Mode</h2>
+                <p style={{ fontSize: '0.85rem', color: '#aaa', margin: 0 }}>Enable focus-friendly interface</p>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={localStorage?.getItem('studyMode') === 'true' || false}
+                  onChange={(e) => {
+                    localStorage.setItem('studyMode', e.target.checked ? 'true' : 'false');
+                    window.dispatchEvent(new Event('storage'));
+                  }}
+                  style={{ marginRight: '0.5rem', width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ color: '#fff', fontWeight: '600' }}>
+                  {localStorage?.getItem('studyMode') === 'true' ? 'On' : 'Off'}
+                </span>
+              </label>
+            </div>
+          </div>
+
           {/* Study Music */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Study Music</h2>
