@@ -405,8 +405,8 @@ export default function Account() {
             onClick={saveAllSettings}
             style={{ 
               padding: '0.7rem 1.5rem', 
-              background: '#8b7500', 
-              color: '#fff', 
+              background: '#000000ff', 
+              color: '1px solid #8b7500', 
               border: 'none', 
               borderRadius: '6px', 
               fontSize: '0.95rem', 
@@ -423,7 +423,7 @@ export default function Account() {
               padding: '0.7rem 1.5rem', 
               background: '#1a1a1a', 
               color: '#fff', 
-              border: '2px solid #fff', 
+              border: '2px solid #8b7500', 
               borderRadius: '6px', 
               fontSize: '0.95rem', 
               fontWeight: '600',
