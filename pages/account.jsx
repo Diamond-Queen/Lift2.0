@@ -17,6 +17,9 @@ export default function Account() {
   const [studyMusic, setStudyMusic] = useState('none');
   const [mounted, setMounted] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
+  const [accountType, setAccountType] = useState('');
+  const [showTrialExpiredModal, setShowTrialExpiredModal] = useState(false);
+  const [subscriptionWarning, setSubscriptionWarning] = useState('');
 
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
@@ -62,6 +65,36 @@ export default function Account() {
           return;
         }
         setUser(userData);
+        
+        // Determine account type and check subscription status
+        if (userData?.subscriptions && userData.subscriptions.length > 0) {
+          const sub = userData.subscriptions[0];
+          if (sub.status === 'trialing') {
+            setAccountType('Beta Tester');
+            // Check if trial has ended
+            if (sub.trialEndsAt) {
+              const trialEndTime = new Date(sub.trialEndsAt).getTime();
+              const nowTime = new Date().getTime();
+              if (nowTime > trialEndTime) {
+                setShowTrialExpiredModal(true);
+                return;
+              }
+              // Check if trial ends soon (within 3 days)
+              const daysUntilEnd = (trialEndTime - nowTime) / (1000 * 60 * 60 * 24);
+              if (daysUntilEnd <= 3 && daysUntilEnd > 0) {
+                setSubscriptionWarning(`Your trial ends in ${Math.ceil(daysUntilEnd)} day${Math.ceil(daysUntilEnd) > 1 ? 's' : ''}. Upgrade now to keep your access.`);
+              }
+            }
+          } else if (sub.status === 'active') {
+            setAccountType(userData.schoolId ? 'School' : 'Individual');
+          } else {
+            setAccountType('Individual');
+            setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');
+          }
+        } else {
+          setAccountType(userData?.schoolId ? 'School' : 'Individual');
+          setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');
+        }
         
         try {
           const p = await fetch('/api/user/preferences');
@@ -124,12 +157,38 @@ export default function Account() {
     );
   }
 
+  // Trial expired modal
+  if (showTrialExpiredModal) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
+        <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#000' }}>Your time has come to an end.</h2>
+          <p style={{ color: '#666', marginBottom: '2rem', lineHeight: '1.6' }}>Your trial period has expired. Upgrade your account to continue using Lift.</p>
+          <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+            <Link href="/subscription/plans" style={{ padding: '0.8rem 1.5rem', background: '#8b7500', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', textDecoration: 'none', textAlign: 'center', display: 'inline-block' }}>
+              Upgrade Plan
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              style={{ padding: '0.8rem 1.5rem', background: '#fff', color: '#8b7500', border: '2px solid #8b7500', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fff' }}>
       {/* Scrollable Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0.75rem' }}>
         <div style={{ maxWidth: '500px', margin: '0 auto', width: '100%' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#000' }}>Account</h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#000', margin: 0 }}>Account</h1>
+            <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#8b7500', background: '#fffbf0', padding: '0.4rem 0.8rem', borderRadius: '20px', border: '1px solid #8b7500' }}>{accountType}</span>
+          </div>
 
           {/* Status Message */}
           {uiStatus.text && (
@@ -145,6 +204,29 @@ export default function Account() {
               textAlign: 'center'
             }}>
               {uiStatus.text}
+            </div>
+          )}
+
+          {/* Subscription Warning */}
+          {subscriptionWarning && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              borderRadius: '8px',
+              background: '#fff3cd',
+              border: '2px solid #ff9800',
+              color: '#d97706',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <div>{subscriptionWarning}</div>
+              <Link href="/subscription/plans" style={{ color: '#ff9800', textDecoration: 'underline', fontWeight: '700' }}>
+                View Plans
+              </Link>
             </div>
           )}
 

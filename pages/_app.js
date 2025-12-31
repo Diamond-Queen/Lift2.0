@@ -3,7 +3,7 @@ import '../styles/theme.css'
 import Head from 'next/head'
 import Link from 'next/link'
 import Image from 'next/image'
-import { SessionProvider, useSession } from 'next-auth/react'
+import { SessionProvider, useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ShootingStars from '../components/ShootingStars'
@@ -97,6 +97,8 @@ export default function App({ Component, pageProps }) {
         <SiteHeader />
         {/* Global Home button (fixed) - route based on auth state */}
         <HomeFab />
+        {/* Trial expiration check */}
+        <TrialExpirationCheck />
         <Component {...pageProps} />
       </SessionProvider>
     </>
@@ -118,5 +120,65 @@ function HomeFab() {
     <a href="#" className="homeFab" aria-label="Home" onClick={handleClick}>
       <Image src="/logo.png" alt="Home" width={48} height={48} style={{ display: 'block', objectFit: 'cover', borderRadius: '50%' }} />
     </a>
+  );
+}
+
+function TrialExpirationCheck() {
+  const { status } = useSession();
+  const router = useRouter();
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+
+    const checkTrialStatus = async () => {
+      try {
+        const res = await fetch('/api/user');
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        const user = data?.data?.user;
+        
+        if (user?.subscriptions && user.subscriptions.length > 0) {
+          const sub = user.subscriptions[0];
+          if (sub.status === 'trialing' && sub.trialEndsAt) {
+            const trialEndTime = new Date(sub.trialEndsAt).getTime();
+            const nowTime = new Date().getTime();
+            if (nowTime > trialEndTime) {
+              setShowExpiredModal(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking trial status:', err);
+      }
+    };
+
+    checkTrialStatus();
+  }, [status]);
+
+  if (!showExpiredModal) return null;
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 99999 }}>
+      <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#000' }}>Trial Expired</h2>
+        <p style={{ color: '#666', marginBottom: '2rem', lineHeight: '1.6' }}>Your trial period has ended. Upgrade your account to continue using Lift.</p>
+        <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+          <button
+            onClick={() => router.push('/subscription/plans')}
+            style={{ padding: '0.8rem 1.5rem', background: '#8b7500', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
+          >
+            Upgrade Plan
+          </button>
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            style={{ padding: '0.8rem 1.5rem', background: '#fff', color: '#8b7500', border: '2px solid #8b7500', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
