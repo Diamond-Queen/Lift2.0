@@ -230,17 +230,21 @@ export default function BetaSignup() {
       // Send a copy of the signup to Formspree (non-blocking on failure)
       try {
         if (FORMSPREE_ENDPOINT) {
+          const formDataBody = new FormData();
+          formDataBody.append('name', formData.name.trim());
+          formDataBody.append('email', formData.email.trim().toLowerCase());
+          formDataBody.append('trialType', trialType);
+          if (trialType === 'school') {
+            formDataBody.append('schoolName', formData.schoolName.trim());
+          }
+          if (trialType === 'social') {
+            formDataBody.append('organizationName', formData.organizationName.trim());
+          }
+          formDataBody.append('source', 'beta-signup');
+          
           await fetch(FORMSPREE_ENDPOINT, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: formData.name.trim(),
-              email: formData.email.trim().toLowerCase(),
-              trialType,
-              schoolName: trialType === 'school' ? formData.schoolName.trim() : undefined,
-              organizationName: trialType === 'social' ? formData.organizationName.trim() : undefined,
-              source: 'beta-signup'
-            }),
+            body: formDataBody,
           });
         }
       } catch (fsErr) {
