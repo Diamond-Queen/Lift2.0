@@ -25,14 +25,26 @@ async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server configuration error' });
   }
 
-  const session = await getServerSession(req, res, authOptions);
+  let session;
+  try {
+    session = await getServerSession(req, res, authOptions);
+  } catch (e) {
+    logger.error('session_error', { message: e.message });
+    return res.status(500).json({ ok: false, error: 'Session error' });
+  }
+
   if (!session?.user?.id) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
+
+  const userId = session.user?.id;
+  if (!userId) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
   try {
     const betaTester = await prisma.betaTester.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
       select: {
         id: true,
         userId: true,

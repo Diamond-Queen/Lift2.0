@@ -45,13 +45,24 @@ async function handler(req, res) {
   }
   
   // Check session - user must be logged in
-  const session = await getServerSession(req, res, authOptions);
+  let session;
+  try {
+    session = await getServerSession(req, res, authOptions);
+  } catch (e) {
+    logger.error('session_error', { message: e.message });
+    return res.status(500).json({ ok: false, error: 'Session error. Please try again.' });
+  }
+
   if (!session?.user?.id) {
     return res.status(401).json({ ok: false, error: 'Unauthorized. You must be logged in.' });
   }
 
-  const userId = session.user.id;
-  const sessionEmail = session.user.email;
+  const userId = session.user?.id || null;
+  const sessionEmail = session.user?.email || null;
+  
+  if (!userId) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized. Invalid session.' });
+  }
   
   const userLimit = trackUserRateLimit(userId, '/api/beta/register');
   if (!userLimit.allowed) {
@@ -80,10 +91,16 @@ async function handler(req, res) {
 
   try {
     // Fetch complete user data from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true, onboarded: true }
-    });
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, name: true, onboarded: true }
+      });
+    } catch (prismaErr) {
+      logger.error('user_fetch_error', { userId, message: prismaErr.message });
+      throw new Error('Failed to fetch user data');
+    }
 
     if (!user) {
       logger.warn('beta_register_user_not_found', { userId, sessionEmail });
@@ -91,9 +108,15 @@ async function handler(req, res) {
     }
 
     // Check if user already exists as a beta tester
-    const existingBeta = await prisma.betaTester.findUnique({
-      where: { userId }
-    });
+    let existingBeta;
+    try {
+      existingBeta = await prisma.betaTester.findUnique({
+        where: { userId }
+      });
+    } catch (prismaErr) {
+      logger.error('beta_tester_check_error', { userId, message: prismaErr.message });
+      throw new Error('Failed to check beta tester status');
+    }
 
     if (existingBeta) {
       return res.status(400).json({ ok: false, error: 'You are already registered as a beta tester.' });
@@ -119,23 +142,35 @@ async function handler(req, res) {
 
     // Create beta tester record and mark user as onboarded
     // Do this sequentially to ensure atomicity
-    const betaTester = await prisma.betaTester.create({ 
-      data: betaTesterData,
-      select: { id: true, trialType: true, trialEndsAt: true }
-    });
-
-    if (!betaTester) {
+    let betaTester;
+    try {
+      betaTester = await prisma.betaTester.create({ 
+        data: betaTesterData,
+        select: { id: true, trialType: true, trialEndsAt: true }
+      });
+    } catch (prismaErr) {
+      logger.error('beta_tester_create_error', { userId, message: prismaErr.message });
       throw new Error('Failed to create beta tester record');
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { onboarded: true },
-      select: { id: true, email: true, onboarded: true }
-    });
+    if (!betaTester || !betaTester.id) {
+      throw new Error('Failed to create beta tester record - no ID returned');
+    }
 
-    if (!updatedUser) {
+    let updatedUser;
+    try {
+      updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { onboarded: true },
+        select: { id: true, email: true, onboarded: true }
+      });
+    } catch (prismaErr) {
+      logger.error('user_update_error', { userId, message: prismaErr.message });
       throw new Error('Failed to update user onboarded status');
+    }
+
+    if (!updatedUser || !updatedUser.id) {
+      throw new Error('Failed to update user - invalid response');
     }
 
     logger.info('beta_register_success', {
@@ -164,18 +199,22 @@ async function handler(req, res) {
       },
     });
   } catch (err) {
+    const errorMessage = err?.message || 'Unknown error';
+    const errorCode = err?.code || undefined;
+    const errorEmail = sessionEmail || 'unknown';
+    
     logger.error('beta_register_error', {
-      message: err.message,
-      code: err.code,
-      userId,
-      userEmail: sessionEmail,
-      stack: err.stack
+      message: errorMessage,
+      code: errorCode,
+      userId: userId || 'unknown',
+      userEmail: errorEmail,
+      stack: err?.stack || 'no stack'
     });
 
-    auditLog('beta_register_error', userId, {
-      message: err.message,
-      code: err.code,
-      email: sessionEmail,
+    auditLog('beta_register_error', userId || null, {
+      message: errorMessage,
+      code: errorCode,
+      email: errorEmail,
     }, 'error');
 
     return res.status(500).json({ ok: false, error: 'Server error. Please try again.' });
