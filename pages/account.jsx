@@ -317,7 +317,7 @@ export default function Account() {
           </div>
 
           {/* Study Mode Toggle */}
-          <div style={ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
+          <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.3rem', color: '#fff' }}>Study Mode</h2>
