@@ -410,6 +410,31 @@ export default function NotesUI() {
 
   return (
     <>
+      {/* Sidebar toggle fixed under the global HomeFab/logo */}
+      <button
+        onClick={() => setSidebarOpen((v) => !v)}
+        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        style={{
+          position: 'fixed',
+          top: 72,
+          left: 16,
+          zIndex: 9999,
+          background: 'var(--accent)',
+          color: 'var(--accent-contrast)',
+          border: 'none',
+          borderRadius: '50%',
+          width: 36,
+          height: 36,
+          boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 800
+        }}
+      >
+        {sidebarOpen ? '←' : '→'}
+      </button>
       {studyMode && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
@@ -432,7 +457,7 @@ export default function NotesUI() {
         </div>
       )}
 
-      <aside>
+      <aside style={{ display: sidebarOpen ? 'block' : 'none' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
             {classes.length === 0 ? (
               <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '0.5rem 0' }}>No classes</p>

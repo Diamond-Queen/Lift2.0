@@ -635,9 +635,37 @@ Sincerely,
         />
       )}
 
+      {/* Sidebar toggle fixed under the global HomeFab/logo */}
+      <button
+        onClick={() => setSidebarOpen((v) => !v)}
+        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        style={{
+          position: 'fixed',
+          top: 72,
+          left: 16,
+          zIndex: 9999,
+          background: 'var(--accent)',
+          color: 'var(--accent-contrast)',
+          border: 'none',
+          borderRadius: '50%',
+          width: 36,
+          height: 36,
+          boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 800
+        }}
+      >
+        {sidebarOpen ? '←' : '→'}
+      </button>
+
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>
         <h1 className={styles.pageTitle}>Lift Career</h1>
 
+        {/* Sidebar: Job Manager + Saved Documents */}
+        <aside style={{ display: sidebarOpen ? 'block' : 'none', width: 320, flexShrink: 0 }}>
         {/* Job Manager */}
         <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(139, 117, 0, 0.12), rgba(139, 117, 0, 0.05))', borderRadius: '10px', border: '1px solid rgba(139, 117, 0, 0.2)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -732,6 +760,7 @@ Sincerely,
             </div>
           </div>
         )}
+        </aside>
 
         {/* Job Color Header */}
         {selectedJobId && (() => {
