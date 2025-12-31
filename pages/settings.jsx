@@ -91,18 +91,18 @@ export default function Settings() {
   }
 
   return (
-    <div className={styles.container} style={{ minHeight: '100vh', padding: '1rem' }}>
+    <div className={styles.container} style={{ minHeight: '100vh', padding: '1rem', overflow: 'auto' }}>
       <Head>
         <title>Settings - Lift</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
-      <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
-        <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', marginBottom: '1.5rem' }}>⚙️ Settings</h1>
+      <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%', paddingBottom: '2rem' }}>
+        <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', marginBottom: '1.5rem' }}>Settings</h1>
 
         {/* Appearance */}
         <section style={{ marginBottom: '2rem', padding: 'clamp(1rem, 3vw, 1.5rem)', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', marginBottom: '1rem' }}>🎨 Appearance</h2>
+          <h2 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.5rem)', marginBottom: '1rem' }}>Appearance</h2>
           
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Theme</label>
@@ -111,9 +111,9 @@ export default function Settings() {
               onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
               style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
             >
-              <option value="light">☀️ Light</option>
-              <option value="dark">🌙 Dark</option>
-              <option value="auto">🔄 Auto (system)</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="auto">Auto (system)</option>
             </select>
           </div>
 
@@ -144,7 +144,7 @@ export default function Settings() {
 
         {/* AI Preferences */}
         <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>🤖 AI Preferences</h2>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>AI Preferences</h2>
           
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Resume/Cover Letter Tone</label>
@@ -189,7 +189,7 @@ export default function Settings() {
 
         {/* Workflow */}
         <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>⚡ Workflow</h2>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Workflow</h2>
           
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Auto-save Interval (seconds)</label>
@@ -231,7 +231,7 @@ export default function Settings() {
 
         {/* Notifications */}
         <section style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--card-bg, #fff)', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>🔔 Notifications</h2>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Notifications</h2>
           
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>

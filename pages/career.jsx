@@ -640,7 +640,7 @@ Sincerely,
       )}
 
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>
-        <h1 className={styles.pageTitle}>📋 Lift Career</h1>
+        <h1 className={styles.pageTitle}>Lift Career</h1>
 
         {/* Job Manager */}
         <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(139, 117, 0, 0.12), rgba(139, 117, 0, 0.05))', borderRadius: '10px', border: '1px solid rgba(139, 117, 0, 0.2)' }}>
@@ -762,7 +762,7 @@ Sincerely,
         fontSize: '14px',
         lineHeight: 1.6
       }}>
-        <strong>💡 Quick Start:</strong> Choose a template below, fill in your information, and click Generate. 
+        <strong>Tip:</strong> Choose a template below, fill in your information, and click Generate. 
         The AI will create a professional {type === 'resume' ? 'resume' : 'cover letter'} based on your selected style.
         {type === 'resume' && <span> Use commas or | to separate experience/education details.</span>}
       </div>
