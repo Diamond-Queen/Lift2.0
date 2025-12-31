@@ -4,17 +4,6 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
-  // Environment variables
-  env: {
-    // Browser compatibility level
-    BROWSER_TARGETS: 'defaults, not dead',
-  },
-  // API request body size limits
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb'
-    }
-  },
   // Optimize for serverless environments (Vercel)
   output: 'standalone',
   // Webpack config for better compatibility
@@ -30,18 +19,6 @@ const nextConfig = {
     }
     return config;
   },
-  // Headers for cross-browser support
-  headers: async () => [
-    {
-      source: '/(.*)',
-      headers: [
-        {
-          key: 'X-UA-Compatible',
-          value: 'IE=edge',
-        },
-      ],
-    },
-  ],
 };
 
 module.exports = nextConfig;
