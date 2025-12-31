@@ -8,11 +8,9 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  /* Fit within viewport without scrolling */
+  /* Allow scrolling for content taller than viewport */
   width: 100%;
   min-height: 100vh;
-  height: 100vh;
-  overflow: hidden;
   /* Use theme background so light mode affects whole screen */
   background: var(--background) !important;
 }

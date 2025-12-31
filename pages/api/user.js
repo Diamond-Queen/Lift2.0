@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const user = prisma
       ? await prisma.user.findUnique({ 
           where: { email: session.user.email }, 
-          include: { school: true, subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 } } 
+          include: { school: true, subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 }, betaTester: true } 
         })
       : await findUserByEmail(session.user.email);
     if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
