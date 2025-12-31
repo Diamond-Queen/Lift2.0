@@ -4,6 +4,7 @@ import Link from 'next/link';
 import styles from '../styles/SignUp.module.css';
 import { useEffect, useState, useRef } from 'react';
 import { musicUrls, getAudioStreamUrl } from '../lib/musicUrls';
+import { useStudyMode } from '../lib/StudyModeContext';
 
 export default function Dashboard() {
   const { status } = useSession();
@@ -14,13 +15,12 @@ export default function Dashboard() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [denyReason, setDenyReason] = useState('');
-  const [studyMode, setStudyMode] = useState(false);
-  const [studyMusic, setStudyMusic] = useState('none');
+  const { studyMode, setStudyMode, studyMusic, setStudyMusic } = useStudyMode();
   const [error, setError] = useState("");
   const audioRef = useRef(null);
   const iframeRef = useRef(null);
 
-  // Fetch user preferences for study mode and music
+  // Fetch user preferences for study mode and music (populate global context)
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -36,19 +36,7 @@ export default function Dashboard() {
       }
     };
     fetchPreferences();
-
-    // Listen for localStorage changes (studyMode, studyMusic)
-    const handleStorage = (e) => {
-      if (e.key === 'studyMode') {
-        setStudyMode(e.newValue === 'true');
-      }
-      if (e.key === 'studyMusic') {
-        setStudyMusic(e.newValue || 'none');
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [setStudyMode, setStudyMusic]);
 
   // Enter/exit fullscreen based on studyMode and handle music playback
   useEffect(() => {
