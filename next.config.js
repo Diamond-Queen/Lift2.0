@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Optimize for serverless environments (Vercel)
+  output: 'standalone',
+  // Turbopack configuration
   turbopack: {
     root: __dirname,
   },
-  // Optimize for serverless environments (Vercel)
-  output: 'standalone',
-  // Webpack config for better compatibility
+  // Webpack config for better compatibility (will be used when webpack is explicitly selected)
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Client-side polyfills
