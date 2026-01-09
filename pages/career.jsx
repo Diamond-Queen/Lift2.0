@@ -14,7 +14,7 @@ export default function Career() {
   const [type, setType] = useState("resume");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { studyMode, studyMusic } = useStudyMode();
+  const { studyMode, setStudyMode, studyMusic, setStudyMusic } = useStudyMode();
   const [musicLoaded, setMusicLoaded] = useState(false);
 
   // Refs
@@ -326,7 +326,8 @@ Sincerely,
   // Audio setup for study music
   useEffect(() => {
     const setupAudio = async () => {
-      if (studyMode && studyMusic !== 'none' && audioRef.current) {
+      // Play music when a track is selected, independent of study mode
+      if (studyMusic && studyMusic !== 'none' && audioRef.current) {
         try {
           // Get stream URL from backend
           const primaryUrl = musicUrls[studyMusic]?.primary;
@@ -354,7 +355,7 @@ Sincerely,
           setError(`⚠ Failed to setup audio stream.`);
         }
       } else if (audioRef.current) {
-        audioRef.current.pause();
+        try { audioRef.current.pause(); audioRef.current.src = ''; } catch(e){}
       }
     };
 
@@ -623,7 +624,7 @@ Sincerely,
   return (
     <>
       {/* Music Player - Hidden audio element */}
-      {studyMode && studyMusic !== 'none' && (
+      {studyMusic && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
           autoPlay

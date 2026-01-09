@@ -20,6 +20,9 @@ async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
+  // Subscriptions temporarily disabled — respond with service unavailable
+  return res.status(503).json({ ok: false, error: 'Subscriptions are temporarily unavailable — Coming soon' });
+
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
   if (!validation.valid) {

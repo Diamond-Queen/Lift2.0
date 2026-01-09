@@ -43,7 +43,8 @@ export default function Dashboard() {
     document.documentElement.dataset.study = studyMode ? 'on' : 'off';
 
     const setupAudio = async () => {
-      if (studyMode && studyMusic !== 'none' && audioRef.current) {
+      // Play music whenever a track is selected and music preference enabled — independent of fullscreen/studyMode
+      if (studyMusic && studyMusic !== 'none' && audioRef.current) {
         try {
           // Get stream URL from backend
           const primaryUrl = musicUrls[studyMusic]?.primary;
@@ -71,7 +72,7 @@ export default function Dashboard() {
           setError(`⚠ Failed to setup audio stream.`);
         }
       } else if (audioRef.current) {
-        audioRef.current.pause();
+        try { audioRef.current.pause(); audioRef.current.src = ''; } catch(e){}
       }
     };
 
@@ -249,7 +250,7 @@ export default function Dashboard() {
     return (
       <>
         {/* Music Player - Hidden audio element */}
-        {studyMode && studyMusic !== 'none' && (
+        {studyMusic && studyMusic !== 'none' && (
           <audio
             ref={audioRef}
             autoPlay

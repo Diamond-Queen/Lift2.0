@@ -108,15 +108,15 @@ export default function Home() {
     }
   };
 
-  // react to studyMode changes
+  // react to music and settings changes — play music independently of studyMode
   useEffect(() => {
-    if (studyMode && musicEnabled && studyMusic !== 'none') {
+    if (musicEnabled && studyMusic !== 'none') {
       startStudyMusic();
     } else {
       stopStudyMusic();
     }
     try { localStorage.setItem('studyMode', studyMode ? 'true' : 'false'); } catch(e){}
-  }, [studyMode, musicEnabled, studyMusic]);
+  }, [musicEnabled, studyMusic, studyMode]);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -124,12 +124,12 @@ export default function Home() {
   }, []);
 
   const toggleMusicEnabled = () => {
-    setMusicEnabled((s) => { const v = !s; try { localStorage.setItem('studyMusic', v ? 'true' : 'false'); } catch(e){}; if (!v) stopStudyMusic(); else if (studyMode) startStudyMusic(); return v; });
+    setMusicEnabled((s) => { const v = !s; try { localStorage.setItem('studyMusic', v ? 'true' : 'false'); } catch(e){}; if (!v) stopStudyMusic(); else startStudyMusic(); return v; });
   };
 
   return (
     <main className={styles.root} role="main">
-      {studyMode && musicEnabled && studyMusic !== 'none' && (
+      {musicEnabled && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
           autoPlay
@@ -150,7 +150,7 @@ export default function Home() {
         <span className="shooting-star s6" />
       </div>
       <div className={styles.hero}>
-        {(studyMode && musicEnabled && studyMusic !== 'none') && (
+        {(musicEnabled && studyMusic !== 'none') && (
           <div style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 9999, padding: '0.4rem 0.75rem', borderRadius: '999px', background: 'rgba(0,0,0,0.4)', color: 'white', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.15)' }}>
             Now Playing: {String(studyMusic).toUpperCase()}
           </div>

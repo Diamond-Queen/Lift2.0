@@ -15,7 +15,7 @@ export default function NotesUI() {
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { studyMode, studyMusic } = useStudyMode();
+  const { studyMode, setStudyMode, studyMusic, setStudyMusic } = useStudyMode();
   const [musicLoaded, setMusicLoaded] = useState(false);
   const audioRef = useRef(null);
 
@@ -222,7 +222,8 @@ export default function NotesUI() {
   // Audio setup for study music
   useEffect(() => {
     const setupAudio = async () => {
-      if (studyMode && studyMusic !== 'none' && audioRef.current) {
+      // Play music whenever a track is selected and audio element exists, independent of studyMode
+      if (studyMusic && studyMusic !== 'none' && audioRef.current) {
         try {
           const primaryUrl = musicUrls[studyMusic]?.primary;
           const fallbackUrl = musicUrls[studyMusic]?.fallback;
@@ -249,7 +250,11 @@ export default function NotesUI() {
           setError(`⚠ Failed to setup audio stream.`);
         }
       } else if (audioRef.current) {
-        audioRef.current.pause();
+        // No music selected — pause and clear source
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = '';
+        } catch (e) {}
       }
     };
 
@@ -435,7 +440,7 @@ export default function NotesUI() {
       >
         {sidebarOpen ? '←' : '→'}
       </button>
-      {studyMode && studyMusic !== 'none' && (
+      {studyMusic && studyMusic !== 'none' && (
         <audio
           ref={audioRef}
           autoPlay
