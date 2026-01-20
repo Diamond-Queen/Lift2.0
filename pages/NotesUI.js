@@ -6,7 +6,7 @@ import styles from "../styles/Notes.module.css";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 import { useStudyMode } from "../lib/StudyModeContext";
 import UnlockModal from "../components/UnlockModal";
-import { exportContent } from "../lib/export";
+import { exportToPdf, exportToPptx, exportToDocx, exportToTxt } from "../lib/export";
 
 export default function NotesUI() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -35,6 +35,7 @@ export default function NotesUI() {
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [unlockFeature, setUnlockFeature] = useState('');
   const [userPlan, setUserPlan] = useState('full'); // track subscription
+  const [exportFormat, setExportFormat] = useState('pdf'); // Selected export format
   
   // Per-class generation results
   const [classGenerations, setClassGenerations] = useState({});
@@ -497,7 +498,7 @@ export default function NotesUI() {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format = 'txt') => {
     if (!input.trim() && summaries.length === 0 && flashcards.length === 0) {
       setError('No content to export');
       setTimeout(() => setError(''), 2000);
@@ -512,7 +513,7 @@ export default function NotesUI() {
       }
       
       if (summaries.length > 0) {
-        content += 'ELABORATED SUMMARY\n' + '='.repeat(50) + '\n';
+        content += 'SUMMARY\n' + '='.repeat(50) + '\n';
         summaries.forEach((summary, i) => {
           content += summary.trim() + '\n\n';
         });
@@ -528,7 +529,20 @@ export default function NotesUI() {
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `lift-notes-${timestamp}`;
       
-      exportContent(content, filename);
+      switch(format) {
+        case 'pdf':
+          await exportToPdf(content, filename);
+          break;
+        case 'pptx':
+          await exportToPptx(content, filename);
+          break;
+        case 'docx':
+          await exportToDocx(content, filename);
+          break;
+        default:
+          exportToTxt(content, filename);
+      }
+      
       setError('✓ Exported successfully!');
       setTimeout(() => setError(''), 2000);
     } catch (err) {
@@ -685,18 +699,28 @@ export default function NotesUI() {
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value)}
+              style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '0 0 auto', minWidth: '100px' }}
+            >
+              <option value="pdf">PDF</option>
+              <option value="pptx">PPTX</option>
+              <option value="docx">DOCX</option>
+              <option value="txt">TXT</option>
+            </select>
             <button
               onClick={() => {
                 if (userPlan !== 'full' && userPlan !== 'notes') {
                   setUnlockFeature('Export Notes');
                   setShowUnlockModal(true);
                 } else {
-                  handleExport();
+                  handleExport(exportFormat);
                 }
               }}
               style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}
             >
-              Export TXT
+              Export
             </button>
             <button onClick={useSample} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Sample</button>
             <button onClick={clearInput} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Clear</button>
