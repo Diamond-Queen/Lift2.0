@@ -92,8 +92,8 @@ async function handler(req, res) {
     const summaryInstruction = summaryLengthMap[summaryLength] || summaryLengthMap['medium'];
 
     const summaryPromise = generateCompletion({
-      prompt: `Summarize the following notes ${summaryInstruction}. Focus on key concepts and main ideas:\n\n${notes}`,
-      temperature: 0.5,
+      prompt: `You are an expert educator. Take the following notes and ELABORATE on them ${summaryInstruction}. Do not just repeat or condense - EXPAND with detailed explanations, real-world examples, context, and deeper insights. Add valuable information that helps truly understand the concepts:\n\n${notes}`,
+      temperature: 0.8,
       type: 'text',
       context: { type: 'summary', notes, summaryLength }
     });
@@ -107,7 +107,7 @@ async function handler(req, res) {
     const flashcardInstruction = flashcardDifficultyMap[flashcardDifficulty] || flashcardDifficultyMap['medium'];
 
     const flashcardsPromise = generateCompletion({
-      prompt: `You are creating study flashcards. ${flashcardInstruction} Generate questions that test understanding of key concepts. Create exactly 12 flashcards. Respond ONLY with valid JSON in this format:
+      prompt: `You are creating study flashcards based on the provided study material. ${flashcardInstruction} Generate SPECIFIC questions directly from the content below - ask about definitions, concepts, processes, and relationships mentioned in these notes. Each answer should be detailed and educational, not generic. Create exactly 12 flashcards that directly test knowledge of THIS specific material. Respond ONLY with valid JSON in this format:
 [
   {"question":"...","answer":"..."},
   ...
@@ -115,7 +115,7 @@ async function handler(req, res) {
 
 Study Material:
 ${notes}`,
-      temperature: 0.3,
+      temperature: 0.5,
       type: 'json',
       context: { type: 'flashcards', notes, flashcardDifficulty }
     });
