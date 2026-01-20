@@ -6,6 +6,7 @@ import styles from "../styles/Notes.module.css";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 import { useStudyMode } from "../lib/StudyModeContext";
 import UnlockModal from "../components/UnlockModal";
+import { exportContent } from "../lib/export";
 
 export default function NotesUI() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -496,6 +497,47 @@ export default function NotesUI() {
     }
   };
 
+  const handleExport = async () => {
+    if (!input.trim() && summaries.length === 0 && flashcards.length === 0) {
+      setError('No content to export');
+      setTimeout(() => setError(''), 2000);
+      return;
+    }
+    
+    try {
+      let content = '';
+      
+      if (input.trim()) {
+        content += 'ORIGINAL NOTES\n' + '='.repeat(50) + '\n' + input.trim() + '\n\n';
+      }
+      
+      if (summaries.length > 0) {
+        content += 'ELABORATED SUMMARY\n' + '='.repeat(50) + '\n';
+        summaries.forEach((summary, i) => {
+          content += summary.trim() + '\n\n';
+        });
+      }
+      
+      if (flashcards.length > 0) {
+        content += 'FLASHCARDS\n' + '='.repeat(50) + '\n';
+        flashcards.forEach((card, i) => {
+          content += `${i + 1}. Q: ${card.question}\n   A: ${card.answer}\n\n`;
+        });
+      }
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `lift-notes-${timestamp}`;
+      
+      exportContent(content, filename);
+      setError('✓ Exported successfully!');
+      setTimeout(() => setError(''), 2000);
+    } catch (err) {
+      console.error('Export error:', err);
+      setError('Export failed');
+      setTimeout(() => setError(''), 2500);
+    }
+  };
+
   const toggleFlashcard = (index) => {
     setFlashcards((prev) =>
       prev.map((card, i) => (i === index ? { ...card, flipped: !card.flipped } : card))
@@ -646,15 +688,15 @@ export default function NotesUI() {
             <button
               onClick={() => {
                 if (userPlan !== 'full' && userPlan !== 'notes') {
-                  setUnlockFeature('Export to PDF');
+                  setUnlockFeature('Export Notes');
                   setShowUnlockModal(true);
                 } else {
-                  alert('Export feature coming soon!');
+                  handleExport();
                 }
               }}
               style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}
             >
-              Export PDF
+              Export TXT
             </button>
             <button onClick={useSample} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Sample</button>
             <button onClick={clearInput} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', flex: '1 1 auto', minWidth: '100px' }}>Clear</button>

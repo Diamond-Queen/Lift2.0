@@ -21,6 +21,8 @@ export default function Account() {
   const [accountType, setAccountType] = useState('');
   const [showTrialExpiredModal, setShowTrialExpiredModal] = useState(false);
   const [subscriptionWarning, setSubscriptionWarning] = useState('');
+  const [summaryLength, setSummaryLength] = useState('medium');
+  const [flashcardDifficulty, setFlashcardDifficulty] = useState('medium');
 
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
@@ -51,6 +53,19 @@ export default function Account() {
       });
     }
   }, [theme, mounted]);
+
+  // Apply study mode immediately when changed
+  useEffect(() => {
+    if (!mounted) return;
+    document.documentElement.dataset.study = studyMode ? 'on' : 'off';
+    localStorage.setItem('studyMode', String(studyMode));
+  }, [studyMode, mounted]);
+
+  // Apply study music immediately when changed
+  useEffect(() => {
+    if (!mounted) return;
+    localStorage.setItem('studyMusic', studyMusic || 'none');
+  }, [studyMusic, mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -111,6 +126,8 @@ export default function Account() {
               const prefs = pd.data.preferences;
               setTheme(prefs.theme || 'dark');
               if (prefs.studyMusic) setStudyMusic(prefs.studyMusic);
+              setSummaryLength(prefs.summaryLength || 'medium');
+              setFlashcardDifficulty(prefs.flashcardDifficulty || 'medium');
             }
           }
         } catch (e) {
@@ -131,7 +148,10 @@ export default function Account() {
         body: JSON.stringify({
           preferences: {
             theme: theme || 'dark',
+            studyMode: studyMode || false,
             studyMusic: studyMusic || 'none',
+            summaryLength: summaryLength || 'medium',
+            flashcardDifficulty: flashcardDifficulty || 'medium',
           },
           formatTemplate,
           resumeTemplate,
@@ -139,6 +159,11 @@ export default function Account() {
         })
       });
       if (res.ok) {
+        // Update localStorage after successful save
+        localStorage.setItem('theme', theme || 'dark');
+        localStorage.setItem('studyMode', String(studyMode || false));
+        localStorage.setItem('studyMusic', studyMusic || 'none');
+        
         setUiStatus({ type: 'success', text: 'Settings saved!' });
         setTimeout(() => setUiStatus({ type: null, text: '' }), 3000);
       } else {
@@ -193,23 +218,6 @@ export default function Account() {
             <h1 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff', margin: 0 }}>Account</h1>
             <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#8b7500', background: 'rgba(139, 117, 0, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '20px', border: '1px solid #8b7500' }}>{accountType}</span>
           </div>
-
-          {/* Status Message */}
-          {uiStatus.text && (
-            <div style={{
-              marginBottom: '1.5rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              background: uiStatus.type === 'success' ? 'rgba(139, 117, 0, 0.15)' : 'rgba(244, 67, 54, 0.15)',
-              border: `2px solid ${uiStatus.type === 'success' ? '#8b7500' : '#f44336'}`,
-              color: uiStatus.type === 'success' ? '#8b7500' : '#ff6b6b',
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              textAlign: 'center'
-            }}>
-              {uiStatus.text}
-            </div>
-          )}
 
           {/* Subscription Warning */}
           {subscriptionWarning && (
@@ -395,6 +403,62 @@ export default function Account() {
             </div>
           </div>
 
+          {/* AI Preferences */}
+          <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>AI Preferences</h2>
+            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Customize how Lift generates summaries and flashcards for your notes.
+            </p>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>
+                Summary Length
+              </label>
+              <select
+                value={summaryLength}
+                onChange={(e) => setSummaryLength(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.7rem',
+                  borderRadius: '8px',
+                  border: '2px solid #8b7500',
+                  background: '#1a1a1a',
+                  color: '#fff',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="short">Short - Quick overview</option>
+                <option value="medium">Medium - Balanced detail</option>
+                <option value="long">Long - Comprehensive explanation</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '0' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>
+                Flashcard Difficulty
+              </label>
+              <select
+                value={flashcardDifficulty}
+                onChange={(e) => setFlashcardDifficulty(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.7rem',
+                  borderRadius: '8px',
+                  border: '2px solid #8b7500',
+                  background: '#1a1a1a',
+                  color: '#fff',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="easy">Easy - Basic concepts</option>
+                <option value="medium">Medium - Key understanding</option>
+                <option value="hard">Hard - Deep comprehension</option>
+              </select>
+            </div>
+          </div>
+
           {/* Resume & Cover Letter Templates */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Templates</h2>
@@ -442,6 +506,22 @@ export default function Account() {
 
       {/* Fixed Footer */}
       <div style={{ padding: '1rem', borderTop: '2px solid #8b7500', background: '#000', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* Status Message - Positioned above buttons */}
+        {uiStatus.text && (
+          <div style={{
+            padding: '0.75rem 1rem',
+            borderRadius: '8px',
+            background: uiStatus.type === 'success' ? 'rgba(139, 117, 0, 0.15)' : 'rgba(244, 67, 54, 0.15)',
+            border: `2px solid ${uiStatus.type === 'success' ? '#8b7500' : '#f44336'}`,
+            color: uiStatus.type === 'success' ? '#8b7500' : '#ff6b6b',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            textAlign: 'center'
+          }}>
+            {uiStatus.text}
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button 
             onClick={saveAllSettings}
