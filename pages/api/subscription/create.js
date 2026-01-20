@@ -48,7 +48,9 @@ async function handler(req, res) {
 
   // Validate plan and price
   const validPlans = {
-    career: 9,
+    beta: 3,
+    career: 7,
+    notes: 7,
     full: 10
   };
   

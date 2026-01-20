@@ -3,6 +3,18 @@
 **Effective Date: December 13, 2025**
 **Last Updated: December 13, 2025**
 
+## 12. BETA PROGRAM & EXTERNAL PAYMENT HANDLING
+
+If you enroll in Lift's beta program, certain features or payments may be
+processed outside of the platform (for example via Cash App) as part of limited
+promotions or pilot programs. When beta payments are routed through third-party
+payment providers, those providers' privacy and payment processing policies
+apply to the payment transaction. We may collect and retain additional
+diagnostic or usage data from beta program participants to improve the service
+and investigate issues. Such data collection will be limited to what is
+necessary for product improvement and security. If you do not consent to data
+collection for beta testing purposes, do not enroll in the beta program.
+
 Lift Technologies & Jamyiah Williams ("Lift," "we," "our") respects your privacy. This Privacy Policy explains how we collect, use, store, and protect your information.
 
 ## 1. INFORMATION WE COLLECT

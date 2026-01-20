@@ -2,6 +2,7 @@ const prisma = require('../../../lib/prisma');
 const { getServerSession } = require('next-auth/next');
 const { setSecureHeaders, auditLog } = require('../../../lib/security');
 const logger = require('../../../lib/logger');
+const { sendWebhookNotification, sendEmailNotification } = require('../../../lib/notify');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -60,6 +61,7 @@ async function handler(req, res) {
         trialEndsAt: true,
         status: true,
         createdAt: true,
+        user: { select: { email: true, name: true } }
       }
     });
 
@@ -80,7 +82,7 @@ async function handler(req, res) {
     const daysRemaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
 
     // Determine trial status
-    let status = betaTester.status; // Could be 'active', 'converted', or 'expired'
+    let status = betaTester.status; // Could be 'active', 'active_notified', 'converted', 'expired', etc.
 
     // If status is not explicitly 'converted' or 'expired', check if expired
     if (status !== 'converted' && status !== 'expired') {
@@ -93,9 +95,61 @@ async function handler(req, res) {
         }).catch(e => {
           logger.warn('failed_to_mark_beta_expired', { betaTesterId: betaTester.id, error: e.message });
         });
-      } else {
+      } else if (!status || status === 'active') {
+        // Only set to 'active' if status is empty or already 'active'
+        // This preserves 'active_notified' and prevents duplicate notifications
         status = 'active';
       }
+    }
+
+    // If only one day remains and tester is active, send a one-day warning notification.
+    try {
+      if (status === 'active' && Math.max(0, daysRemaining) === 1) {
+        const notifyPayload = {
+          userId: betaTester.userId,
+          email: betaTester.user?.email || null,
+          name: betaTester.user?.name || null,
+          trialType: betaTester.trialType,
+          daysRemaining: Math.max(0, daysRemaining),
+          trialEndsAt: trialEndsAt.toISOString(),
+        };
+
+        const webhookUrl = process.env.NOTIFY_WEBHOOK_URL || null;
+        let notified = false;
+
+        if (webhookUrl) {
+          try {
+            await sendWebhookNotification(webhookUrl, notifyPayload);
+            notified = true;
+            logger.info('beta_one_day_webhook_sent', { userId: betaTester.userId });
+          } catch (e) {
+            logger.warn('beta_one_day_webhook_error', { message: e.message });
+          }
+        }
+
+        if (!notified && process.env.SENDGRID_API_KEY && betaTester.user?.email) {
+          try {
+            const to = betaTester.user.email;
+            const subject = 'One day left in your Lift beta trial';
+            const text = `Hi ${betaTester.user?.name || ''},\n\nYour Lift beta trial ends in 1 day (${trialEndsAt.toISOString()}). Subscribe to keep using Lift without interruption.`;
+            const html = `<p>Hi ${betaTester.user?.name || 'there'},</p><p>Your Lift beta trial ends in <strong>1 day</strong> (${trialEndsAt.toISOString()}). <a href=\"https://yourdomain.com/subscription/plans\">Subscribe</a> to keep using Lift without interruption.</p>`;
+            await sendEmailNotification({ to, subject, text, html });
+            notified = true;
+            logger.info('beta_one_day_email_sent', { userId: betaTester.userId, email: to });
+          } catch (e) {
+            logger.warn('beta_one_day_email_error', { message: e.message });
+          }
+        }
+
+        // If we successfully notified via webhook or email, mark tester to avoid duplicate sends.
+        if (notified) {
+          prisma.betaTester.update({ where: { id: betaTester.id }, data: { status: 'active_notified' } }).catch(e => {
+            logger.warn('failed_to_mark_beta_notified', { betaTesterId: betaTester.id, error: e.message });
+          });
+        }
+      }
+    } catch (e) {
+      logger.warn('beta_one_day_notification_flow_failed', { message: e.message });
     }
 
     return res.status(200).json({

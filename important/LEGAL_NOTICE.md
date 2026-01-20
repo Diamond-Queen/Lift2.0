@@ -134,3 +134,16 @@ By accessing, using, or interacting with this application, you acknowledge:
 **Lift Technologies & Jamyiah Williams - All Rights Reserved © 2025**
 
 **Last Updated: December 13, 2025**
+
+## BETA PROGRAM
+
+By participating in Lift's beta program, you acknowledge that certain features
+may be experimental, subject to change, or temporarily handled through external
+payment channels (for example, Cash App) for limited promotional purchases.
+Beta participants may receive access under trial terms; data associated with
+beta usage may be retained for debugging, analytics, and service improvement.
+Participation does not constitute a guaranteed continued access to beta features
+and may be revoked at any time. Any external payment links used for beta
+purchases are processed by third-party providers and are subject to their
+terms of service. Lift Technologies is not responsible for the processing
+policies of third-party payment providers.

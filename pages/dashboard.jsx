@@ -329,6 +329,28 @@ export default function Dashboard() {
             </Link>
           </div>
         )}
+        {trialInfo && trialInfo.status === 'trial-active' && trialInfo.daysRemaining === 1 && (
+          <div style={{
+            textAlign: 'center',
+            marginTop: '0.5rem',
+            marginBottom: '1rem',
+            padding: '0.9rem',
+            borderRadius: '8px',
+            border: '1px solid #ffae42',
+            background: 'rgba(255, 174, 66, 0.06)',
+            color: '#b35f00'
+          }}>
+            <div style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+              ⚠️ One day left in your beta trial
+            </div>
+            <div style={{ fontSize: '0.85rem', marginBottom: '0.25rem' }}>
+              Subscribe now to keep using Lift without interruption.
+            </div>
+            <Link href="/subscription/plans" className={styles.loginLink} style={{ color: '#b35f00', textDecoration: 'underline', display: 'inline-block', marginTop: '0.25rem' }}>
+              View Subscription Plans
+            </Link>
+          </div>
+        )}
         {trialInfo && trialInfo.status === 'trial-expired' && (
           <div style={{
             textAlign: 'center',

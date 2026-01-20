@@ -401,13 +401,14 @@ html[data-theme="light"] .btn.accent:hover {
     position: fixed;
     top: 16px;
     left: 16px;
-    z-index: 10;
+    z-index: 10000;
     display: inline-block;
     background: transparent; /* remove yellow background */
     padding: 0; /* remove padding around logo */
     border-radius: 8px; /* rounded corners for image wrapper */
     box-shadow: none; /* no glow around logo */
     cursor: pointer; /* show pointer cursor for clickability */
+    pointer-events: auto; /* ensure it's always clickable */
 }
 .homeFab:hover { transform: translateY(-2px); }
 

@@ -203,6 +203,30 @@ async function handler(req, res) {
       betaTesterId: betaTester.id,
     });
 
+    // If a Cash App redirect URL is configured, instruct the client to redirect
+    // the user to that external payment link for the one-time $3 beta purchase.
+    const cashappRedirect = process.env.NEXT_PUBLIC_CASHAPP_REDIRECT || process.env.CASHAPP_REDIRECT;
+    if (cashappRedirect) {
+      logger.info('beta_register_cashapp_redirect', { userId, url: cashappRedirect });
+      auditLog('beta_register_cashapp_redirect', userId, { url: cashappRedirect });
+      return res.status(201).json({
+        ok: true,
+        data: {
+          betaTester: {
+            id: betaTester.id,
+            trialType: betaTester.trialType,
+            trialEndsAt: betaTester.trialEndsAt.toISOString(),
+            daysRemaining: daysToAdd,
+          },
+          redirect: {
+            url: cashappRedirect,
+            method: 'cashapp',
+            amountUSD: 3
+          }
+        }
+      });
+    }
+
     return res.status(201).json({
       ok: true,
       data: {

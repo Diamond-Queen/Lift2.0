@@ -9,6 +9,7 @@ import UnlockModal from "../components/UnlockModal";
 
 export default function NotesUI() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [togglePos, setTogglePos] = useState({ top: 72, left: 16 });
   // Core state
   const [input, setInput] = useState("");
   const [summaries, setSummaries] = useState([]);
@@ -66,6 +67,32 @@ export default function NotesUI() {
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // Position the sidebar toggle directly below the global HomeFab so it always appears
+  // under the logo/Fab on every screen size. Recompute on resize/scroll.
+  useEffect(() => {
+    const compute = () => {
+      try {
+        const el = document.querySelector('.homeFab');
+        if (el) {
+          const r = el.getBoundingClientRect();
+          const top = Math.max(8, Math.round(r.top + r.height + 8));
+          const left = Math.max(8, Math.round(r.left));
+          setTogglePos({ top, left });
+        }
+      } catch (e) {}
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    window.addEventListener('scroll', compute, { passive: true });
+    const obs = new MutationObserver(compute);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('scroll', compute);
+      obs.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -168,6 +195,11 @@ export default function NotesUI() {
     } finally {
       setLoadingClasses(false);
     }
+  };
+
+  const handleRenameClass = async (classId) => {
+    if (!editingClassName.trim()) return;
+    setLoadingClasses(true);
     try {
       const res = await fetch('/api/content/classes', {
         method: 'PUT',
@@ -187,6 +219,66 @@ export default function NotesUI() {
       setError('Error renaming class');
     } finally {
       setLoadingClasses(false);
+    }
+  };
+
+  const handleLoadNote = (item) => {
+    if (!item) return;
+    setInput(item.originalInput || "");
+    // if summaries/flashcards were saved, restore them
+    if (item.summaries) setSummaries(item.summaries || []);
+    if (item.metadata && item.metadata.flashcards) setFlashcards(item.metadata.flashcards || []);
+  };
+
+  const handleDeleteNote = async (itemId) => {
+    if (!confirm('Remove this saved note?')) return;
+    try {
+      const res = await fetch('/api/content/items', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId })
+      });
+      if (res.ok) {
+        setSavedItems(savedItems.filter(it => it.id !== itemId));
+        setError('✓ Removed');
+        setTimeout(() => setError(''), 1500);
+      }
+    } catch (err) {
+      setError('Failed to remove note');
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!selectedClassId) {
+      setError('Select a class first');
+      return;
+    }
+    const title = (input || '').split('\n')[0].slice(0, 80) || `Note ${new Date().toLocaleString()}`;
+    try {
+      const res = await fetch('/api/content/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          classId: selectedClassId, 
+          title, 
+          originalInput: input, 
+          type: 'note', 
+          summaries: summaries.length > 0 ? summaries : null, 
+          metadata: { flashcards: flashcards.length > 0 ? flashcards : null } 
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedItems([data.data, ...savedItems]);
+        setError('✓ Saved');
+        setTimeout(() => setError(''), 1500);
+      } else {
+        const d = await res.json();
+        setError(d.error || 'Save failed');
+        setTimeout(() => setError(''), 2500);
+      }
+    } catch (err) {
+      setError('Save failed');
     }
   };
 
@@ -215,9 +307,6 @@ export default function NotesUI() {
     }
   };
 
-  const handleSaveNote = async () => {
-    // ...existing code for saving note...
-  };
 
   // Audio setup for study music
   useEffect(() => {
@@ -421,9 +510,9 @@ export default function NotesUI() {
         aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         style={{
           position: 'fixed',
-          top: 72,
-          left: 16,
-          zIndex: 9999,
+          top: togglePos.top,
+          left: togglePos.left,
+          zIndex: 9998,
           background: 'var(--accent)',
           color: 'var(--accent-contrast)',
           border: 'none',
@@ -452,20 +541,40 @@ export default function NotesUI() {
         />
       )}
 
-      {showClassForm && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
-          <input type="text" placeholder="Class name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); }} autoFocus style={{ padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.95rem' }} />
-          <input type="color" value={newClassColor} onChange={(e) => setNewClassColor(e.target.value)} title="Choose class color" style={{ width: '100%', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }} />
-          <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
-            {loadingClasses ? '...' : 'Create'}
+      <div className={styles.container}>
+      <aside className={styles.sidebar} style={{ display: sidebarOpen ? 'block' : 'none' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>Classes</h3>
+          <button 
+            onClick={() => setShowClassForm(!showClassForm)} 
+            style={{ 
+              padding: '0.5rem 1rem', 
+              background: 'var(--accent)', 
+              color: 'var(--accent-contrast)', 
+              border: 'none', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              fontSize: '1rem'
+            }}
+          >
+            {showClassForm ? '✕' : '+ New'}
           </button>
         </div>
-      )}
 
-      <aside style={{ display: sidebarOpen ? 'block' : 'none' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+        {showClassForm && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+            <input type="text" placeholder="Class name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleCreateClass(); if (e.key === 'Escape') setShowClassForm(false); }} autoFocus style={{ padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.95rem' }} />
+            <input type="color" value={newClassColor} onChange={(e) => setNewClassColor(e.target.value)} title="Choose class color" style={{ width: '100%', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }} />
+            <button onClick={handleCreateClass} disabled={loadingClasses} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, opacity: loadingClasses ? 0.6 : 1 }}>
+              {loadingClasses ? '...' : 'Create'}
+            </button>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {classes.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '0.5rem 0' }}>No classes</p>
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '0.5rem 0' }}>No classes yet</p>
             ) : (
               classes.map((cls) => (
                 <div key={cls.id} onClick={() => !editingClassId && setSelectedClassId(cls.id)} style={{ padding: '0.75rem', background: selectedClassId === cls.id ? 'rgba(139, 117, 0, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${cls.color || '#8b7500'}`, border: selectedClassId === cls.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingClassId === cls.id ? 'default' : 'pointer', transition: 'all 0.2s' }}>
@@ -510,14 +619,17 @@ export default function NotesUI() {
         <main className={styles.mainContent}>
           <h1 className={styles.pageTitle}>Lift Notes</h1>
 
-          {selectedClassId && classes.find(c => c.id === selectedClassId) && (
-            <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderLeft: `4px solid ${classes.find(c => c.id === selectedClassId).color || '#8b7500'}`, borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--card-border)' }}>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Class</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: classes.find(c => c.id === selectedClassId).color || '#8b7500' }}>
-                {classes.find(c => c.id === selectedClassId).name}
+          {(() => {
+            const selectedClass = selectedClassId ? classes.find(c => c.id === selectedClassId) : null;
+            return selectedClass && (
+              <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderLeft: `4px solid ${selectedClass.color || '#8b7500'}`, borderRadius: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--card-border)' }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Class</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: selectedClass.color || '#8b7500' }}>
+                  {selectedClass.name}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <textarea className={styles.textarea} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste notes, type, or upload a file..." />
 
@@ -603,6 +715,7 @@ export default function NotesUI() {
             </div>
           )}
         </main>
+      </div>
 
         <UnlockModal
         isOpen={showUnlockModal}

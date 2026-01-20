@@ -152,6 +152,44 @@
   border-radius: 8px;
 }
 
+.errorMessage {
+  color: crimson;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: linear-gradient(180deg, rgba(255,230,230,0.95), rgba(255,240,240,0.9));
+  border: 1px solid rgba(220,20,60,0.15);
+  border-radius: 8px;
+}
+
+.section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+}
+
+.section h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.summaryBox {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.summaryBox p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-color);
+}
+
 /* Result Card */
 .resultCard {
   margin-top: 1.5rem;
@@ -384,10 +422,31 @@
   z-index: 9999;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .container {
+    flex-direction: column;
     padding: 1rem;
+    gap: 1rem;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    width: 280px;
+    max-height: 100vh;
+    border-radius: 0;
+    border-right: 1px solid var(--card-border);
+    background: var(--background);
+    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    padding-top: 4rem; /* Space for the toggle button */
+  }
+
+  .mainContent {
+    width: 100%;
+    margin-left: 0;
+    padding-top: 1rem;
   }
 
   .pageTitle {

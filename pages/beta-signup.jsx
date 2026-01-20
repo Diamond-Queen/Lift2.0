@@ -227,6 +227,43 @@ export default function BetaSignup() {
         return;
       }
 
+      // If server returned a redirect (Cash App) for a one-time beta payment,
+      // inform the user and redirect them to the external payment URL.
+      try {
+        const redirect = data?.data?.redirect;
+        if (redirect && redirect.method === 'cashapp' && redirect.url) {
+          // Send non-blocking copy to Formspree then redirect
+          (async () => {
+            try {
+              if (FORMSPREE_ENDPOINT) {
+                const formDataBody = new FormData();
+                formDataBody.append('name', formData.name.trim());
+                formDataBody.append('email', formData.email.trim().toLowerCase());
+                formDataBody.append('trialType', trialType);
+                if (trialType === 'school') formDataBody.append('schoolName', formData.schoolName.trim());
+                if (trialType === 'social') formDataBody.append('organizationName', formData.organizationName.trim());
+                formDataBody.append('source', 'beta-signup');
+                await fetch(FORMSPREE_ENDPOINT, { method: 'POST', body: formDataBody });
+              }
+            } catch (fsErr) {
+              console.error('Formspree submission failed', fsErr);
+            }
+          })();
+
+          const confirmed = confirm(`To complete beta enrollment you will be redirected to Cash App for a one-time $3 payment. Proceed?`);
+          if (confirmed) {
+            window.location.assign(redirect.url);
+            return;
+          } else {
+            setSuccess(true);
+            setTimeout(() => router.push('/dashboard'), 2000);
+            return;
+          }
+        }
+      } catch (e) {
+        // ignore and continue to default success flow
+      }
+
       // Send a copy of the signup to Formspree (non-blocking on failure)
       try {
         if (FORMSPREE_ENDPOINT) {

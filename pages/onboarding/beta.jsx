@@ -70,6 +70,20 @@ export default function BetaOnboarding() {
         return;
       }
 
+      // If server returned a redirect (Cash App) for a one-time beta payment,
+      // inform the user and redirect them to the external payment URL.
+      const redirect = data?.data?.redirect;
+      if (redirect && redirect.method === 'cashapp' && redirect.url) {
+        const proceed = window.confirm(
+          `Beta program requires a one-time payment of $${redirect.amountUSD || 3}. You'll be redirected to Cash App. Continue?`
+        );
+        if (proceed) {
+          window.location.href = redirect.url;
+          return;
+        }
+        // If user cancels, fall through to success flow
+      }
+
       // Success - redirect to dashboard
       router.push("/dashboard");
     } catch (err) {
@@ -83,7 +97,7 @@ export default function BetaOnboarding() {
       <div className={styles.signupCard} style={{ maxWidth: "500px" }}>
         <h1 className={styles.pageTitle}>Join Beta Program</h1>
         <p style={{ textAlign: "center", marginBottom: "1.5rem", color: "var(--text-muted)" }}>
-          Get free access to Lift while we develop new features
+          Get limited access to Lift while we develop new features for only $3
         </p>
 
         <form onSubmit={handleSubmit}>
