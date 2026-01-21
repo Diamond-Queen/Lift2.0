@@ -53,19 +53,6 @@ async function handler(req, res) {
 
   const planConfig = validPlans[plan];
 
-  // If this is the inexpensive beta purchase and a Cash App redirect is configured,
-  // prefer redirecting the user directly to the Cash App URL instead of creating a
-  // Stripe Checkout session.
-  const cashappRedirect = process.env.NEXT_PUBLIC_CASHAPP_REDIRECT || process.env.CASHAPP_REDIRECT;
-  if (plan === 'beta' && cashappRedirect) {
-    logger.info('checkout_cashapp_redirect', { plan: 'beta', url: cashappRedirect });
-    if (typeof auditLog === 'function') auditLog('checkout_cashapp_redirect', null, { plan: 'beta', url: cashappRedirect });
-    return res.json({ ok: true, data: { url: cashappRedirect, method: 'cashapp' } });
-  }
-
-  // All other flows are intentionally disabled in dev; return Service Unavailable.
-  return res.status(503).json({ ok: false, error: 'Subscriptions are temporarily unavailable — Coming soon' });
-
   try {
     const user = prisma
       ? await prisma.user.findUnique({ 
