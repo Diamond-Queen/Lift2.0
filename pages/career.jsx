@@ -788,7 +788,7 @@ Sincerely,
         fontSize: '14px',
         lineHeight: 1.6
       }}>
-        <strong>Tip:</strong> Choose a template below, fill in your information, and click Generate. 
+        <strong>Tip:</strong> Fill in your information, and click Generate. 
         The AI will create a professional {type === 'resume' ? 'resume' : 'cover letter'} based on your selected style.
         {type === 'resume' && <span> Use commas or | to separate experience/education details.</span>}
       </div>
