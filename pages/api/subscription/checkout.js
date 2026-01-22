@@ -16,8 +16,7 @@ async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
-  // Note: keep all subscription flows disabled except a direct Cash App
-  // redirect for the inexpensive beta plan. Non-beta checkouts remain closed.
+  // Note: Beta plan is handled separately via /api/beta/register with Stripe checkout.
 
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
@@ -31,17 +30,43 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
-  const { authOptions } = await import('../auth/[...nextauth]');
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  let authOptions;
+  try {
+    const imported = await import('../../../lib/authOptions');
+    authOptions = imported.authOptions;
+  } catch (e) {
+    logger.error('failed_to_import_auth_options', { error: e.message });
+    return res.status(500).json({ ok: false, error: 'Server configuration error' });
+  }
+
+  let session;
+  try {
+    session = await getServerSession(req, res, authOptions);
+  } catch (e) {
+    logger.error('checkout_session_error', { message: e.message });
+    return res.status(500).json({ ok: false, error: 'Session error. Please try again.' });
+  }
+
+  if (!session || !session.user?.email) {
+    logger.warn('checkout_unauthorized', { hasSession: !!session, hasEmail: !!session?.user?.email });
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
 
   const devMode = String(process.env.STRIPE_DEV_MODE).toLowerCase() === 'true' || !stripe;
 
   const { plan } = req.body || {};
   
+  // Beta plan is not handled through subscription checkout
+  if (plan === 'beta') {
+    return res.status(400).json({ 
+      ok: false, 
+      error: 'Beta program signup is handled separately. Please visit /beta-signup to join.',
+      redirect: '/beta-signup'
+    });
+  }
+  
   // Validate plan
   const validPlans = {
-    beta: { price: process.env.STRIPE_PRICE_BETA, amount: 300, name: 'Beta Program' },
     career: { price: process.env.STRIPE_PRICE_CAREER, amount: 700, name: 'Career Only' },
     notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 700, name: 'Notes Only' },
     full: { price: process.env.STRIPE_PRICE_FULL, amount: 1000, name: 'Full Access' }

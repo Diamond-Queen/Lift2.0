@@ -203,12 +203,56 @@ async function handler(req, res) {
       betaTesterId: betaTester.id,
     });
 
-    // If a Cash App redirect URL is configured, instruct the client to redirect
-    // the user to that external payment link for the one-time $3 beta purchase.
-    const cashappRedirect = process.env.NEXT_PUBLIC_CASHAPP_REDIRECT || process.env.CASHAPP_REDIRECT;
-    if (cashappRedirect) {
-      logger.info('beta_register_cashapp_redirect', { userId, url: cashappRedirect });
-      auditLog('beta_register_cashapp_redirect', userId, { url: cashappRedirect });
+    // Create Stripe checkout session for the one-time $3 beta purchase
+    // User must complete payment to activate beta features
+    let stripeCheckoutUrl = null;
+    const stripe = require('../../../lib/stripe');
+    const stripePrice = process.env.STRIPE_PRICE_BETA;
+    
+    if (stripe && stripePrice) {
+      try {
+        // Create Stripe customer if needed
+        const customers = await stripe.customers.list({
+          email: user.email,
+          limit: 1
+        });
+        let customer = customers.data.length > 0 ? customers.data[0] : null;
+        
+        if (!customer) {
+          customer = await stripe.customers.create({
+            email: user.email,
+            name: user.name || undefined,
+            metadata: { userId: user.id, betaTesterId: betaTester.id }
+          });
+        }
+        
+        // Create checkout session
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: stripePrice,
+              quantity: 1
+            }
+          ],
+          mode: 'payment',
+          customer: customer.id,
+          metadata: { userId: user.id, betaTesterId: betaTester.id, trialType },
+          success_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard?beta_checkout=success`,
+          cancel_url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/beta-signup?beta_checkout=cancel`
+        });
+        
+        stripeCheckoutUrl = session.url;
+        logger.info('beta_stripe_checkout_created', { userId, betaTesterId: betaTester.id, sessionId: session.id });
+        auditLog('beta_stripe_checkout_created', userId, { betaTesterId: betaTester.id, sessionId: session.id });
+      } catch (stripeErr) {
+        logger.error('beta_stripe_checkout_error', { userId, message: stripeErr.message });
+        // Fall through - will skip stripe and return success
+      }
+    }
+    
+    // If Stripe checkout was created, return it; otherwise just return success
+    if (stripeCheckoutUrl) {
       return res.status(201).json({
         ok: true,
         data: {
@@ -219,8 +263,8 @@ async function handler(req, res) {
             daysRemaining: daysToAdd,
           },
           redirect: {
-            url: cashappRedirect,
-            method: 'cashapp',
+            url: stripeCheckoutUrl,
+            method: 'stripe',
             amountUSD: 3
           }
         }

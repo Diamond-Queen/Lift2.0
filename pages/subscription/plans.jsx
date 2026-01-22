@@ -27,13 +27,8 @@ export default function SubscriptionPlans() {
     router.push('/signup');
     return null;
   }
-  if (status === 'unauthenticated') {
-    router.push('/signup');
-    return null;
-  }
 
   const plans = [
-    { id: 'beta', name: 'Beta Program', price: 300, features: ['Access to beta features', 'Community support', '3-day free trial'] },
     { id: 'notes', name: 'Notes Only', price: 700, features: ['Unlimited notes', 'PDF export', 'Cloud sync'] },
     { id: 'career', name: 'Career Only', price: 700, features: ['Career tools', 'Resume builder', 'Interview prep'] },
     { id: 'full', name: 'Full Access', price: 1000, features: ['All features', 'Notes + Career', 'Priority support'] }
@@ -76,6 +71,19 @@ export default function SubscriptionPlans() {
         <h1 className={styles.pageTitle}>Choose Your Plan</h1>
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>All plans include a 3-day free trial.</p>
         {error && <div style={{ marginBottom: '1rem', padding: '0.75rem', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: 'rgb(239,68,68)' }}>{error}</div>}
+        
+        <div style={{ marginBottom: '3rem', padding: '1.5rem', border: '2px solid var(--accent)', borderRadius: '8px', background: 'rgba(var(--accent-rgb, 59, 130, 246), 0.05)' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--accent)' }}>✨ Join Our Beta Program</h2>
+          <p style={{ margin: '0.5rem 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Get early access to new features and help shape the future of Lift. Choose between school or social beta for extended free trials.</p>
+          <button onClick={() => router.push('/beta-signup')} className={styles.submitButton} style={{ width: '100%' }}>
+            Join the Beta Program
+          </button>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '0.9rem', margin: 0 }}>Or choose a subscription plan:</p>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           {plans.map((p) => (
             <div key={p.id} style={{ padding: '1.5rem', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>

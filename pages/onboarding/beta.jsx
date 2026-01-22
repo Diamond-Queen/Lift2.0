@@ -70,18 +70,12 @@ export default function BetaOnboarding() {
         return;
       }
 
-      // If server returned a redirect (Cash App) for a one-time beta payment,
-      // inform the user and redirect them to the external payment URL.
+      // If server returned a redirect (Stripe checkout) for a one-time beta payment,
+      // redirect them to the Stripe checkout page.
       const redirect = data?.data?.redirect;
-      if (redirect && redirect.method === 'cashapp' && redirect.url) {
-        const proceed = window.confirm(
-          `Beta program requires a one-time payment of $${redirect.amountUSD || 3}. You'll be redirected to Cash App. Continue?`
-        );
-        if (proceed) {
-          window.location.href = redirect.url;
-          return;
-        }
-        // If user cancels, fall through to success flow
+      if (redirect && redirect.method === 'stripe' && redirect.url) {
+        window.location.href = redirect.url;
+        return;
       }
 
       // Success - redirect to dashboard

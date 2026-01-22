@@ -227,11 +227,11 @@ export default function BetaSignup() {
         return;
       }
 
-      // If server returned a redirect (Cash App) for a one-time beta payment,
-      // inform the user and redirect them to the external payment URL.
+      // If server returned a redirect (Stripe checkout) for a one-time beta payment,
+      // redirect them to the Stripe checkout page.
       try {
         const redirect = data?.data?.redirect;
-        if (redirect && redirect.method === 'cashapp' && redirect.url) {
+        if (redirect && redirect.method === 'stripe' && redirect.url) {
           // Send non-blocking copy to Formspree then redirect
           (async () => {
             try {
@@ -250,15 +250,9 @@ export default function BetaSignup() {
             }
           })();
 
-          const confirmed = confirm(`To complete beta enrollment you will be redirected to Cash App for a one-time $3 payment. Proceed?`);
-          if (confirmed) {
-            window.location.assign(redirect.url);
-            return;
-          } else {
-            setSuccess(true);
-            setTimeout(() => router.push('/dashboard'), 2000);
-            return;
-          }
+          // Redirect to Stripe checkout
+          window.location.assign(redirect.url);
+          return;
         }
       } catch (e) {
         // ignore and continue to default success flow
