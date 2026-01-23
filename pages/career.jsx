@@ -866,9 +866,9 @@ Sincerely,
               <h1>{result.name}</h1>
               <p className={styles.contact}>{result.email} | {result.phone}{result.address && ` | ${result.address}`}</p>
               {result.linkedin && <p>LinkedIn / Portfolio: {result.linkedin}</p>}
-              {result.objective && <div style={{ marginBottom: '1rem' }}><strong>Professional Summary:</strong> {result.objective}</div>}
+              {result.objective && <div className={styles.objectiveSection}><strong>Professional Summary:</strong> {result.objective}</div>}
 
-              {result.experience?.length > 0 ? (
+              {result.experience?.length > 0 && (
                 <>
                   <h2>Experience</h2>
                   {result.experience.map((job, i) => {
@@ -892,14 +892,9 @@ Sincerely,
                     );
                   })}
                 </>
-              ) : (
-                <>
-                  <h2>Experience</h2>
-                  <div style={{ color: '#999', fontStyle: 'italic' }}>Add your professional experience to enhance your resume</div>
-                </>
               )}
 
-              {result.education?.length > 0 ? (
+              {result.education?.length > 0 && (
                 <>
                   <h2>Education</h2>
                   {result.education.map((edu, i) => {
@@ -917,11 +912,6 @@ Sincerely,
                       </div>
                     );
                   })}
-                </>
-              ) : (
-                <>
-                  <h2>Education</h2>
-                  <div style={{ color: '#999', fontStyle: 'italic' }}>Add your educational background</div>
                 </>
               )}
 
