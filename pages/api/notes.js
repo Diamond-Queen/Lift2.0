@@ -106,15 +106,13 @@ async function handler(req, res) {
     const flashcardInstruction = flashcardDifficultyMap[flashcardDifficulty] || flashcardDifficultyMap['medium'];
 
     const flashcardsPromise = generateCompletion({
-      prompt: `You are creating study flashcards based on the provided study material. ${flashcardInstruction} Generate SPECIFIC questions directly from the content below - ask about definitions, concepts, processes, and relationships mentioned in these notes. Each answer should be detailed and educational, not generic. Create exactly 12 flashcards that directly test knowledge of THIS specific material. Respond ONLY with valid JSON in this format:
-[
-  {"question":"...","answer":"..."},
-  ...
-]
+      prompt: `TASK: Generate 12 study flashcards ONLY in JSON format. ${flashcardInstruction} CRITICAL: Return ONLY this JSON structure, nothing else - no explanation, no markdown, just pure JSON:
+[{"question":"...","answer":"..."},{"question":"...","answer":"..."}]
 
-Study Material:
+Create exactly 12 cards testing knowledge from:
 ${notes}`,
-      temperature: 0.5,
+      temperature: 0.3,
+      maxTokens: 1000,
       type: 'json',
       context: { type: 'flashcards', notes, flashcardDifficulty }
     });
@@ -129,17 +127,38 @@ ${notes}`,
     const rawContent = flashcardsResp.content;
     
     try {
-      // FIX 1: Robust JSON parsing using regex to extract only the JSON block
-      const jsonMatch = rawContent.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      // Extract JSON array from response - handles text before/after JSON
+      let jsonContent = rawContent;
+      
+      // Try to find JSON array in the content
+      const jsonMatch = rawContent.match(/\[\s*\{[\s\S]*?\}\s*\]/);
       if (jsonMatch) {
-        flashcards = JSON.parse(jsonMatch[0]);
+        jsonContent = jsonMatch[0];
       }
       
-      if (!Array.isArray(flashcards)) flashcards = [];
+      // Parse and validate
+      const parsed = JSON.parse(jsonContent);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure all items have question and answer
+        flashcards = parsed.filter(card => 
+          card.question && card.answer && typeof card.question === 'string' && typeof card.answer === 'string'
+        ).slice(0, 12);
+      }
     } catch (parseError) {
-      logger.error('notes_json_parse_error', { message: parseError.message });
-      // Fallback: if parsing failed, return an empty array for flashcards
+      logger.error('notes_json_parse_error', { raw: rawContent.slice(0, 200), message: parseError.message });
+      // Template fallback: generate from notes directly
       flashcards = [];
+    }
+    
+    // If still empty after parsing, use template fallback
+    if (flashcards.length === 0) {
+      const { buildFlashcardsTemplate } = require('../../lib/ai');
+      try {
+        flashcards = buildFlashcardsTemplate({ notes, flashcardDifficulty });
+      } catch (templateErr) {
+        logger.error('flashcard_template_error', { message: templateErr.message });
+        flashcards = [];
+      }
     }
 
     // FIX 2: Removed '.map((f) => ({ ...f, flipped: false }))' 

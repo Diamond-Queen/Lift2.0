@@ -358,12 +358,19 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     });
 
     let raw = aiResponse.content;
+    let isTemplateResult = false;
 
     // Safely extract JSON object using regex as a fallback guardrail
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       logger.error('career_no_json', { snippet: raw.slice(0,200), provider: aiResponse.provider });
-      return res.status(500).json({ error: "Invalid AI response format" });
+      // Use template fallback instead of error
+      logger.info('career_using_template_fallback', { type });
+      const { buildResumeTemplate, buildCoverTemplate } = require('../../lib/ai');
+      const result = type === 'resume' 
+        ? buildResumeTemplate({ name, email, phone, address, linkedin, objective, experience, education, skills, certifications })
+        : buildCoverTemplate({ name, recipient, position, paragraphs });
+      return res.status(200).json({ ok: true, data: { result, provider: 'template' } });
     }
 
     let result;
@@ -371,23 +378,31 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
       result = JSON.parse(jsonMatch[0]);
     } catch (parseErr) {
       logger.error('career_json_parse_error', { message: parseErr.message, provider: aiResponse.provider });
-      return res.status(500).json({ error: "Failed to parse AI JSON" });
+      // Use template fallback instead of error
+      logger.info('career_using_template_fallback', { type });
+      const { buildResumeTemplate, buildCoverTemplate } = require('../../lib/ai');
+      result = type === 'resume' 
+        ? buildResumeTemplate({ name, email, phone, address, linkedin, objective, experience, education, skills, certifications })
+        : buildCoverTemplate({ name, recipient, position, paragraphs });
+      isTemplateResult = true;
     }
 
     // Enforce no new entities: if raw inputs are missing, keep arrays empty
-    const rawExp = String(experience || '').trim();
-    const rawEdu = String(education || '').trim();
-    const rawCerts = String(certifications || '').trim();
+    // (Skip this complex validation if we're using template fallback)
+    if (!isTemplateResult) {
+      const rawExp = String(experience || '').trim();
+      const rawEdu = String(education || '').trim();
+      const rawCerts = String(certifications || '').trim();
 
-    if (!rawExp) {
-      result.experience = Array.isArray(result.experience) ? [] : [];
-    }
-    if (!rawEdu) {
-      result.education = Array.isArray(result.education) ? [] : [];
-    }
-    if (!rawCerts) {
-      result.certifications = Array.isArray(result.certifications) ? [] : [];
-    }
+      if (!rawExp) {
+        result.experience = Array.isArray(result.experience) ? [] : [];
+      }
+      if (!rawEdu) {
+        result.education = Array.isArray(result.education) ? [] : [];
+      }
+      if (!rawCerts) {
+        result.certifications = Array.isArray(result.certifications) ? [] : [];
+      }
     // Skills: allow creative expansion when few are provided; never invent experience/education
     const rawSkillsStr = String(skills || '').trim();
     const rawSkillsArr = rawSkillsStr ? rawSkillsStr.split(',').map(s=>s.trim()).filter(Boolean) : [];
@@ -610,6 +625,8 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     } else {
       // Cover letter: remove strict matching; allow expansion from minimal hints without rejection.
     }
+    } // End of !isTemplateResult block
+
     // Always send structured object
     // Normalize the AI result to avoid nested objects being sent to the client
     const unwrap = (v) => {
