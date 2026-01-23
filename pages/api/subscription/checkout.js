@@ -56,6 +56,11 @@ async function handler(req, res) {
 
   const { plan } = req.body || {};
   
+  // Validate plan exists
+  if (!plan) {
+    return res.status(400).json({ ok: false, error: 'Plan parameter is required' });
+  }
+  
   // Beta plan is not handled through subscription checkout
   if (plan === 'beta') {
     return res.status(400).json({ 
@@ -73,7 +78,7 @@ async function handler(req, res) {
   };
   
   if (!validPlans[plan]) {
-    return res.status(400).json({ ok: false, error: 'Invalid plan' });
+    return res.status(400).json({ ok: false, error: 'Invalid plan selected' });
   }
 
   const planConfig = validPlans[plan];

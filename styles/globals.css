@@ -15,13 +15,13 @@
     --card-bg-dark: linear-gradient(180deg, rgba(212,175,55,0.04), rgba(255,255,255,0.01));
     --card-border-dark: rgba(212,175,55,0.15);
     --glass-shadow-dark: 0 10px 40px rgba(2,6,23,0.6);
-    /* --- Light Mode Variables - Gold, Dark Purple, White --- */
-    --bg-top-light: #FDFBF7;
-    --bg-bottom-light: #F5F1EB;
-    --text-color-light: #1a0f15;
+    /* --- Light Mode Variables - Black and Purple --- */
+    --bg-top-light: #FEFBF8;
+    --bg-bottom-light: #F5F1EE;
+    --text-color-light: #000000;
     --card-bg-light: #FFFFFF;
-    --card-border-light: rgba(212,175,55,0.15);
-    --glass-shadow-light: 0 10px 40px rgba(212,175,55,0.08);
+    --card-border-light: rgba(147,51,234,0.15);
+    --glass-shadow-light: 0 10px 40px rgba(147,51,234,0.08);
     
     /* --- Shared Variables --- */
     --accent: #9333EA; /* dark purple */

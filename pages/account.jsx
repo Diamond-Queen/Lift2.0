@@ -23,6 +23,8 @@ export default function Account() {
   const [subscriptionWarning, setSubscriptionWarning] = useState('');
   const [summaryLength, setSummaryLength] = useState('medium');
   const [flashcardDifficulty, setFlashcardDifficulty] = useState('medium');
+  const [subscription, setSubscription] = useState(null);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
@@ -174,6 +176,34 @@ export default function Account() {
     }
   }
 
+  const handleCancelSubscription = async () => {
+    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features.')) {
+      return;
+    }
+
+    setCancelingSubscription(true);
+    try {
+      const res = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUiStatus({ type: 'success', text: '✅ Subscription canceled' });
+        setSubscription(null);
+        setAccountType('Individual');
+        setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');
+        setTimeout(() => setUiStatus({ type: null, text: '' }), 3000);
+      } else {
+        setUiStatus({ type: 'error', text: `❌ ${data.error || 'Failed to cancel'}` });
+      }
+    } catch (err) {
+      setUiStatus({ type: 'error', text: '❌ Error canceling subscription' });
+    } finally {
+      setCancelingSubscription(false);
+    }
+  }
+
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
   };
@@ -239,6 +269,43 @@ export default function Account() {
               <Link href="/subscription/plans" style={{ color: '#ffb74d', textDecoration: 'underline', fontWeight: '700' }}>
                 View Plans
               </Link>
+            </div>
+          )}
+
+          {/* Subscription Management */}
+          {user?.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0].status === 'active' && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              borderRadius: '8px',
+              background: 'rgba(147, 51, 234, 0.1)',
+              border: '1px solid rgba(147, 51, 234, 0.3)',
+              color: '#fff'
+            }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.75rem', color: '#fff' }}>Active Subscription</h3>
+              <div style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0.25rem 0', color: '#aaa' }}>
+                  Plan: <span style={{ color: '#9333EA', fontWeight: '600' }}>{user.subscriptions[0].plan.charAt(0).toUpperCase() + user.subscriptions[0].plan.slice(1)}</span>
+                </p>
+              </div>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={cancelingSubscription}
+                style={{
+                  padding: '0.6rem 1rem',
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: cancelingSubscription ? 'not-allowed' : 'pointer',
+                  opacity: cancelingSubscription ? 0.6 : 1,
+                  transition: 'all 0.2s'
+                }}
+              >
+                {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
+              </button>
             </div>
           )}
 

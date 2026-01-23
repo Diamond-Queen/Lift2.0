@@ -123,6 +123,9 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [subscription, setSubscription] = useState(null);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState('');
   
   const [preferences, setPreferences] = useState({
     theme: 'light',
@@ -143,8 +146,23 @@ export default function Settings() {
     }
     if (status === 'authenticated') {
       fetchPreferences();
+      fetchSubscription();
     }
   }, [status, router]);
+
+  async function fetchSubscription() {
+    try {
+      const res = await fetch('/api/user/subscription');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.data) {
+          setSubscription(data.data);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load subscription:', err);
+    }
+  }
 
   async function fetchPreferences() {
     try {
@@ -180,6 +198,33 @@ export default function Settings() {
       setMessage('❌ Error');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features.')) {
+      return;
+    }
+
+    setCancelingSubscription(true);
+    setCancelMessage('');
+    try {
+      const res = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCancelMessage('✅ Subscription canceled');
+        setSubscription(null);
+        setTimeout(() => fetchSubscription(), 1000);
+      } else {
+        setCancelMessage(`❌ ${data.error || 'Failed to cancel'}`);
+      }
+    } catch (err) {
+      setCancelMessage('❌ Error canceling subscription');
+    } finally {
+      setCancelingSubscription(false);
     }
   }
 
@@ -246,6 +291,64 @@ export default function Settings() {
                 <option value="large">Large</option>
               </select>
             </div>
+          </div>
+
+          {/* Subscription Management */}
+          <div style={settingsStyles.section}>
+            <h2 style={settingsStyles.sectionTitle}>Subscription</h2>
+            
+            {subscription ? (
+              <div>
+                <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0f4ff', borderRadius: '6px', border: '1px solid #9333EA' }}>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#000' }}>
+                    Active Plan: <span style={{ color: '#9333EA' }}>{subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}</span>
+                  </p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#666' }}>
+                    Status: <span style={{ fontWeight: '600', color: '#000' }}>{subscription.status}</span>
+                  </p>
+                  {subscription.status === 'trialing' && subscription.trialEndsAt && (
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#666' }}>
+                      Trial ends: <span style={{ fontWeight: '600', color: '#000' }}>{new Date(subscription.trialEndsAt).toLocaleDateString()}</span>
+                    </p>
+                  )}
+                </div>
+                <button 
+                  onClick={handleCancelSubscription}
+                  disabled={cancelingSubscription}
+                  style={{
+                    ...settingsStyles.button,
+                    background: '#dc2626',
+                    color: '#fff',
+                    opacity: cancelingSubscription ? 0.6 : 1,
+                    cursor: cancelingSubscription ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
+                </button>
+                {cancelMessage && (
+                  <p style={{
+                    marginTop: '0.75rem',
+                    fontSize: '0.9rem',
+                    color: cancelMessage.includes('✅') ? '#16a34a' : '#dc2626'
+                  }}>
+                    {cancelMessage}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <p style={{ color: '#666', margin: '0 0 1rem 0' }}>You don't have an active subscription.</p>
+                <button 
+                  onClick={() => router.push('/subscription/plans')}
+                  style={{
+                    ...settingsStyles.button,
+                    ...settingsStyles.primaryButton
+                  }}
+                >
+                  View Plans
+                </button>
+              </div>
+            )}
           </div>
 
           {/* AI Preferences */}

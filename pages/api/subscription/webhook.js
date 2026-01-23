@@ -122,6 +122,7 @@ async function handleCheckoutCompleted(session) {
   await prisma.subscription.upsert({
     where: { stripeCustomerId: customerId },
     update: {
+      stripeSubscriptionId: subscriptionId,
       status: subscription.status,
       plan: plan,
       trialEndsAt: trialEnd,
@@ -129,6 +130,7 @@ async function handleCheckoutCompleted(session) {
     },
     create: {
       stripeCustomerId: customerId,
+      stripeSubscriptionId: subscriptionId,
       status: subscription.status,
       plan: plan,
       trialEndsAt: trialEnd,
@@ -141,6 +143,7 @@ async function handleCheckoutCompleted(session) {
 
 async function handleSubscriptionUpdate(subscription) {
   const customerId = subscription.customer;
+  const subscriptionId = subscription.id;
   const status = subscription.status;
   const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
 
@@ -148,11 +151,12 @@ async function handleSubscriptionUpdate(subscription) {
     await prisma.subscription.update({
       where: { stripeCustomerId: customerId },
       data: {
+        stripeSubscriptionId: subscriptionId,
         status: status,
         trialEndsAt: trialEnd
       }
     });
-    logger.info('subscription_updated', { customerId, status, trialEnd });
+    logger.info('subscription_updated', { customerId, subscriptionId, status, trialEnd });
   } catch (err) {
     // If subscription not found, create it
     if (err.code === 'P2025') {

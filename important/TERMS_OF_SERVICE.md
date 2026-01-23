@@ -67,6 +67,34 @@ Nothing in these Terms grants you a license or ownership interest in any intelle
 - We do not store credit card information
 - Subscription benefits are non-transferable
 - Refunds are subject to our refund policy
+- You may cancel your subscription at any time through your account settings
+- Cancellation takes effect at the end of the current billing cycle
+
+## 7.1 THIRD-PARTY APIs AND SERVICES
+
+Lift uses third-party APIs and services to provide its features. By using Lift, you acknowledge and agree that:
+
+- **AI Services**: We use OpenAI (GPT models) and other AI providers to generate content, summaries, and recommendations
+- **Payment Processing**: Stripe processes all payment transactions securely
+- **Analytics**: We may use third-party analytics providers to understand usage patterns
+- **Cloud Infrastructure**: Your data may be stored on cloud providers (AWS, Google Cloud, etc.)
+- **Email Services**: Third-party email providers may be used to send notifications and account-related emails
+- **School Data**: School codes and information may be sourced from external educational databases
+
+**Data Sharing with Third Parties**:
+- Only necessary data is shared with third-party providers
+- Your payment information is handled directly by Stripe (we never see full card details)
+- AI providers may access your prompts and generated content to improve their services (in accordance with their privacy policies)
+- All third-party services are contractually bound to protect your data
+- You can opt-out of certain third-party features in your account settings
+
+**Third-Party Privacy Policies**:
+- Stripe: https://stripe.com/privacy
+- OpenAI: https://openai.com/privacy
+- Google Cloud: https://cloud.google.com/terms/cloud-privacy-notice
+- AWS: https://aws.amazon.com/privacy
+
+You are responsible for reviewing the privacy policies of any third-party services used by Lift.
 
 ## 8. DATA COLLECTION & USAGE ANALYTICS
 
