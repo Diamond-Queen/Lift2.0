@@ -152,58 +152,81 @@
 /* =================== Printable Resume =================== */
 .printableResume {
   background: #fff;
-  padding: 2rem 2.5rem;
+  padding: 2.5rem 3rem;
   color: #111;
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 11pt;
   border-radius: 10px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+  min-height: 900px;
+  display: flex;
+  flex-direction: column;
 }
 
 .printableResume h1 {
-  font-size: 28pt;
+  font-size: 32pt;
   font-weight: 900;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
+  margin-top: 0;
   color: #1a1a1a;
+  letter-spacing: -0.5px;
 }
 
 .printableResume .contact {
   font-size: 10pt;
-  color: #555;
-  margin-bottom: 1rem;
+  color: #666;
+  margin-bottom: 1.2rem;
+  font-weight: 500;
 }
 
 .printableResume h2 {
-  font-size: 14pt;
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 2px solid #6a5af9;
-  padding-bottom: 2px;
+  font-size: 13pt;
+  margin-top: 1.8rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 2.5px solid #6a5af9;
+  padding-bottom: 0.3rem;
   color: #6a5af9;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.printableResume p {
+  margin-bottom: 0.6rem;
 }
 
 .sectionItem {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.4rem;
 }
 
 .sectionItem strong {
-  font-weight: 600;
+  font-weight: 700;
+  color: #1a1a1a;
+  display: block;
+}
+
+.sectionItem p {
+  margin-top: 0.2rem;
+  color: #555;
+  font-size: 10.5pt;
 }
 
 .skillsCertsContainer {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.8rem;
+  margin-top: 0.4rem;
 }
 
 .skillsCertsContainer p {
-  flex: 1 1 45%;
-  background: #eae8ff;
-  padding: 0.4rem 0.6rem;
+  flex: 1 1 auto;
+  background: linear-gradient(135deg, #eae8ff 0%, #f5f3ff 100%);
+  padding: 0.5rem 0.8rem;
   border-radius: 6px;
   font-size: 10pt;
+  margin: 0;
+  border-left: 3px solid #6a5af9;
 }
 
 /* =================== Cover Letter =================== */
