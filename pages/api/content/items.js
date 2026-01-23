@@ -44,11 +44,12 @@ async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // List all content items for user (optionally filtered by type or classId)
-      const { type, classId } = req.query;
+      // List all content items for user (optionally filtered by type, classId, or jobId)
+      const { type, classId, jobId } = req.query;
       const where = { userId };
       if (type) where.type = type;
       if (classId) where.classId = classId;
+      if (jobId) where.jobId = jobId;
 
       const items = prisma
         ? await prisma.contentItem.findMany({
@@ -56,11 +57,11 @@ async function handler(req, res) {
             orderBy: { createdAt: 'desc' }
           })
         : (await pool.query(
-            `SELECT id, title, type, "classId", "createdAt", "updatedAt" 
+            `SELECT id, title, type, "classId", "jobId", "createdAt", "updatedAt" 
              FROM "ContentItem" 
-             WHERE "userId" = $1 ${type ? 'AND type = $2' : ''} ${classId ? `AND "classId" = $${type ? 3 : 2}` : ''}
+             WHERE "userId" = $1 ${type ? 'AND type = $2' : ''} ${classId ? `AND "classId" = $${type ? 3 : 2}` : ''} ${jobId ? `AND "jobId" = $${type ? classId ? 4 : 3 : classId ? 3 : 2}` : ''}
              ORDER BY "createdAt" DESC`,
-            [userId, ...(type ? [type] : []), ...(classId ? [classId] : [])]
+            [userId, ...(type ? [type] : []), ...(classId ? [classId] : []), ...(jobId ? [jobId] : [])]
           )).rows;
 
       return res.json({ ok: true, data: items });
@@ -68,13 +69,51 @@ async function handler(req, res) {
 
     if (req.method === 'POST') {
       // Create a new content item
-      const { type, title, originalInput, classId, summaries, metadata } = req.body || {};
+      const { type, title, originalInput, classId, jobId, summaries, metadata } = req.body || {};
       if (!type || !['note', 'resume', 'cover_letter'].includes(type)) {
         return res.status(400).json({ ok: false, error: 'Invalid content type' });
       }
       if (!title || typeof title !== 'string') return res.status(400).json({ ok: false, error: 'Title required' });
       if (!originalInput || typeof originalInput !== 'string') {
         return res.status(400).json({ ok: false, error: 'Original input required' });
+      }
+
+      // Check subscription plan and item limits
+      try {
+        const userWithSub = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+        });
+        
+        const activeSub = userWithSub?.subscriptions?.[0];
+        const plan = activeSub?.plan;
+        
+        // Notes Only plan: limit notes to 4
+        if (plan === 'notes' && type === 'note') {
+          const noteCount = await prisma.contentItem.count({ where: { userId, type: 'note' } });
+          if (noteCount >= 4) {
+            return res.status(403).json({ 
+              ok: false, 
+              error: 'You have reached the 4 note limit on your current plan. Upgrade to Full Access for unlimited notes.' 
+            });
+          }
+        }
+        
+        // Career Only plan: limit resumes and cover letters to 4 total
+        if (plan === 'career' && (type === 'resume' || type === 'cover_letter')) {
+          const careerCount = await prisma.contentItem.count({ 
+            where: { userId, type: { in: ['resume', 'cover_letter'] } } 
+          });
+          if (careerCount >= 4) {
+            return res.status(403).json({ 
+              ok: false, 
+              error: 'You have reached the 4 document limit on your current plan. Upgrade to Full Access for unlimited career documents.' 
+            });
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to check item subscription limit', { error: err.message });
+        // Continue - let request proceed if check fails
       }
 
       try {
@@ -86,18 +125,19 @@ async function handler(req, res) {
                 title: title.trim(),
                 originalInput,
                 classId: classId || null,
+                jobId: jobId || null,
                 summaries: summaries || null,
                 metadata: metadata || null
               }
             })
           : (await pool.query(
-              `INSERT INTO "ContentItem" (id, "userId", type, title, "originalInput", "classId", summaries, metadata, "createdAt", "updatedAt")
-               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+              `INSERT INTO "ContentItem" (id, "userId", type, title, "originalInput", "classId", "jobId", summaries, metadata, "createdAt", "updatedAt")
+               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
                RETURNING *`,
-              [userId, type, title.trim(), originalInput, classId || null, JSON.stringify(summaries || null), JSON.stringify(metadata || null)]
+              [userId, type, title.trim(), originalInput, classId || null, jobId || null, JSON.stringify(summaries || null), JSON.stringify(metadata || null)]
             )).rows[0];
 
-        logger.info('content_item_created', { userId, type, title: title.trim(), classId: classId || null });
+        logger.info('content_item_created', { userId, type, title: title.trim(), classId: classId || null, jobId: jobId || null });
         return res.json({ ok: true, data: newItem });
       } catch (e) {
         logger.error('content_create_error', { message: e.message });

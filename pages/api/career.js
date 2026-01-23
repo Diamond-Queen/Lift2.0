@@ -37,6 +37,29 @@ async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
   }
 
+  // Check subscription plan for career feature
+  try {
+    const session = await getServerSession(req, res, authOptions);
+    if (session?.user?.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+      });
+      
+      const activeSub = user?.subscriptions?.[0];
+      // Career feature requires 'career' or 'full' plan
+      if (activeSub && activeSub.plan === 'notes') {
+        return res.status(403).json({ 
+          ok: false, 
+          error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to use career features.' 
+        });
+      }
+    }
+  } catch (err) {
+    logger.error('Failed to check career subscription', { error: err.message });
+    // Continue - let request proceed if subscription check fails
+  }
+
   // Load user preferences for AI tone (if authenticated) - USE CACHE FIRST
   let aiTone = 'professional'; // Default tone
   let resumeTemplateStyle = 'professional'; // Default resume template

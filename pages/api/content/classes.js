@@ -65,6 +65,39 @@ async function handler(req, res) {
         return res.status(400).json({ ok: false, error: 'Class name is required' });
       }
 
+      // Check subscription plan and class limit
+      try {
+        const userWithSub = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+        });
+        
+        const activeSub = userWithSub?.subscriptions?.[0];
+        const plan = activeSub?.plan;
+        
+        // Career Only plan cannot create classes (notes feature)
+        if (plan === 'career') {
+          return res.status(403).json({ 
+            ok: false, 
+            error: 'Notes feature is not included in your Career Only plan. Upgrade to Full Access to organize notes by class.' 
+          });
+        }
+        
+        // Notes Only plan has a 4-class limit; Full Access and beta are unlimited
+        if (plan === 'notes') {
+          const classCount = await prisma.class.count({ where: { userId } });
+          if (classCount >= 4) {
+            return res.status(403).json({ 
+              ok: false, 
+              error: 'You have reached the 4 class limit on your current plan. Upgrade to Full Access for unlimited classes.' 
+            });
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to check class subscription limit', { error: err.message });
+        // Continue - let request proceed if check fails
+      }
+
       const trimmedName = name.trim();
       try {
         const newClass = prisma
