@@ -120,14 +120,14 @@ export default function Account() {
           if (p.ok) {
             const pd = await p.json();
             setFormatTemplate(pd.data?.formatTemplate || '');
-            setResumeTemplate(pd.data?.resumeTemplate || 'professional');
-            setCoverLetterTemplate(pd.data?.coverLetterTemplate || 'formal');
             if (pd.data?.preferences) {
               const prefs = pd.data.preferences;
               setTheme(prefs.theme || 'dark');
               if (prefs.studyMusic) setStudyMusic(prefs.studyMusic);
               setSummaryLength(prefs.summaryLength || 'medium');
               setFlashcardDifficulty(prefs.flashcardDifficulty || 'medium');
+              setResumeTemplate(prefs.resumeTemplate || 'professional');
+              setCoverLetterTemplate(prefs.coverLetterTemplate || 'formal');
             }
           }
         } catch (e) {
@@ -152,10 +152,10 @@ export default function Account() {
             studyMusic: studyMusic || 'none',
             summaryLength: summaryLength || 'medium',
             flashcardDifficulty: flashcardDifficulty || 'medium',
+            resumeTemplate: resumeTemplate || 'professional',
+            coverLetterTemplate: coverLetterTemplate || 'formal',
           },
           formatTemplate,
-          resumeTemplate,
-          coverLetterTemplate,
         })
       });
       if (res.ok) {

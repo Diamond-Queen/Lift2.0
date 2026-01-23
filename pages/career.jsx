@@ -40,6 +40,8 @@ export default function Career() {
   const [result, setResult] = useState(null);
   const [formatTemplate, setFormatTemplate] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("professional");
+  const [resumeTemplate, setResumeTemplate] = useState("professional");
+  const [coverLetterTemplate, setCoverLetterTemplate] = useState("formal");
 
   // Job + Content persistence
   const [jobs, setJobs] = useState([]);
@@ -103,6 +105,8 @@ Sincerely,
           const prefs = data?.data?.preferences || {};
           if (typeof prefs.studyMode === 'boolean') setStudyMode(prefs.studyMode);
           if (typeof prefs.studyMusic === 'string') setStudyMusic(prefs.studyMusic);
+          if (typeof prefs.resumeTemplate === 'string') setResumeTemplate(prefs.resumeTemplate);
+          if (typeof prefs.coverLetterTemplate === 'string') setCoverLetterTemplate(prefs.coverLetterTemplate);
         }
       } catch (err) {
         console.error('Failed to fetch preferences:', err);
@@ -484,6 +488,8 @@ Sincerely,
         email,
         phone,
         formatTemplate: templateToUse,
+        resumeTemplate,
+        coverLetterTemplate,
         ...(type === "resume" && {
           address,
           linkedin,
@@ -860,14 +866,13 @@ Sincerely,
               <h1>{result.name}</h1>
               <p className={styles.contact}>{result.email} | {result.phone}{result.address && ` | ${result.address}`}</p>
               {result.linkedin && <p>LinkedIn / Portfolio: {result.linkedin}</p>}
-              {result.objective && <p><strong>Objective:</strong> {result.objective}</p>}
+              {result.objective && <div style={{ marginBottom: '1rem' }}><strong>Professional Summary:</strong> {result.objective}</div>}
 
-              {result.experience?.length > 0 && (
+              {result.experience?.length > 0 ? (
                 <>
                   <h2>Experience</h2>
                   {result.experience.map((job, i) => {
                     const full = asText(job);
-                    // If the API returned a single readable string for the job, print it as a single line
                     if (typeof job === 'string' || (full && !asText(job.title) && !asText(job.company) && !asText(job.dates) && !asText(job.details))) {
                       return (
                         <div key={i} className={styles.sectionItem}>
@@ -875,7 +880,6 @@ Sincerely,
                         </div>
                       );
                     }
-                    // Otherwise treat it as an object with fields
                     const title = asText(job.title);
                     const company = asText(job.company);
                     const dates = asText(job.dates);
@@ -888,13 +892,17 @@ Sincerely,
                     );
                   })}
                 </>
+              ) : (
+                <>
+                  <h2>Experience</h2>
+                  <div style={{ color: '#999', fontStyle: 'italic' }}>Add your professional experience to enhance your resume</div>
+                </>
               )}
 
-              {result.education?.length > 0 && (
+              {result.education?.length > 0 ? (
                 <>
                   <h2>Education</h2>
                   {result.education.map((edu, i) => {
-                    // Prefer a single readable string if possible (handles many nested shapes)
                     const full = asText(edu);
                     const degree = asText(edu.degree);
                     const school = asText(edu.school);
@@ -910,12 +918,21 @@ Sincerely,
                     );
                   })}
                 </>
+              ) : (
+                <>
+                  <h2>Education</h2>
+                  <div style={{ color: '#999', fontStyle: 'italic' }}>Add your educational background</div>
+                </>
               )}
 
               {result.skills?.length > 0 && (
                 <>
                   <h2>Skills</h2>
-                  <p>{result.skills.map(asText).filter(Boolean).join(", ")}</p>
+                  <div className={styles.skillsCertsContainer}>
+                    {result.skills.map((skill, i) => (
+                      <p key={i}>{asText(skill)}</p>
+                    ))}
+                  </div>
                 </>
               )}
 

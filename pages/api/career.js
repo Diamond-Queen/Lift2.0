@@ -39,6 +39,8 @@ async function handler(req, res) {
 
   // Load user preferences for AI tone (if authenticated) - USE CACHE FIRST
   let aiTone = 'professional'; // Default tone
+  let resumeTemplateStyle = 'professional'; // Default resume template
+  let coverLetterStyle = 'formal'; // Default cover letter style
   try {
     const session = await getServerSession(req, res, authOptions);
     if (session?.user?.id) {
@@ -63,9 +65,11 @@ async function handler(req, res) {
       }
       
       aiTone = userPrefs?.aiTone || 'professional';
+      resumeTemplateStyle = userPrefs?.resumeTemplate || 'professional';
+      coverLetterStyle = userPrefs?.coverLetterTemplate || 'formal';
     }
   } catch (err) {
-    // If preference load fails, continue with default
+    // If preference load fails, continue with defaults
     logger.error('Failed to load AI tone preference', { error: err.message });
   }
 
@@ -259,6 +263,27 @@ Layout preferences:
     const toneInstruction = toneMapping[aiTone] || toneMapping['professional'];
     const toneDirective = `\n\n--- TONE & STYLE ---\n${toneInstruction}`;
 
+    // Add resume template style guidance
+    const resumeStyleGuidance = {
+      'professional': 'Use traditional, corporate-friendly formatting. Focus on clear structure and professional language.',
+      'modern': 'Use contemporary design elements. Highlight creative achievements and impact. Include a brief, punchy profile.',
+      'technical': 'Emphasize technical skills prominently. Include technologies, frameworks, and tools. Focus on quantifiable achievements.',
+      'minimalist': 'Keep it simple and focused. Use ample white space. Only include most relevant information. Avoid unnecessary details.',
+      'executive': 'Highlight leadership and strategic impact. Include business metrics and results. Emphasize senior-level achievements.',
+      'creative': 'Allow for creative flair and unique presentation. Highlight awards, exhibitions, or portfolio work. Use engaging language.'
+    };
+    const resumeStyleGuide = resumeStyleGuidance[resumeTemplateStyle] || resumeStyleGuidance['professional'];
+
+    // Add cover letter style guidance
+    const coverLetterStyleGuidance = {
+      'formal': 'Use traditional business letter format with proper letterhead structure. Maintain formal, respectful tone throughout.',
+      'modern': 'Use contemporary formatting. Keep paragraphs concise and punchy. Show personality while remaining professional.',
+      'creative': 'Show personality and unique voice. Engage the reader with compelling storytelling. Take creative risks appropriate for creative roles.',
+      'brief': 'Keep it short and to the point. Limit to 3-4 short paragraphs. Focus on why you\'re a perfect fit.',
+      'narrative': 'Tell your career story. Use narrative structure. Connect past experiences to the future opportunity.'
+    };
+    const coverLetterStyleGuide = coverLetterStyleGuidance[coverLetterStyle] || coverLetterStyleGuidance['formal'];
+
     if (type === "resume") {
       // PROMPT FOR RESUME GENERATION
       prompt = `
@@ -300,6 +325,9 @@ Certifications (Comma separated list): ${certifications || "N/A"}
   "skills": ["Skill 1", "Skill 2"],
   "certifications": ["Certification 1", "Certification 2"]
 }${formatInstructions}${toneDirective}
+
+--- TEMPLATE STYLE GUIDANCE ---
+${resumeStyleGuide}
       `;
     } else {
       // PROMPT FOR COVER LETTER GENERATION
@@ -314,6 +342,8 @@ You are a professional correspondent. Your task is to generate a JSON object rep
     - Paragraph 2: Expand on specific skills, experiences, or qualities mentioned in their input; show how these align with the role.
 4.  **Use Their Words:** Build directly from what they typed. Expand, rephrase professionally, and add structure—but do NOT invent qualifications, employers, or achievements they didn't mention.
 5.  **Minimal Input Handling:** If input is very brief (e.g., "I want this job"), create professional paragraphs expressing enthusiasm and general readiness without specific false claims.
+
+${coverLetterStyleGuide}
 
 --- RAW USER INPUT ---
 Name: ${name}

@@ -149,84 +149,148 @@
   color: #ffffff;
 }
 
-/* =================== Printable Resume =================== */
+/* =================== Printable Resume - Modern Canva Style =================== */
 .printableResume {
   background: #fff;
-  padding: 2.5rem 3rem;
-  color: #111;
+  padding: 0;
+  color: #2d2d2d;
   line-height: 1.6;
   font-size: 11pt;
-  border-radius: 10px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-  min-height: 900px;
-  display: flex;
-  flex-direction: column;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 1200px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  page-break-after: always;
+  overflow: hidden;
+}
+
+/* Left Sidebar */
+.printableResume > h1:first-of-type {
+  grid-column: 1 / 3;
+}
+
+/* Create a pseudo-sidebar effect */
+.printableResume::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 100%;
+  background: linear-gradient(135deg, #6a5af9 0%, #8b7500 100%);
+  z-index: 0;
+}
+
+.printableResume {
+  position: relative;
+  z-index: 1;
 }
 
 .printableResume h1 {
-  font-size: 32pt;
+  font-size: 42pt;
   font-weight: 900;
-  margin-bottom: 0.4rem;
-  margin-top: 0;
-  color: #1a1a1a;
-  letter-spacing: -0.5px;
+  margin: 0;
+  padding: 2rem 2.5rem 0.5rem 2.5rem;
+  color: #000;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  grid-column: 1 / 3;
+  background: #fff;
+  position: relative;
+  z-index: 2;
 }
 
 .printableResume .contact {
-  font-size: 10pt;
+  font-size: 9pt;
   color: #666;
-  margin-bottom: 1.2rem;
+  margin: 0;
+  padding: 0.5rem 2.5rem 1.5rem 2.5rem;
   font-weight: 500;
+  line-height: 1.5;
+  grid-column: 1 / 3;
+  background: #fff;
+  position: relative;
+  z-index: 2;
+}
+
+.printableResume > p:nth-of-type(1) {
+  grid-column: 2 / 3;
+  grid-row: 2;
+  padding: 2rem 2.5rem 1.2rem 2rem;
+  margin: 0;
+  background: #fff;
+  font-size: 10.5pt;
+  line-height: 1.7;
+  color: #444;
+  border-top: 3px solid #6a5af9;
 }
 
 .printableResume h2 {
   font-size: 13pt;
-  margin-top: 1.8rem;
-  margin-bottom: 0.8rem;
-  border-bottom: 2.5px solid #6a5af9;
-  padding-bottom: 0.3rem;
-  color: #6a5af9;
+  margin: 0;
+  padding: 1.5rem 2.5rem 0.8rem 2.5rem;
+  border: none;
+  color: #fff;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 700;
+  letter-spacing: 1.2px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #6a5af9 0%, #8b7500 100%);
+  grid-column: 1 / 3;
+  position: relative;
+  z-index: 2;
 }
 
-.printableResume p {
-  margin-bottom: 0.6rem;
+.printableResume > div:not(.skillsCertsContainer) {
+  grid-column: 2 / 3;
+  padding: 0 2.5rem;
+  background: #fff;
+  position: relative;
+  z-index: 2;
 }
 
 .sectionItem {
-  margin-bottom: 0.8rem;
-  padding-bottom: 0.4rem;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .sectionItem strong {
   font-weight: 700;
-  color: #1a1a1a;
+  color: #000;
   display: block;
+  font-size: 11pt;
+  margin-bottom: 0.2rem;
 }
 
 .sectionItem p {
-  margin-top: 0.2rem;
-  color: #555;
-  font-size: 10.5pt;
+  margin: 0.3rem 0 0 0;
+  color: #666;
+  font-size: 10pt;
+  line-height: 1.5;
 }
 
 .skillsCertsContainer {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
-  margin-top: 0.4rem;
+  margin: 1rem 2.5rem;
+  grid-column: 1 / 3;
+  background: #fff;
+  padding: 1.5rem 2.5rem;
+  position: relative;
+  z-index: 2;
 }
 
 .skillsCertsContainer p {
-  flex: 1 1 auto;
-  background: linear-gradient(135deg, #eae8ff 0%, #f5f3ff 100%);
-  padding: 0.5rem 0.8rem;
-  border-radius: 6px;
+  background: #f5f3ff;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
   font-size: 10pt;
   margin: 0;
-  border-left: 3px solid #6a5af9;
+  border-left: 3px solid #8b7500;
+  color: #333;
+  font-weight: 500;
 }
 
 /* =================== Cover Letter =================== */
