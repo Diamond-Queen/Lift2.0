@@ -170,6 +170,19 @@ export default function NotesUI() {
     }
   }, [selectedClassId]);
 
+  // Auto-save notes for the current class whenever input, summaries, or flashcards change
+  useEffect(() => {
+    if (selectedClassId && (input || summaries.length > 0 || flashcards.length > 0)) {
+      const key = `class_${selectedClassId}_notes`;
+      const dataToSave = {
+        input,
+        summaries,
+        flashcards
+      };
+      localStorage.setItem(key, JSON.stringify(dataToSave));
+    }
+  }, [selectedClassId, input, summaries, flashcards]);
+
   const handleCreateClass = async () => {
     if (!newClassName.trim()) return;
     // Gate: free tier allows max 2 classes

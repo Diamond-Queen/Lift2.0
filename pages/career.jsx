@@ -504,7 +504,7 @@ Sincerely,
 
       if (!res.ok) throw new Error("Network response not ok");
       const data = await res.json();
-      const newResult = data.result || {};
+      const newResult = data.data?.result || data.result || {};
       setResult(newResult);
       // Store per-job
       if (selectedJobId) {
