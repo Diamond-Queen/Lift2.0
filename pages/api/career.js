@@ -1,4 +1,4 @@
-const { generateCompletion } = require('../../lib/ai');
+const { generateCompletion, buildResumeTemplate, buildCoverTemplate } = require('../../lib/ai');
 const logger = require('../../lib/logger');
 const {
   setSecureHeaders,
@@ -396,7 +396,6 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
       logger.error('career_no_json', { snippet: raw.slice(0,200), provider: aiResponse.provider });
       // Use template fallback instead of error
       logger.info('career_using_template_fallback', { type });
-      const { buildResumeTemplate, buildCoverTemplate } = require('../../lib/ai');
       const result = type === 'resume' 
         ? buildResumeTemplate({ name, email, phone, address, linkedin, objective, experience, education, skills, certifications })
         : buildCoverTemplate({ name, recipient, position, paragraphs });
@@ -410,11 +409,30 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
       logger.error('career_json_parse_error', { message: parseErr.message, provider: aiResponse.provider });
       // Use template fallback instead of error
       logger.info('career_using_template_fallback', { type });
-      const { buildResumeTemplate, buildCoverTemplate } = require('../../lib/ai');
-      result = type === 'resume' 
+      const result = type === 'resume' 
         ? buildResumeTemplate({ name, email, phone, address, linkedin, objective, experience, education, skills, certifications })
         : buildCoverTemplate({ name, recipient, position, paragraphs });
-      isTemplateResult = true;
+      return res.status(200).json({ ok: true, data: { result, provider: 'template' } });
+    }
+
+    // For resumes, apply the smart expansion logic from buildResumeTemplate
+    // This ensures objectives are expanded and skills are properly enriched
+    if (type === 'resume') {
+      const expanded = buildResumeTemplate({ 
+        name: result.name || name || '',
+        email: result.email || email || '',
+        phone: result.phone || phone || '',
+        address: result.address || address || '',
+        linkedin: result.linkedin || linkedin || '',
+        objective: result.objective || objective || '',
+        experience: result.experience || experience || [],
+        education: result.education || education || [],
+        skills: result.skills || skills || [],
+        certifications: result.certifications || certifications || []
+      });
+      // Use expanded objective and skills
+      result.objective = expanded.objective || result.objective;
+      result.skills = expanded.skills && expanded.skills.length > 0 ? expanded.skills : (result.skills || []);
     }
 
     // Enforce no new entities: if raw inputs are missing, keep arrays empty
