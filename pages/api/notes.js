@@ -77,10 +77,9 @@ async function handler(req, res) {
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
 
-    // --- Generate summary and flashcards in parallel with resilient adapter (25 second overall timeout) ---
-    // Each AI provider has 10s timeout internally, so this gives them reasonable time
+    // --- Generate summary and flashcards in parallel (10 second timeout) ---
     const timeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Generation timeout - try shorter notes or split them')), 25000)
+      setTimeout(() => reject(new Error('Generation timed out. Try shorter notes.')), 10000)
     );
 
     // Adjust summary prompt based on user preference
