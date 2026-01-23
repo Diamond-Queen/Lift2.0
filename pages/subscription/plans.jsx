@@ -51,12 +51,12 @@ export default function SubscriptionPlans() {
         setSelectedPlan(null);
         return;
       }
-      if (data.data.method === 'cashapp') {
+      if (data.data.url) {
         window.location.href = data.data.url;
-      } else if (data.data.url) {
-        window.location.href = data.data.url;
-      } else if (data.data.sessionId) {
-        router.push(data.data.url);
+      } else {
+        setError('No checkout URL returned');
+        setLoading(false);
+        setSelectedPlan(null);
       }
     } catch (err) {
       setError(err.message || 'An error occurred');
