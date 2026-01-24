@@ -90,8 +90,14 @@ export default function Account() {
           setSubscriptionWarning('Upgrade to a paid plan to keep access after your trial ends.');
         } else if (userData?.subscriptions && userData.subscriptions.length > 0) {
           const sub = userData.subscriptions[0];
+          // Determine plan type
+          const planType = sub.plan === 'career' ? 'Career Only' : 
+                          sub.plan === 'notes' ? 'Notes Only' : 
+                          sub.plan === 'full' ? 'Full Access' : 'Individual';
+          
           if (sub.status === 'trialing') {
-            setAccountType('Beta Tester');
+            // For paid subscriptions on trial, show the plan type with trial indicator
+            setAccountType(`${planType} (Trial)`);
             // Check if trial has ended
             if (sub.trialEndsAt) {
               const trialEndTime = new Date(sub.trialEndsAt).getTime();
@@ -103,11 +109,11 @@ export default function Account() {
               // Check if trial ends soon (within 3 days)
               const daysUntilEnd = (trialEndTime - nowTime) / (1000 * 60 * 60 * 24);
               if (daysUntilEnd <= 3 && daysUntilEnd > 0) {
-                setSubscriptionWarning(`Your trial ends in ${Math.ceil(daysUntilEnd)} day${Math.ceil(daysUntilEnd) > 1 ? 's' : ''}. Upgrade now to keep your access.`);
+                setSubscriptionWarning(`Your ${planType} trial ends in ${Math.ceil(daysUntilEnd)} day${Math.ceil(daysUntilEnd) > 1 ? 's' : ''}. Your payment method will be charged after the trial.`);
               }
             }
           } else if (sub.status === 'active') {
-            setAccountType(userData.schoolId ? 'School' : 'Individual');
+            setAccountType(userData.schoolId ? 'School' : planType);
           } else {
             setAccountType('Individual');
             setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');

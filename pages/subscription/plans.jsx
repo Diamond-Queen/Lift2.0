@@ -29,9 +29,9 @@ export default function SubscriptionPlans() {
   }
 
   const plans = [
-    { id: 'notes', name: 'Notes Only', price: 700, features: ['Unlimited notes', 'PDF export', 'Cloud sync'] },
-    { id: 'career', name: 'Career Only', price: 700, features: ['Career tools', 'Resume builder', 'Interview prep'] },
-    { id: 'full', name: 'Full Access', price: 1000, features: ['All features', 'Notes + Career', 'Priority support'] }
+    { id: 'notes', name: 'Notes Only', price: 700, features: ['AI study notes', 'Up to 4 classes', 'PDF export', 'Cloud sync'] },
+    { id: 'career', name: 'Career Only', price: 700, features: ['Resume builder', 'Cover letter generator', 'Up to 4 saved jobs', 'Interview prep'] },
+    { id: 'full', name: 'Full Access', price: 1000, features: ['Unlimited classes & jobs', 'All Notes features', 'All Career features', 'Priority support'] }
   ];
 
   const handleCheckout = async (planId) => {

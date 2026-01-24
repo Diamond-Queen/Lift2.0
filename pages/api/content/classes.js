@@ -99,6 +99,27 @@ async function handler(req, res) {
       }
 
       const trimmedName = name.trim();
+      
+      // Check if class with this name already exists for this user
+      try {
+        if (prisma) {
+          const existingClass = await prisma.class.findFirst({
+            where: { userId, name: trimmedName }
+          });
+          
+          if (existingClass) {
+            return res.status(409).json({ 
+              ok: false, 
+              error: 'A class with this name already exists',
+              data: existingClass 
+            });
+          }
+        }
+      } catch (checkErr) {
+        logger.error('class_existence_check_failed', { error: checkErr.message });
+        // Continue to attempt creation
+      }
+      
       try {
         const newClass = prisma
           ? await prisma.class.create({
@@ -112,9 +133,14 @@ async function handler(req, res) {
         logger.info('class_created', { userId, name: trimmedName });
         return res.json({ ok: true, data: newClass });
       } catch (e) {
-        if (e.code === 'P2002') {
-          return res.status(409).json({ ok: false, error: 'Class name already exists' });
+        if (e.code === 'P2002' || e.code === '23505') {
+          // P2002 is Prisma unique constraint, 23505 is PostgreSQL unique constraint
+          return res.status(409).json({ 
+            ok: false, 
+            error: 'A class with this name already exists' 
+          });
         }
+        logger.error('class_creation_failed', { error: e.message, code: e.code });
         throw e;
       }
     }

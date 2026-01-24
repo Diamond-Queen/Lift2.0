@@ -120,8 +120,20 @@ async function handler(req, res) {
       const trialEnds = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       try {
         if (prisma) {
-          await prisma.subscription.create({
-            data: {
+          // Use upsert to avoid duplicate subscription errors
+          // For dev mode, we use a fake customer ID based on user ID
+          const devCustomerId = `dev_cus_${user.id}`;
+          
+          await prisma.subscription.upsert({
+            where: { stripeCustomerId: devCustomerId },
+            update: {
+              plan,
+              status: 'trialing',
+              trialEndsAt: trialEnds,
+              userId: user.id
+            },
+            create: {
+              stripeCustomerId: devCustomerId,
               userId: user.id,
               plan,
               status: 'trialing',
