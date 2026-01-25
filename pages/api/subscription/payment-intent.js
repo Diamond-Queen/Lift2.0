@@ -10,9 +10,18 @@ const {
   auditLog,
 } = require('../../../lib/security');
 const { extractClientIp } = require('../../../lib/ip');
-const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
+  // Lazy load authOptions to avoid circular dependency issues
+  let authOptions;
+  try {
+    authOptions = require('../../../lib/authOptions').authOptions;
+  } catch (e) {
+    logger.error('failed_to_load_auth_options', { error: e.message });
+    setSecureHeaders(res);
+    return res.status(500).json({ ok: false, error: 'Server configuration error' });
+  }
+
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
@@ -164,14 +173,18 @@ async function handler(req, res) {
       }
     });
   } catch (err) {
+    const errorMsg = err?.message || String(err) || 'Unknown error';
     logger.error('payment_intent_creation_error', { 
-      message: err.message, 
-      stack: err.stack,
-      code: err.code,
-      param: err.param
+      message: errorMsg,
+      type: err?.constructor?.name,
+      code: err?.code,
+      status: err?.status,
+      plan,
+      hasStripe: !!stripe
     });
-    auditLog('payment_intent_creation_error', null, { message: err.message }, 'error');
-    return res.status(500).json({ ok: false, error: err.message || 'Failed to create payment intent' });
+    console.error('[payment-intent] Error:', errorMsg, err);
+    auditLog('payment_intent_creation_error', null, { message: errorMsg }, 'error');
+    return res.status(500).json({ ok: false, error: errorMsg });
   }
 }
 

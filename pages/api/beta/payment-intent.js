@@ -10,9 +10,18 @@ const {
   auditLog,
 } = require('../../../lib/security');
 const { extractClientIp } = require('../../../lib/ip');
-const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
+  // Lazy load authOptions to avoid circular dependency issues
+  let authOptions;
+  try {
+    authOptions = require('../../../lib/authOptions').authOptions;
+  } catch (e) {
+    logger.error('failed_to_load_auth_options', { error: e.message });
+    setSecureHeaders(res);
+    return res.status(500).json({ ok: false, error: 'Server configuration error' });
+  }
+
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
 
@@ -70,15 +79,6 @@ async function handler(req, res) {
     if (!userLimit.allowed) {
       auditLog('beta_payment_intent_rate_limited_user', user.id, { ip });
       return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
-    }
-
-    // Check if user is already a beta tester
-    const existingBeta = await prisma.betaTester.findUnique({
-      where: { userId: user.id }
-    });
-
-    if (existingBeta) {
-      return res.status(400).json({ ok: false, error: 'You are already a beta tester' });
     }
 
     // Dev mode: return mock data
@@ -153,14 +153,18 @@ async function handler(req, res) {
       }
     });
   } catch (err) {
+    const errorMsg = err?.message || String(err) || 'Unknown error';
     logger.error('beta_payment_intent_creation_error', { 
-      message: err.message, 
-      stack: err.stack,
-      code: err.code,
-      param: err.param
+      message: errorMsg,
+      type: err?.constructor?.name,
+      code: err?.code,
+      status: err?.status,
+      trialType,
+      hasStripe: !!stripe
     });
-    auditLog('beta_payment_intent_creation_error', null, { message: err.message }, 'error');
-    return res.status(500).json({ ok: false, error: err.message || 'Failed to create checkout session' });
+    console.error('[beta-payment-intent] Error:', errorMsg, err);
+    auditLog('beta_payment_intent_creation_error', null, { message: errorMsg }, 'error');
+    return res.status(500).json({ ok: false, error: errorMsg });
   }
 }
 

@@ -131,7 +131,18 @@ async function handler(req, res) {
     }
 
     if (existingBeta) {
-      return res.status(400).json({ ok: false, error: 'You are already registered as a beta tester.' });
+      // User is already a beta tester - allow them to proceed to payment
+      // They may be re-registering with a different trial type or extending their access
+      logger.info('beta_tester_re_registering', { userId, trialType });
+      return res.json({
+        ok: true,
+        data: {
+          redirect: {
+            method: 'stripe',
+            url: `/beta/checkout?trialType=${trialType}`
+          }
+        }
+      });
     }
 
     // Prepare beta tester data with proper null handling
