@@ -84,9 +84,18 @@ async function handler(req, res) {
           where: { id: subscription.id },
           data: { status: 'canceled' }
         });
+        // Delete user account
+        try {
+          await prisma.user.delete({
+            where: { id: user.id }
+          });
+          logger.info('dev_user_account_deleted_after_cancellation', { userId: user.id });
+        } catch (deleteErr) {
+          logger.error('error_deleting_user_in_dev_cancel', { userId: user.id, message: deleteErr.message });
+        }
       }
       logger.info('dev_subscription_canceled', { userId: user.id, subscriptionId: subscription.id });
-      return res.json({ ok: true, message: 'Subscription canceled' });
+      return res.json({ ok: true, message: 'Subscription canceled and account deleted', shouldLogout: true });
     }
 
     // Cancel the Stripe subscription
@@ -109,7 +118,22 @@ async function handler(req, res) {
     });
     auditLog('subscription_canceled', user.id, { subscriptionId: subscription.id, ip });
 
-    return res.json({ ok: true, message: 'Subscription canceled successfully' });
+    // Delete the user account after subscription cancellation
+    if (prisma) {
+      try {
+        await prisma.user.delete({
+          where: { id: user.id }
+        });
+        logger.info('user_account_deleted_after_cancellation', { userId: user.id });
+        auditLog('user_account_deleted_after_cancellation', user.id, { ip });
+      } catch (deleteErr) {
+        logger.error('error_deleting_user_after_cancellation', { userId: user.id, message: deleteErr.message });
+        auditLog('error_deleting_user_after_cancellation', user.id, { message: deleteErr.message }, 'error');
+        // Still return success for subscription cancellation even if delete fails
+      }
+    }
+
+    return res.json({ ok: true, message: 'Subscription canceled and account deleted', shouldLogout: true });
   } catch (err) {
     if (err.type === 'StripeInvalidRequestError' && err.statusCode === 404) {
       // Stripe subscription not found, update local record
@@ -123,8 +147,17 @@ async function handler(req, res) {
             data: { status: 'canceled' }
           });
         }
+        // Delete user account
+        try {
+          await prisma.user.delete({
+            where: { id: session.user.id }
+          });
+          logger.info('user_account_deleted_stripe_404', { userId: session.user.id });
+        } catch (deleteErr) {
+          logger.error('error_deleting_user_in_stripe_404', { userId: session.user.id, message: deleteErr.message });
+        }
       }
-      return res.json({ ok: true, message: 'Subscription canceled' });
+      return res.json({ ok: true, message: 'Subscription canceled and account deleted', shouldLogout: true });
     }
 
     logger.error('cancel_subscription_error', { message: err.message, stack: err.stack });

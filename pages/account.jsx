@@ -183,7 +183,7 @@ export default function Account() {
   }
 
   const handleCancelSubscription = async () => {
-    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features.')) {
+    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features and your account will be permanently deleted.')) {
       return;
     }
 
@@ -195,13 +195,10 @@ export default function Account() {
       });
       const data = await res.json();
       if (res.ok) {
-        setUiStatus({ type: 'success', text: '✅ Subscription canceled' });
-        setSubscription(null);
-        setAccountType('Individual');
-        setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');
-        // Refresh after 2 seconds to reload user data
-        setTimeout(() => {
-          window.location.reload();
+        setUiStatus({ type: 'success', text: '✅ Subscription canceled and account deleted' });
+        // Sign out and redirect after 2 seconds
+        setTimeout(async () => {
+          await signOut({ callbackUrl: '/' });
         }, 2000);
       } else {
         console.error('Cancel subscription error:', data);
