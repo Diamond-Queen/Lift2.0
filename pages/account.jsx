@@ -197,10 +197,8 @@ export default function Account() {
       const data = await res.json();
       if (res.ok) {
         setUiStatus({ type: 'success', text: '✅ Subscription canceled and account deleted' });
-        // Sign out and redirect after 2 seconds
-        setTimeout(async () => {
-          await signOut({ callbackUrl: '/' });
-        }, 2000);
+        // Sign out immediately
+        await signOut({ callbackUrl: '/' });
       } else {
         console.error('Cancel subscription error:', data);
         setUiStatus({ type: 'error', text: `❌ ${data.error || 'Failed to cancel'}` });
@@ -226,8 +224,9 @@ export default function Account() {
       });
       const data = await res.json();
       if (res.ok) {
-        setUiStatus({ type: 'success', text: '✅ Beta trial canceled. Sign out to exit.' });
-        setCancelingBeta(false);
+        setUiStatus({ type: 'success', text: '✅ Beta trial canceled. Signing out...' });
+        // Sign out immediately
+        await signOut({ callbackUrl: '/' });
       } else {
         console.error('Cancel beta trial error:', data);
         setUiStatus({ type: 'error', text: `❌ ${data.error || 'Failed to cancel'}` });
