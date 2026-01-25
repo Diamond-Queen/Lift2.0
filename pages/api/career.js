@@ -336,12 +336,9 @@ Skills (Comma separated list - EXPAND WITH RELATED SKILLS): ${skills || "N/A"}
 Certifications (Comma separated list): ${certifications || "N/A"}
 
 --- REQUIRED JSON FORMAT ---
+IMPORTANT: Only include fields that have actual values. Do NOT include fields with empty strings, "N/A", or placeholder values.
 {
-  "name": "${name}",
-  "email": "${email || ''}",
-  "phone": "${phone || ''}",
-  "address": "${address || ""}",
-  "linkedin": "${linkedin || ""}",
+  "name": "${name}",${email ? `\n  "email": "${email}",` : ''}${phone ? `\n  "phone": "${phone}",` : ''}${address ? `\n  "address": "${address}",` : ''}${linkedin ? `\n  "linkedin": "${linkedin}",` : ''}
   "objective": "A compelling, expanded 2-3 sentence professional summary derived from the raw input. Should highlight career goals and value proposition.",
   "experience": [
     { "title": "Job Title", "company": "Company Name", "dates": "Start - End Date", "details": "Key accomplishment or responsibility." }
@@ -352,6 +349,9 @@ Certifications (Comma separated list): ${certifications || "N/A"}
   "skills": ["Skill 1", "Related Skill 1", "Related Skill 2", "Skill 2"],
   "certifications": ["Certification 1", "Certification 2"]
 }${formatInstructions}${toneDirective}
+
+--- CRITICAL REMINDER ---
+OMIT EMPTY FIELDS: Only include email, phone, address, linkedin if they were provided in the raw input and have actual values. Do NOT include them with empty strings or "N/A".
 
 --- TEMPLATE STYLE GUIDANCE ---
 ${resumeStyleGuide}
@@ -445,6 +445,13 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     // For resumes, apply the smart expansion logic from buildResumeTemplate
     // This ensures objectives are expanded and skills are properly enriched
     if (type === 'resume') {
+      logger.info('resume_applying_expansion', {
+        api_result_objective: result.objective ? result.objective.slice(0, 50) : 'null',
+        api_result_skills: Array.isArray(result.skills) ? result.skills.slice(0, 2) : result.skills,
+        user_input_objective: objective ? objective.slice(0, 50) : 'null',
+        user_input_skills: skills ? String(skills).slice(0, 50) : 'null'
+      });
+      
       const expanded = buildResumeTemplate({ 
         name: result.name || name || '',
         email: result.email || email || '',
@@ -457,24 +464,53 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
         skills: result.skills || skills || [],
         certifications: result.certifications || certifications || []
       });
+      
+      logger.info('resume_after_expansion', {
+        expanded_objective: expanded.objective ? expanded.objective.slice(0, 80) : 'null',
+        expanded_skills: Array.isArray(expanded.skills) ? expanded.skills.slice(0, 3) : null
+      });
+      
       // Use expanded objective and skills
       result.objective = expanded.objective || result.objective;
       result.skills = expanded.skills && expanded.skills.length > 0 ? expanded.skills : (result.skills || []);
+      
+      logger.info('resume_final_result', {
+        final_objective: result.objective ? result.objective.slice(0, 80) : 'null',
+        final_skills: Array.isArray(result.skills) ? result.skills.slice(0, 3) : null
+      });
     }
 
     // Filter out empty/falsy fields from result - don't show N/A or empty values
     if (type === 'resume') {
-      // Remove empty contact fields
-      if (!result.email || result.email === 'N/A' || (typeof result.email === 'string' && result.email.trim() === '')) delete result.email;
-      if (!result.phone || result.phone === 'N/A' || (typeof result.phone === 'string' && result.phone.trim() === '')) delete result.phone;
-      if (!result.address || result.address === 'N/A' || (typeof result.address === 'string' && result.address.trim() === '')) delete result.address;
-      if (!result.linkedin || result.linkedin === 'N/A' || (typeof result.linkedin === 'string' && result.linkedin.trim() === '')) delete result.linkedin;
+      // Remove empty contact fields - be aggressive about removing empty/N/A values
+      if (!result.email || result.email === 'N/A' || (typeof result.email === 'string' && result.email.trim() === '') || result.email === '') delete result.email;
+      if (!result.phone || result.phone === 'N/A' || (typeof result.phone === 'string' && result.phone.trim() === '') || result.phone === '') delete result.phone;
+      if (!result.address || result.address === 'N/A' || (typeof result.address === 'string' && result.address.trim() === '') || result.address === '') delete result.address;
+      if (!result.linkedin || result.linkedin === 'N/A' || (typeof result.linkedin === 'string' && result.linkedin.trim() === '') || result.linkedin === '') delete result.linkedin;
       
-      // Filter empty arrays
-      if (!Array.isArray(result.experience) || result.experience.length === 0) delete result.experience;
-      if (!Array.isArray(result.education) || result.education.length === 0) delete result.education;
-      if (!Array.isArray(result.skills) || result.skills.length === 0) delete result.skills;
-      if (!Array.isArray(result.certifications) || result.certifications.length === 0) delete result.certifications;
+      // Filter empty or all-empty arrays
+      if (!Array.isArray(result.experience) || result.experience.length === 0 || result.experience.every(e => !e || (typeof e === 'string' && !e.trim()))) delete result.experience;
+      if (!Array.isArray(result.education) || result.education.length === 0 || result.education.every(e => !e || (typeof e === 'string' && !e.trim()))) delete result.education;
+      if (!Array.isArray(result.skills) || result.skills.length === 0 || result.skills.every(s => !s || (typeof s === 'string' && !s.trim()))) delete result.skills;
+      if (!Array.isArray(result.certifications) || result.certifications.length === 0 || result.certifications.every(c => !c || (typeof c === 'string' && !c.trim()))) delete result.certifications;
+      
+      // Also filter OUT empty items WITHIN arrays
+      if (Array.isArray(result.experience)) {
+        result.experience = result.experience.filter(e => e && (typeof e !== 'string' || e.trim() !== ''));
+        if (result.experience.length === 0) delete result.experience;
+      }
+      if (Array.isArray(result.education)) {
+        result.education = result.education.filter(e => e && (typeof e !== 'string' || e.trim() !== ''));
+        if (result.education.length === 0) delete result.education;
+      }
+      if (Array.isArray(result.skills)) {
+        result.skills = result.skills.filter(s => s && (typeof s !== 'string' || s.trim() !== ''));
+        if (result.skills.length === 0) delete result.skills;
+      }
+      if (Array.isArray(result.certifications)) {
+        result.certifications = result.certifications.filter(c => c && (typeof c !== 'string' || c.trim() !== ''));
+        if (result.certifications.length === 0) delete result.certifications;
+      }
     } else if (type === 'cover') {
       // For cover letters, ensure paragraphs exist and are not empty
       if (Array.isArray(result.paragraphs)) {

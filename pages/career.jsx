@@ -511,6 +511,9 @@ Sincerely,
       if (!res.ok) throw new Error("Network response not ok");
       const data = await res.json();
       const newResult = data.data?.result || data.result || {};
+      console.log('API Response - newResult:', newResult);
+      console.log('newResult.objective:', newResult.objective);
+      console.log('newResult.skills:', newResult.skills);
       setResult(newResult);
       // Store per-job
       if (selectedJobId) {
