@@ -160,7 +160,7 @@ async function handler(req, res) {
       schoolName: cleanSchoolName,
       organizationName: cleanOrgName,
       trialEndsAt,
-      status: 'active',
+      status: 'pending', // Will be activated after payment succeeds via webhook
     };
 
     // Create beta tester record and mark user as onboarded

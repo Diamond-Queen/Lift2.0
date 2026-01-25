@@ -103,13 +103,46 @@ module.exports.config = config;
 async function handleCheckoutCompleted(session) {
   const userId = session.metadata?.userId;
   const plan = session.metadata?.plan;
+  const trialType = session.metadata?.trialType; // for beta payments
   const isUpgrade = session.metadata?.upgrade === 'true';
   const previousPlan = session.metadata?.previousPlan;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
 
-  if (!userId || !plan) {
+  if (!userId) {
     logger.warn('checkout_completed_missing_metadata', { sessionId: session.id });
+    return;
+  }
+
+  // Handle beta payment (one-time payment)
+  if (trialType && !subscriptionId) {
+    try {
+      // Activate the pending beta tester record
+      if (prisma) {
+        await prisma.betaTester.updateMany({
+          where: { userId, status: 'pending' },
+          data: { status: 'active' }
+        });
+      }
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          onboarded: true,
+          betaTesterPaymentCompleted: true,
+          betaTesterPaymentDate: new Date()
+        }
+      });
+      logger.info('beta_checkout_completed', { userId, trialType, sessionId: session.id });
+      return;
+    } catch (err) {
+      logger.error('beta_checkout_completed_error', { userId, trialType, error: err.message });
+      return;
+    }
+  }
+
+  // Handle subscription checkout (existing logic)
+  if (!plan) {
+    logger.warn('checkout_completed_missing_plan', { sessionId: session.id });
     return;
   }
 
@@ -317,7 +350,13 @@ async function handlePaymentIntentSucceeded(paymentIntent) {
   try {
     // Update user in database if this is a one-time payment
     if (userId && metadata.type === 'beta') {
-      // For beta one-time payments, mark user as having completed payment
+      // For beta one-time payments, activate the beta tester and mark as paid
+      if (prisma) {
+        await prisma.betaTester.updateMany({
+          where: { userId, status: 'pending' },
+          data: { status: 'active' }
+        });
+      }
       await prisma.user.update({
         where: { id: userId },
         data: {
