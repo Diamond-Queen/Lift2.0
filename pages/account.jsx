@@ -624,10 +624,10 @@ export default function Account() {
             </div>
           </div>
 
-          {/* AI Preferences - Only for users with notes access */}
+          {/* Notes Preferences - Only for users with notes access */}
           {user?.subscriptions?.[0]?.plan !== 'career' || user?.betaTester ? (
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>AI Preferences</h2>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>Notes Preferences</h2>
             <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
               Customize how Lift generates summaries and flashcards for your notes.
             </p>
