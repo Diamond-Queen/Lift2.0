@@ -130,7 +130,14 @@ async function handler(req, res) {
       });
     }
 
+    // Validate price ID exists
+    if (!planConfig.price) {
+      logger.error('missing_stripe_price_id', { plan });
+      return res.status(500).json({ ok: false, error: `Stripe price not configured for plan: ${plan}` });
+    }
+
     // Create Checkout Session for subscription (Embedded Checkout)
+    logger.info('creating_checkout_session', { customerId: customer.id, plan, price: planConfig.price });
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       line_items: [
@@ -162,9 +169,14 @@ async function handler(req, res) {
       }
     });
   } catch (err) {
-    logger.error('payment_intent_creation_error', { message: err.message, stack: err.stack });
+    logger.error('payment_intent_creation_error', { 
+      message: err.message, 
+      stack: err.stack,
+      code: err.code,
+      param: err.param
+    });
     auditLog('payment_intent_creation_error', null, { message: err.message }, 'error');
-    return res.status(500).json({ ok: false, error: 'Failed to create payment intent' });
+    return res.status(500).json({ ok: false, error: err.message || 'Failed to create payment intent' });
   }
 }
 
