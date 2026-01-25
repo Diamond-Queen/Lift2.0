@@ -121,6 +121,12 @@ async function handler(req, res) {
     // Delete the user account after subscription cancellation
     if (prisma) {
       try {
+        // First delete all related records to avoid foreign key issues
+        await prisma.subscription.deleteMany({
+          where: { userId: user.id }
+        });
+        
+        // Then delete the user
         await prisma.user.delete({
           where: { id: user.id }
         });
@@ -147,8 +153,12 @@ async function handler(req, res) {
             data: { status: 'canceled' }
           });
         }
-        // Delete user account
+        // Delete related records and user account
         try {
+          await prisma.subscription.deleteMany({
+            where: { userId: session.user.id }
+          });
+          
           await prisma.user.delete({
             where: { id: session.user.id }
           });
