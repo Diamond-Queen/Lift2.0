@@ -69,13 +69,14 @@ async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'User is not in beta program' });
     }
 
-    // Mark beta tester as inactive (cancel trial)
+    // Cancel beta trial by disconnecting the BetaTester relationship
     if (prisma) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          betaTester: false,
-          betaTrialEndsAt: new Date() // Mark as expired
+          betaTester: {
+            disconnect: true
+          }
         }
       });
     }
