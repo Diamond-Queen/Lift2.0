@@ -122,20 +122,20 @@ async function handler(req, res) {
 
     // Adjust flashcard prompt based on difficulty preference
     const flashcardDifficultyMap = {
-      'easy': 'Create 12 straightforward flashcards covering basic concepts and definitions.',
-      'medium': 'Create 12 flashcards with balanced complexity covering key concepts.',
-      'hard': 'Create 12 challenging flashcards that test deep understanding and application.'
+      'easy': 'Create straightforward flashcards covering basic concepts and definitions.',
+      'medium': 'Create flashcards with balanced complexity covering key concepts.',
+      'hard': 'Create challenging flashcards that test deep understanding and application.'
     };
     const flashcardInstruction = flashcardDifficultyMap[flashcardDifficulty] || flashcardDifficultyMap['medium'];
 
     const flashcardsPromise = generateCompletion({
-      prompt: `TASK: Generate 12 study flashcards ONLY in JSON format. ${flashcardInstruction} CRITICAL: Return ONLY this JSON structure, nothing else - no explanation, no markdown, just pure JSON:
-[{"question":"...","answer":"..."},{"question":"...","answer":"..."}]
+      prompt: `TASK: Generate study flashcards in JSON format. ${flashcardInstruction} Return at least 5-8 cards (fewer if the content is very limited, more if detailed). For minimal input (like a single topic), generate 4-5 basic cards. CRITICAL: Return ONLY this JSON structure, nothing else - no explanation, no markdown, just pure JSON:
+[{"question":"...","answer":"..."}]
 
-Create exactly 12 cards testing knowledge from:
+Generate flashcards from this content:
 ${notes}`,
-      temperature: 0.3,
-      maxTokens: 1000,
+      // For short notes, be more lenient with token limits
+      maxTokens: notes.length < 100 ? 500 : 1000,
       type: 'json',
       context: { type: 'flashcards', notes, flashcardDifficulty }
     });

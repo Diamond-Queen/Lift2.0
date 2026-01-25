@@ -702,6 +702,22 @@ export default function NotesUI() {
 
           <textarea className={styles.textarea} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste notes, type, or upload a file..." />
 
+          {/* Input validation warning */}
+          {input.trim() && input.trim().length < 50 && (
+            <div style={{ 
+              padding: '0.75rem 1rem', 
+              marginBottom: '1rem',
+              background: 'rgba(255, 193, 7, 0.1)',
+              border: '1px solid rgba(255, 193, 7, 0.3)',
+              borderRadius: '6px',
+              color: '#ffc107',
+              fontSize: '0.9rem',
+              lineHeight: '1.4'
+            }}>
+              ⚠️ <strong>Note:</strong> Your note is very short ({input.trim().length} characters). For better results with flashcards, provide more details and context. Example: "Define photosynthesis and explain the light-dependent reactions step by step."
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
             <button className={styles.secondaryButton} onClick={handleGenerate} disabled={loading} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700 }}>
               {loading ? 'Generating…' : 'Generate Notes'}
