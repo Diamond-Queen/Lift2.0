@@ -73,6 +73,18 @@ async function handler(req, res) {
         break;
       }
 
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object;
+        await handlePaymentIntentSucceeded(paymentIntent);
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object;
+        await handlePaymentIntentFailed(paymentIntent);
+        break;
+      }
+
       default:
         logger.info('webhook_unhandled_event', { type: event.type });
     }
@@ -293,4 +305,74 @@ async function handlePaymentFailed(invoice) {
 
   // Optionally notify user or take action
   logger.warn('payment_failed', { customerId, subscriptionId, attemptCount: invoice.attempt_count });
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent) {
+  const customerId = paymentIntent.customer;
+  const paymentIntentId = paymentIntent.id;
+  const amount = paymentIntent.amount;
+  const metadata = paymentIntent.metadata || {};
+  const userId = metadata.userId;
+
+  try {
+    // Update user in database if this is a one-time payment
+    if (userId && metadata.type === 'beta') {
+      // For beta one-time payments, mark user as having completed payment
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          betaTesterPaymentCompleted: true,
+          betaTesterPaymentDate: new Date()
+        }
+      });
+      logger.info('beta_one_time_payment_succeeded', { 
+        userId, 
+        paymentIntentId, 
+        amount,
+        customerId 
+      });
+    } else {
+      // Log other one-time payments
+      logger.info('payment_intent_succeeded', { 
+        customerId, 
+        paymentIntentId, 
+        amount,
+        userId 
+      });
+    }
+  } catch (err) {
+    logger.error('payment_intent_success_handler_error', { 
+      message: err.message,
+      paymentIntentId,
+      userId 
+    });
+  }
+}
+
+async function handlePaymentIntentFailed(paymentIntent) {
+  const customerId = paymentIntent.customer;
+  const paymentIntentId = paymentIntent.id;
+  const amount = paymentIntent.amount;
+  const lastPaymentError = paymentIntent.last_payment_error;
+  const metadata = paymentIntent.metadata || {};
+  const userId = metadata.userId;
+
+  try {
+    logger.warn('payment_intent_failed', { 
+      customerId, 
+      paymentIntentId, 
+      amount,
+      userId,
+      error: lastPaymentError?.message,
+      errorCode: lastPaymentError?.code 
+    });
+
+    // Optionally notify user of payment failure or take action
+    // For now, just log it
+  } catch (err) {
+    logger.error('payment_intent_failure_handler_error', { 
+      message: err.message,
+      paymentIntentId 
+    });
+  }
 }
