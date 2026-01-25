@@ -168,7 +168,7 @@ Sincerely,
   const fetchJobs = async () => {
     setLoadingJobs(true);
     try {
-      const res = await fetch('/api/content/classes');
+      const res = await fetch('/api/content/classes?type=job');
       if (res.ok) {
         const data = await res.json();
         setJobs(data.data || []);
@@ -252,7 +252,7 @@ Sincerely,
       const res = await fetch('/api/content/classes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newJobName, color: newJobColor })
+        body: JSON.stringify({ name: newJobName, color: newJobColor, type: 'job' })
       });
       if (res.ok) {
         const data = await res.json();

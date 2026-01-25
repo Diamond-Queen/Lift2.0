@@ -44,28 +44,31 @@ async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // List all classes for user
+      // List all classes for user - filter by type if specified in query
+      const classType = req.query.type || 'class'; // Default to 'class' unless specified as 'job'
       const classes = prisma
         ? await prisma.class.findMany({
-            where: { userId },
+            where: { userId, type: classType },
             orderBy: { createdAt: 'desc' }
           })
         : (await pool.query(
-            'SELECT id, name, color, "createdAt", "updatedAt" FROM "Class" WHERE "userId" = $1 ORDER BY "createdAt" DESC',
-            [userId]
+            'SELECT id, name, color, type, "createdAt", "updatedAt" FROM "Class" WHERE "userId" = $1 AND type = $2 ORDER BY "createdAt" DESC',
+            [userId, classType]
           )).rows;
 
       return res.json({ ok: true, data: classes });
     }
 
     if (req.method === 'POST') {
-      // Create a new class
-      const { name, color } = req.body || {};
+      // Create a new class or job
+      const { name, color, type } = req.body || {};
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ ok: false, error: 'Class name is required' });
+        return res.status(400).json({ ok: false, error: 'Name is required' });
       }
 
-      // Check subscription plan and class limit
+      const classType = type || 'class'; // Default to 'class' unless specified as 'job'
+
+      // Check subscription plan and class/job limit
       try {
         const userWithSub = await prisma.user.findUnique({
           where: { id: userId },
@@ -76,16 +79,24 @@ async function handler(req, res) {
         const plan = activeSub?.plan;
         
         // Career Only plan cannot create classes (notes feature)
-        if (plan === 'career') {
+        if (plan === 'career' && classType === 'class') {
           return res.status(403).json({ 
             ok: false, 
             error: 'Notes feature is not included in your Career Only plan. Upgrade to Full Access to organize notes by class.' 
           });
         }
         
+        // Notes Only plan cannot create jobs (career feature)
+        if (plan === 'notes' && classType === 'job') {
+          return res.status(403).json({ 
+            ok: false, 
+            error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to manage jobs.' 
+          });
+        }
+        
         // Notes Only plan has a 4-class limit; Full Access and beta are unlimited
-        if (plan === 'notes') {
-          const classCount = await prisma.class.count({ where: { userId } });
+        if (plan === 'notes' && classType === 'class') {
+          const classCount = await prisma.class.count({ where: { userId, type: 'class' } });
           if (classCount >= 4) {
             return res.status(403).json({ 
               ok: false, 
@@ -93,51 +104,62 @@ async function handler(req, res) {
             });
           }
         }
+        
+        // Career Only plan has a 4-job limit; Full Access and beta are unlimited
+        if (plan === 'career' && classType === 'job') {
+          const jobCount = await prisma.class.count({ where: { userId, type: 'job' } });
+          if (jobCount >= 4) {
+            return res.status(403).json({ 
+              ok: false, 
+              error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+            });
+          }
+        }
       } catch (err) {
-        logger.error('Failed to check class subscription limit', { error: err.message });
+        logger.error('Failed to check subscription limit', { error: err.message });
         // Continue - let request proceed if check fails
       }
 
       const trimmedName = name.trim();
       
-      // Check if class with this name already exists for this user
+      // Check if class/job with this name already exists for this user
       try {
         if (prisma) {
           const existingClass = await prisma.class.findFirst({
-            where: { userId, name: trimmedName }
+            where: { userId, name: trimmedName, type: classType }
           });
           
           if (existingClass) {
             return res.status(409).json({ 
               ok: false, 
-              error: 'A class with this name already exists',
+              error: 'A ' + classType + ' with this name already exists',
               data: existingClass 
             });
           }
         }
       } catch (checkErr) {
-        logger.error('class_existence_check_failed', { error: checkErr.message });
+        logger.error('existence_check_failed', { error: checkErr.message });
         // Continue to attempt creation
       }
       
       try {
         const newClass = prisma
           ? await prisma.class.create({
-              data: { userId, name: trimmedName, color: color || '#d4af37' }
+              data: { userId, name: trimmedName, color: color || '#d4af37', type: classType }
             })
           : (await pool.query(
-              'INSERT INTO "Class" (id, "userId", name, color, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING *',
-              [userId, trimmedName, color || '#d4af37']
+              'INSERT INTO "Class" (id, "userId", name, color, type, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW()) RETURNING *',
+              [userId, trimmedName, color || '#d4af37', classType]
             )).rows[0];
 
-        logger.info('class_created', { userId, name: trimmedName });
+        logger.info('class_created', { userId, name: trimmedName, type: classType });
         return res.json({ ok: true, data: newClass });
       } catch (e) {
         if (e.code === 'P2002' || e.code === '23505') {
           // P2002 is Prisma unique constraint, 23505 is PostgreSQL unique constraint
           return res.status(409).json({ 
             ok: false, 
-            error: 'A class with this name already exists' 
+            error: 'A ' + classType + ' with this name already exists' 
           });
         }
         logger.error('class_creation_failed', { error: e.message, code: e.code });
