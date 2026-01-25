@@ -91,6 +91,8 @@ module.exports.config = config;
 async function handleCheckoutCompleted(session) {
   const userId = session.metadata?.userId;
   const plan = session.metadata?.plan;
+  const isUpgrade = session.metadata?.upgrade === 'true';
+  const previousPlan = session.metadata?.previousPlan;
   const customerId = session.customer;
   const subscriptionId = session.subscription;
 
@@ -119,26 +121,66 @@ async function handleCheckoutCompleted(session) {
   });
 
   // Create or update subscription record
-  await prisma.subscription.upsert({
-    where: { stripeCustomerId: customerId },
-    update: {
-      stripeSubscriptionId: subscriptionId,
-      status: subscription.status,
-      plan: plan,
-      trialEndsAt: trialEnd,
-      userId: userId
-    },
-    create: {
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscriptionId,
-      status: subscription.status,
-      plan: plan,
-      trialEndsAt: trialEnd,
-      userId: userId
-    }
-  });
+  // For upgrades, update the existing subscription. For new subscriptions, create or upsert.
+  if (isUpgrade && previousPlan) {
+    // Find the existing subscription and update it
+    const existingSub = await prisma.subscription.findFirst({
+      where: { userId: userId }
+    });
 
-  logger.info('checkout_completed', { userId, plan, subscriptionId, trialEnd });
+    if (existingSub) {
+      await prisma.subscription.update({
+        where: { id: existingSub.id },
+        data: {
+          stripeSubscriptionId: subscriptionId,
+          status: subscription.status,
+          plan: plan,
+          trialEndsAt: trialEnd,
+          stripeCustomerId: customerId
+        }
+      });
+      logger.info('subscription_upgraded', { 
+        userId, 
+        previousPlan, 
+        newPlan: plan, 
+        subscriptionId, 
+        trialEnd 
+      });
+    } else {
+      // Create new if not found (shouldn't happen in normal flow)
+      await prisma.subscription.create({
+        data: {
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          status: subscription.status,
+          plan: plan,
+          trialEndsAt: trialEnd,
+          userId: userId
+        }
+      });
+    }
+  } else {
+    // New subscription
+    await prisma.subscription.upsert({
+      where: { stripeCustomerId: customerId },
+      update: {
+        stripeSubscriptionId: subscriptionId,
+        status: subscription.status,
+        plan: plan,
+        trialEndsAt: trialEnd,
+        userId: userId
+      },
+      create: {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        status: subscription.status,
+        plan: plan,
+        trialEndsAt: trialEnd,
+        userId: userId
+      }
+    });
+    logger.info('checkout_completed', { userId, plan, subscriptionId, trialEnd });
+  }
 }
 
 async function handleSubscriptionUpdate(subscription) {
@@ -147,18 +189,51 @@ async function handleSubscriptionUpdate(subscription) {
   const status = subscription.status;
   const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
 
+  // Get the current items to determine plan
+  const items = subscription.items?.data || [];
+  const lineItem = items[0];
+  
+  let plan = null;
+  if (lineItem?.price?.id === process.env.STRIPE_PRICE_CAREER) {
+    plan = 'career';
+  } else if (lineItem?.price?.id === process.env.STRIPE_PRICE_NOTES) {
+    plan = 'notes';
+  } else if (lineItem?.price?.id === process.env.STRIPE_PRICE_FULL) {
+    plan = 'full';
+  }
+
   try {
-    await prisma.subscription.update({
+    const existingSub = await prisma.subscription.findUnique({
       where: { stripeCustomerId: customerId },
-      data: {
-        stripeSubscriptionId: subscriptionId,
-        status: status,
-        trialEndsAt: trialEnd
-      }
+      select: { plan: true, status: true }
     });
-    logger.info('subscription_updated', { customerId, subscriptionId, status, trialEnd });
+
+    if (existingSub) {
+      const planChanged = plan && existingSub.plan !== plan;
+      if (planChanged) {
+        logger.info('subscription_plan_changed', { 
+          customerId, 
+          subscriptionId, 
+          previousPlan: existingSub.plan,
+          newPlan: plan,
+          status 
+        });
+      }
+
+      await prisma.subscription.update({
+        where: { stripeCustomerId: customerId },
+        data: {
+          stripeSubscriptionId: subscriptionId,
+          status: status,
+          ...(plan && { plan: plan }),
+          trialEndsAt: trialEnd
+        }
+      });
+      logger.info('subscription_updated', { customerId, subscriptionId, status, plan, trialEnd });
+    } else {
+      logger.warn('subscription_not_found_for_update', { customerId });
+    }
   } catch (err) {
-    // If subscription not found, create it
     if (err.code === 'P2025') {
       logger.warn('subscription_not_found_for_update', { customerId });
     } else {

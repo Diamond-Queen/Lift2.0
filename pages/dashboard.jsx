@@ -425,7 +425,7 @@ export default function Dashboard() {
               Career is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($10/month) or Career Only ($5/month)
+              Upgrade to Full Access ($10/month) or Career Only ($7/month)
             </Link>
           </div>
         )}
@@ -435,7 +435,7 @@ export default function Dashboard() {
           {plan === 'career' ? (
             <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed' }}>
               Lift Notes
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Notes ($5/mo) or Full Access ($10/mo)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Notes ($7/mo) or Full Access ($10/mo)</div>
             </button>
           ) : (
             <Link href="/notes" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem' }}>
@@ -448,7 +448,7 @@ export default function Dashboard() {
           {plan === 'notes' ? (
             <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', border: '1px solid rgba(147, 51, 234, 0.2)' }}>
               Lift Career
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($5/mo) or Full Access ($10/mo)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($7/mo) or Full Access ($10/mo)</div>
             </button>
           ) : (
             <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.5)' }}>
@@ -457,13 +457,18 @@ export default function Dashboard() {
             </Link>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
             <Link href="/account" className={styles.loginLink}>
               Account Settings
             </Link>
             {(plan === 'career' || plan === 'notes') && (
               <Link href="/subscription/plans" className={styles.loginLink}>
-                Upgrade to Full Access
+                Upgrade Plan
+              </Link>
+            )}
+            {plan && (plan === 'career' || plan === 'notes' || plan === 'full') && (
+              <Link href="/account?tab=subscription" className={styles.loginLink} style={{ color: '#dc2626' }}>
+                Cancel Subscription
               </Link>
             )}
           </div>

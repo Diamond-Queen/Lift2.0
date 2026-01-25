@@ -114,7 +114,6 @@ async function handler(req, res) {
       });
     }
 
-    // Create Checkout Session for beta (one-time payment via Embedded Checkout)
     const session_obj = await stripe.checkout.sessions.create({
       customer: customer.id,
       line_items: [
@@ -131,8 +130,8 @@ async function handler(req, res) {
         }
       ],
       mode: 'payment',
-      ui_mode: 'embedded',
-      return_url: `${process.env.NEXTAUTH_URL}/beta/checkout?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=success`,
+      cancel_url: `${process.env.NEXTAUTH_URL}/beta-signup?checkout=cancelled`,
       metadata: {
         userId: user.id,
         trialType: trialType
@@ -149,7 +148,7 @@ async function handler(req, res) {
     return res.json({
       ok: true,
       data: {
-        clientSecret: session_obj.client_secret
+        redirectUrl: session_obj.url
       }
     });
   } catch (err) {

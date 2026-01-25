@@ -25,6 +25,7 @@ export default function Account() {
   const [flashcardDifficulty, setFlashcardDifficulty] = useState('medium');
   const [subscription, setSubscription] = useState(null);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
+  const [cancelingBeta, setCancelingBeta] = useState(false);
 
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
@@ -212,6 +213,41 @@ export default function Account() {
     }
   }
 
+  const handleCancelBetaTrial = async () => {
+    if (!window.confirm('Are you sure you want to cancel your beta trial? You will lose access to Lift.')) {
+      return;
+    }
+
+    setCancelingBeta(true);
+    try {
+      const res = await fetch('/api/beta/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUiStatus({ type: 'success', text: '✅ Beta trial canceled. Sign out to exit.' });
+        setCancelingBeta(false);
+      } else {
+        console.error('Cancel beta trial error:', data);
+        setUiStatus({ type: 'error', text: `❌ ${data.error || 'Failed to cancel'}` });
+        setCancelingBeta(false);
+      }
+    } catch (err) {
+      console.error('Cancel beta trial exception:', err);
+      setUiStatus({ type: 'error', text: '❌ Error canceling beta trial' });
+      setCancelingBeta(false);
+    }
+  }
+
+  const handleUpgradeSubscription = async () => {
+    try {
+      await router.push('/subscription/plans');
+    } catch (err) {
+      setUiStatus({ type: 'error', text: '❌ Failed to navigate to upgrade page' });
+    }
+  }
+
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
   };
@@ -280,8 +316,8 @@ export default function Account() {
             </div>
           )}
 
-          {/* Subscription Management */}
-          {user?.subscriptions && user.subscriptions.length > 0 && user.subscriptions[0].status === 'active' && (
+          {/* Subscription Management - Active Paid Subscription */}
+          {user?.subscriptions && user.subscriptions.length > 0 && (user.subscriptions[0].status === 'active' || user.subscriptions[0].status === 'trialing') && (
             <div style={{
               marginBottom: '1.5rem',
               padding: '1rem',
@@ -290,30 +326,119 @@ export default function Account() {
               border: '1px solid rgba(147, 51, 234, 0.3)',
               color: '#fff'
             }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.75rem', color: '#fff' }}>Active Subscription</h3>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.75rem', color: '#fff' }}>
+                {user.subscriptions[0].status === 'trialing' ? 'Trial Subscription' : 'Active Subscription'}
+              </h3>
               <div style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                 <p style={{ margin: '0.25rem 0', color: '#aaa' }}>
                   Plan: <span style={{ color: '#9333EA', fontWeight: '600' }}>{user.subscriptions[0].plan.charAt(0).toUpperCase() + user.subscriptions[0].plan.slice(1)}</span>
                 </p>
+                {user.subscriptions[0].status === 'trialing' && user.subscriptions[0].trialEndsAt && (
+                  <p style={{ margin: '0.25rem 0', color: '#aaa' }}>
+                    Trial ends: <span style={{ color: '#9333EA', fontWeight: '600' }}>{new Date(user.subscriptions[0].trialEndsAt).toLocaleDateString()}</span>
+                  </p>
+                )}
               </div>
-              <button
-                onClick={handleCancelSubscription}
-                disabled={cancelingSubscription}
-                style={{
-                  padding: '0.6rem 1rem',
-                  background: '#dc2626',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: cancelingSubscription ? 'not-allowed' : 'pointer',
-                  opacity: cancelingSubscription ? 0.6 : 1,
-                  transition: 'all 0.2s'
-                }}
-              >
-                {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {user.subscriptions[0].plan !== 'full' && (
+                  <button
+                    onClick={handleUpgradeSubscription}
+                    disabled={cancelingSubscription}
+                    style={{
+                      padding: '0.6rem 1rem',
+                      background: '#8b7500',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      opacity: cancelingSubscription ? 0.6 : 1,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
+                <button
+                  onClick={handleCancelSubscription}
+                  disabled={cancelingSubscription}
+                  style={{
+                    padding: '0.6rem 1rem',
+                    background: '#dc2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: cancelingSubscription ? 'not-allowed' : 'pointer',
+                    opacity: cancelingSubscription ? 0.6 : 1,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Beta Tester Management */}
+          {user?.betaTester && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              borderRadius: '8px',
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              color: '#fff'
+            }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '0.75rem', color: '#fff' }}>Beta Tester</h3>
+              <div style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                <p style={{ margin: '0.25rem 0', color: '#aaa' }}>
+                  You are enrolled in the Lift beta program. Enjoy early access to new features!
+                </p>
+                {user.betaTrialEndsAt && (
+                  <p style={{ margin: '0.25rem 0', color: '#aaa' }}>
+                    Beta trial ends: <span style={{ color: '#3B82F6', fontWeight: '600' }}>{new Date(user.betaTrialEndsAt).toLocaleDateString()}</span>
+                  </p>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleUpgradeSubscription}
+                  style={{
+                    padding: '0.6rem 1rem',
+                    background: '#8b7500',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Upgrade to Paid Plan
+                </button>
+                <button
+                  onClick={handleCancelBetaTrial}
+                  disabled={cancelingBeta}
+                  style={{
+                    padding: '0.6rem 1rem',
+                    background: '#dc2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: cancelingBeta ? 'not-allowed' : 'pointer',
+                    opacity: cancelingBeta ? 0.6 : 1,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {cancelingBeta ? 'Canceling...' : 'Cancel Trial'}
+                </button>
+              </div>
             </div>
           )}
 

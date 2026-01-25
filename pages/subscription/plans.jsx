@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import Link from "next/link";
@@ -10,7 +10,26 @@ export default function SubscriptionPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userPlan, setUserPlan] = useState(null);
   const devMode = String(process.env.NEXT_PUBLIC_STRIPE_DEV_MODE || "").toLowerCase() === 'true';
+
+  // Fetch current user plan on mount
+  useEffect(() => {
+    if (status === 'authenticated') {
+      (async () => {
+        try {
+          const res = await fetch('/api/user');
+          if (res.ok) {
+            const data = await res.json();
+            const currentPlan = data?.data?.user?.preferences?.subscriptionPlan;
+            setUserPlan(currentPlan);
+          }
+        } catch (err) {
+          console.error('Failed to fetch user plan:', err);
+        }
+      })();
+    }
+  }, [status]);
 
   if (status === 'loading') {
     return (
@@ -39,8 +58,25 @@ export default function SubscriptionPlans() {
     setSelectedPlan(planId);
     setError('');
     try {
-      // Navigate to embedded checkout page
-      await router.push(`/subscription/checkout?plan=${planId}`);
+      // If user has an existing plan and is upgrading, use upgrade endpoint
+      if (userPlan && userPlan !== planId) {
+        const res = await fetch('/api/subscription/upgrade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPlan: planId })
+        });
+        const data = await res.json();
+        if (res.ok && data.data?.redirectUrl) {
+          window.location.href = data.data.redirectUrl;
+        } else {
+          setError(data.error || 'Failed to upgrade plan');
+          setLoading(false);
+          setSelectedPlan(null);
+        }
+      } else {
+        // New subscription
+        await router.push(`/subscription/checkout?plan=${planId}`);
+      }
     } catch (err) {
       setError(err.message || 'An error occurred');
       setLoading(false);
@@ -85,8 +121,8 @@ export default function SubscriptionPlans() {
                   {p.features.map((f, i) => <li key={i} style={{ marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{f}</li>)}
                 </ul>
               </div>
-              <button onClick={() => handleCheckout(p.id)} disabled={loading && selectedPlan === p.id} className={styles.submitButton} style={{ width: '100%', marginTop: '1rem' }}>
-                {loading && selectedPlan === p.id ? 'Processing...' : 'Subscribe Now'}
+              <button onClick={() => handleCheckout(p.id)} disabled={loading && selectedPlan === p.id || userPlan === p.id} className={styles.submitButton} style={{ width: '100%', marginTop: '1rem' }}>
+                {loading && selectedPlan === p.id ? 'Processing...' : userPlan === p.id ? 'Current Plan' : userPlan ? 'Upgrade' : 'Subscribe Now'}
               </button>
             </div>
           ))}
