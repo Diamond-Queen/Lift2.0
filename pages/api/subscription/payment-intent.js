@@ -10,6 +10,7 @@ const {
   auditLog,
 } = require('../../../lib/security');
 const { extractClientIp } = require('../../../lib/ip');
+const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -26,15 +27,6 @@ async function handler(req, res) {
   if (!ipLimit.allowed) {
     auditLog('payment_intent_rate_limited_ip', null, { ip });
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
-  }
-
-  let authOptions;
-  try {
-    const imported = await import('../../../lib/authOptions');
-    authOptions = imported.authOptions;
-  } catch (e) {
-    logger.error('failed_to_import_auth_options', { error: e.message });
-    return res.status(500).json({ ok: false, error: 'Server configuration error' });
   }
 
   let session;
