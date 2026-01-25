@@ -49,17 +49,20 @@ async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Plan parameter is required' });
   }
 
-  const validPlans = {
-    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 700, name: 'Career Only' },
-    notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 700, name: 'Notes Only' },
-    full: { price: process.env.STRIPE_PRICE_FULL, amount: 1000, name: 'Full Access' }
-  };
-
-  if (!validPlans[plan]) {
+  // Validate plan is one of the allowed types
+  const validPlans = ['career', 'notes', 'full'];
+  if (!validPlans.includes(plan)) {
     return res.status(400).json({ ok: false, error: 'Invalid plan selected' });
   }
 
-  const planConfig = validPlans[plan];
+  // Hardcoded price IDs from environment for security
+  const PLAN_CONFIG = {
+    career: { priceId: process.env.STRIPE_PRICE_CAREER, name: 'Career Only' },
+    notes: { priceId: process.env.STRIPE_PRICE_NOTES, name: 'Notes Only' },
+    full: { priceId: process.env.STRIPE_PRICE_FULL, name: 'Full Access' }
+  };
+
+  const planConfig = PLAN_CONFIG[plan];
 
   try {
     const user = prisma
@@ -123,18 +126,18 @@ async function handler(req, res) {
     }
 
     // Validate price ID exists
-    if (!planConfig.price) {
+    if (!planConfig.priceId) {
       logger.error('missing_stripe_price_id', { plan });
       return res.status(500).json({ ok: false, error: `Stripe price not configured for plan: ${plan}` });
     }
 
     // Create Checkout Session for subscription (Embedded Checkout)
-    logger.info('creating_checkout_session', { customerId: customer.id, plan, price: planConfig.price });
+    logger.info('creating_checkout_session', { customerId: customer.id, plan, price: planConfig.priceId });
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       line_items: [
         {
-          price: planConfig.price,
+          price: planConfig.priceId,
           quantity: 1
         }
       ],

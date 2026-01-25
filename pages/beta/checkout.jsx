@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -25,13 +25,19 @@ export default function BetaCheckoutPage() {
     }
   }, [status, router]);
 
-  // Fetch payment intent
+  // Fetch client secret from backend
   useEffect(() => {
-    if (!trialType) return;
+    if (!trialType || status !== 'authenticated') return;
 
-    const fetchPaymentIntent = async () => {
+    const fetchClientSecret = async () => {
       try {
         setLoading(true);
+        
+        if (!['school', 'social'].includes(trialType)) {
+          setError('Invalid trial type');
+          return;
+        }
+
         const res = await fetch('/api/beta/payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -39,21 +45,34 @@ export default function BetaCheckoutPage() {
         });
 
         const data = await res.json();
+        console.log('Client secret response:', data);
+        
         if (res.ok) {
-          setClientSecret(data.data.clientSecret);
+          const secret = data.data?.clientSecret || data.clientSecret;
+          console.log('Client secret:', secret);
+          setClientSecret(secret);
         } else {
           setError(data.error || 'Failed to initialize checkout');
         }
       } catch (err) {
-        console.error('Error fetching payment intent:', err);
+        console.error('Error fetching client secret:', err);
         setError('Failed to initialize checkout');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPaymentIntent();
-  }, [trialType]);
+    fetchClientSecret();
+  }, [trialType, status]);
+
+  const checkoutOptions = useMemo(() => ({
+    clientSecret,
+    onComplete: async () => {
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
+    }
+  }), [clientSecret, router]);
 
   if (status === 'loading' || loading) {
     return (
@@ -93,21 +112,15 @@ export default function BetaCheckoutPage() {
           {clientSecret && (
             <EmbeddedCheckoutProvider 
               stripe={stripePromise} 
-              options={{ 
-                clientSecret,
-                onComplete: async () => {
-                  // Wait a moment for backend to process
-                  setTimeout(() => {
-                    router.push('/dashboard');
-                  }, 1500);
-                }
-              }}
+              options={checkoutOptions}
             >
               <div style={{
                 background: '#1a1a1a',
                 borderRadius: '8px',
                 border: '2px solid #8b7500',
-                padding: '2rem'
+                padding: '2rem',
+                width: '100%',
+                boxSizing: 'border-box'
               }}>
                 <EmbeddedCheckout />
               </div>

@@ -40,11 +40,19 @@ export default function SubscriptionPlans() {
     setError('');
     try {
       // Navigate to embedded checkout page
-      router.push(`/subscription/checkout?plan=${planId}`);
+      await router.push(`/subscription/checkout?plan=${planId}`);
     } catch (err) {
       setError(err.message || 'An error occurred');
       setLoading(false);
       setSelectedPlan(null);
+    }
+  };
+
+  const handleBeta = async () => {
+    try {
+      await router.push('/beta-signup');
+    } catch (err) {
+      setError('Failed to navigate to beta signup');
     }
   };
 
@@ -58,7 +66,7 @@ export default function SubscriptionPlans() {
         <div style={{ marginBottom: '3rem', padding: '1.5rem', border: '2px solid var(--accent)', borderRadius: '8px', background: 'rgba(var(--accent-rgb, 59, 130, 246), 0.05)' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', color: 'var(--accent)' }}>✨ Join Our Beta Program</h2>
           <p style={{ margin: '0.5rem 0 1rem 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Get early access to new features and help shape the future of Lift. Choose between school or social beta for extended free trials.</p>
-          <button onClick={() => router.push('/beta-signup')} className={styles.submitButton} style={{ width: '100%' }}>
+          <button onClick={handleBeta} className={styles.submitButton} style={{ width: '100%' }}>
             Join the Beta Program
           </button>
         </div>

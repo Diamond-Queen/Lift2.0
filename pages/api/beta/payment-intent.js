@@ -10,6 +10,7 @@ const {
   auditLog,
 } = require('../../../lib/security');
 const { extractClientIp } = require('../../../lib/ip');
+const { authOptions } = require('../../../lib/authOptions');
 
 async function handler(req, res) {
   setSecureHeaders(res);
@@ -26,15 +27,6 @@ async function handler(req, res) {
   if (!ipLimit.allowed) {
     auditLog('beta_payment_intent_rate_limited_ip', null, { ip });
     return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
-  }
-
-  let authOptions;
-  try {
-    const imported = await import('../../../lib/authOptions');
-    authOptions = imported.authOptions;
-  } catch (e) {
-    logger.error('failed_to_import_auth_options', { error: e.message });
-    return res.status(500).json({ ok: false, error: 'Server configuration error' });
   }
 
   let session;
@@ -60,6 +52,9 @@ async function handler(req, res) {
   if (!['school', 'social'].includes(trialType)) {
     return res.status(400).json({ ok: false, error: 'Invalid trial type. Must be "school" or "social".' });
   }
+
+  // Hardcoded amount for security
+  const BETA_AMOUNT = 300; // $3.00 in cents
 
   try {
     const user = prisma
@@ -88,15 +83,12 @@ async function handler(req, res) {
 
     // Dev mode: return mock data
     if (devMode) {
-      const mockIntentId = `pi_dev_beta_${user.id}_${Date.now()}`;
+      const mockSecret = `cs_dev_${user.id}_${Date.now()}_secret_${Math.random().toString(36).substr(2, 9)}`;
       logger.info('beta_payment_intent_dev_mode', { userId: user.id, trialType });
       return res.json({
         ok: true,
         data: {
-          clientSecret: `${mockIntentId}_secret_dev`,
-          intentId: mockIntentId,
-          amount: 300, // $3.00 in cents
-          trialType: trialType
+          clientSecret: mockSecret
         }
       });
     }
@@ -122,44 +114,53 @@ async function handler(req, res) {
       });
     }
 
-    // Create Payment Intent for beta purchase (one-time $3 payment)
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Create Checkout Session for beta (one-time payment via Embedded Checkout)
+    const session_obj = await stripe.checkout.sessions.create({
       customer: customer.id,
-      amount: 300, // $3.00 in cents
-      currency: 'usd',
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never'
-      },
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Beta Program Access (${trialType} trial)`,
+              description: `${trialType === 'school' ? 14 : 7} days free premium features`
+            },
+            unit_amount: BETA_AMOUNT
+          },
+          quantity: 1
+        }
+      ],
+      mode: 'payment',
+      ui_mode: 'embedded',
+      return_url: `${process.env.NEXTAUTH_URL}/beta/checkout?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         userId: user.id,
-        type: 'beta',
         trialType: trialType
-      },
-      description: `Beta Program Access (${trialType} trial)`
+      }
     });
 
-    logger.info('beta_payment_intent_created', {
+    logger.info('beta_checkout_session_created', {
       userId: user.id,
-      intentId: paymentIntent.id,
+      sessionId: session_obj.id,
       trialType
     });
-    auditLog('beta_payment_intent_created', user.id, { intentId: paymentIntent.id, trialType, ip });
+    auditLog('beta_checkout_session_created', user.id, { sessionId: session_obj.id, trialType, ip });
 
     return res.json({
       ok: true,
       data: {
-        clientSecret: paymentIntent.client_secret,
-        intentId: paymentIntent.id,
-        amount: 300,
-        trialType: trialType,
-        trialDays: trialType === 'school' ? 14 : 7
+        clientSecret: session_obj.client_secret
       }
     });
   } catch (err) {
-    logger.error('beta_payment_intent_creation_error', { message: err.message, stack: err.stack });
+    logger.error('beta_payment_intent_creation_error', { 
+      message: err.message, 
+      stack: err.stack,
+      code: err.code,
+      param: err.param
+    });
     auditLog('beta_payment_intent_creation_error', null, { message: err.message }, 'error');
-    return res.status(500).json({ ok: false, error: 'Failed to create payment intent' });
+    return res.status(500).json({ ok: false, error: err.message || 'Failed to create checkout session' });
   }
 }
 

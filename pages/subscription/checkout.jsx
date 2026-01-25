@@ -25,13 +25,19 @@ export default function CheckoutPage() {
     }
   }, [status, router]);
 
-  // Fetch payment intent
+  // Fetch client secret from backend
   useEffect(() => {
-    if (!plan) return;
+    if (!plan || status !== 'authenticated') return;
 
-    const fetchPaymentIntent = async () => {
+    const fetchClientSecret = async () => {
       try {
         setLoading(true);
+        
+        if (!['career', 'notes', 'full'].includes(plan)) {
+          setError(`Invalid plan: ${plan}`);
+          return;
+        }
+
         const res = await fetch('/api/subscription/payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -39,7 +45,8 @@ export default function CheckoutPage() {
         });
 
         const data = await res.json();
-        console.log('Payment intent response:', data);
+        console.log('Client secret response:', data);
+        
         if (res.ok) {
           const secret = data.data?.clientSecret || data.clientSecret;
           console.log('Client secret:', secret);
@@ -48,15 +55,15 @@ export default function CheckoutPage() {
           setError(data.error || 'Failed to initialize checkout');
         }
       } catch (err) {
-        console.error('Error fetching payment intent:', err);
+        console.error('Error fetching client secret:', err);
         setError('Failed to initialize checkout');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPaymentIntent();
-  }, [plan]);
+    fetchClientSecret();
+  }, [plan, status]);
 
   const checkoutOptions = useMemo(() => ({
     clientSecret,
