@@ -257,7 +257,37 @@ async function handler(req, res) {
         return sanitizeValue(e);
       }).filter(Boolean);
     }
-    return res.status(200).json({ ok: true, data: { result: out } });
+    
+    // CRITICAL: Apply expansion logic even for structured input!
+    // This ensures objectives and skills are properly expanded
+    logger.info('applying_expansion_to_structured_input', {
+      has_objective: !!objective,
+      objective_length: objective ? objective.length : 0,
+      has_skills: out.skills && out.skills.length > 0,
+      skills_count: out.skills ? out.skills.length : 0
+    });
+    
+    const expanded = buildResumeTemplate({
+      name: out.name || '',
+      email: out.email || '',
+      phone: out.phone || '',
+      address: out.address || '',
+      linkedin: out.linkedin || '',
+      objective: objective || '', // Use original objective
+      experience: out.experience || [],
+      education: out.education || [],
+      skills: skills || out.skills || [], // Use original skills input
+      certifications: out.certifications || []
+    });
+    
+    logger.info('structured_input_after_expansion', {
+      expanded_objective: expanded.objective ? expanded.objective.slice(0, 100) : 'null',
+      expanded_skills_count: Array.isArray(expanded.skills) ? expanded.skills.length : 0,
+      expanded_skills_sample: Array.isArray(expanded.skills) ? JSON.stringify(expanded.skills.slice(0, 5)) : 'null'
+    });
+    
+    // Use expanded values
+    return res.status(200).json({ ok: true, data: { result: expanded } });
   }
 
   try {
@@ -453,11 +483,11 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     if (type === 'resume') {
       // IMPORTANT: Always re-expand using buildResumeTemplate to ensure consistent, quality expansions
       // Use ORIGINAL user input for objective/skills, not the API response, to guarantee proper expansion
-      logger.info('resume_applying_expansion', {
-        api_result_objective: result.objective ? result.objective.slice(0, 50) : 'null',
-        api_result_skills: Array.isArray(result.skills) ? result.skills.slice(0, 2) : result.skills,
-        user_input_objective: objective ? objective.slice(0, 50) : 'null',
-        user_input_skills: skills ? String(skills).slice(0, 50) : 'null'
+      logger.info('resume_applying_expansion_start', {
+        user_provided_objective: objective ? objective.slice(0, 80) : 'EMPTY',
+        user_provided_skills: skills ? String(skills).slice(0, 80) : 'EMPTY',
+        api_returned_objective: result.objective ? result.objective.slice(0, 80) : 'EMPTY',
+        api_returned_skills: Array.isArray(result.skills) ? JSON.stringify(result.skills.slice(0,3)) : String(result.skills).slice(0, 80)
       });
       
       // CRITICAL: Use user input objective/skills for expansion, not API response
@@ -476,8 +506,9 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
       });
       
       logger.info('resume_after_expansion', {
-        expanded_objective: expanded.objective ? expanded.objective.slice(0, 80) : 'null',
-        expanded_skills: Array.isArray(expanded.skills) ? expanded.skills.slice(0, 3) : null
+        expanded_objective: expanded.objective ? expanded.objective.slice(0, 100) : 'null',
+        expanded_skills_count: Array.isArray(expanded.skills) ? expanded.skills.length : 0,
+        expanded_skills_sample: Array.isArray(expanded.skills) ? JSON.stringify(expanded.skills.slice(0, 5)) : 'null'
       });
       
       // Use expanded values - they're guaranteed to be properly expanded
