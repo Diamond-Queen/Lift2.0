@@ -624,7 +624,8 @@ export default function Account() {
             </div>
           </div>
 
-          {/* AI Preferences */}
+          {/* AI Preferences - Only for users with notes access */}
+          {user?.subscriptions?.[0]?.plan !== 'career' || user?.betaTester ? (
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#fff' }}>AI Preferences</h2>
             <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
@@ -655,30 +656,61 @@ export default function Account() {
               </select>
             </div>
 
-            <div style={{ marginBottom: '0' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>
-                Flashcard Difficulty
-              </label>
-              <select
-                value={flashcardDifficulty}
-                onChange={(e) => setFlashcardDifficulty(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.7rem',
-                  borderRadius: '8px',
-                  border: '2px solid #8b7500',
-                  background: '#1a1a1a',
-                  color: '#fff',
-                  fontSize: '0.9rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="easy">Easy - Basic concepts</option>
-                <option value="medium">Medium - Key understanding</option>
-                <option value="hard">Hard - Deep comprehension</option>
-              </select>
-            </div>
+            {/* Only show flashcard difficulty for users with notes access (not career-only) */}
+            {user?.subscriptions?.[0]?.plan !== 'career' && user?.betaTester && (
+              <div style={{ marginBottom: '0' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>
+                  Flashcard Difficulty
+                </label>
+                <select
+                  value={flashcardDifficulty}
+                  onChange={(e) => setFlashcardDifficulty(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    borderRadius: '8px',
+                    border: '2px solid #8b7500',
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="easy">Easy - Basic concepts</option>
+                  <option value="medium">Medium - Key understanding</option>
+                  <option value="hard">Hard - Deep comprehension</option>
+                </select>
+              </div>
+            )}
+            
+            {/* Show flashcard difficulty for non-career plans */}
+            {user?.subscriptions?.[0]?.plan !== 'career' && !user?.betaTester && (
+              <div style={{ marginBottom: '0' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff', fontSize: '0.9rem', fontWeight: '600' }}>
+                  Flashcard Difficulty
+                </label>
+                <select
+                  value={flashcardDifficulty}
+                  onChange={(e) => setFlashcardDifficulty(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.7rem',
+                    borderRadius: '8px',
+                    border: '2px solid #8b7500',
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="easy">Easy - Basic concepts</option>
+                  <option value="medium">Medium - Key understanding</option>
+                  <option value="hard">Hard - Deep comprehension</option>
+                </select>
+              </div>
+            )}
           </div>
+          ) : null}
 
           {/* Resume & Cover Letter Templates */}
           <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '2px solid #8b7500' }}>
