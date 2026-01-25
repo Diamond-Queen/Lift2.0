@@ -66,9 +66,9 @@ async function handler(req, res) {
 
   // Hardcoded price IDs from environment for security
   const PLAN_CONFIG = {
-    career: { priceId: process.env.STRIPE_PRICE_CAREER, name: 'Career Only' },
-    notes: { priceId: process.env.STRIPE_PRICE_NOTES, name: 'Notes Only' },
-    full: { priceId: process.env.STRIPE_PRICE_FULL, name: 'Full Access' }
+    career: { name: 'Career Only', amount: 700 }, // $7.00
+    notes: { name: 'Notes Only', amount: 700 }, // $7.00
+    full: { name: 'Full Access', amount: 1000 } // $10.00
   };
 
   const planConfig = PLAN_CONFIG[plan];
@@ -135,19 +135,30 @@ async function handler(req, res) {
       });
     }
 
-    // Validate price ID exists
-    if (!planConfig.priceId) {
-      logger.error('missing_stripe_price_id', { plan });
-      return res.status(500).json({ ok: false, error: `Stripe price not configured for plan: ${plan}` });
+    // Validate plan config exists
+    if (!planConfig) {
+      logger.error('missing_plan_config', { plan });
+      return res.status(500).json({ ok: false, error: `Plan not configured: ${plan}` });
     }
 
-    // Create Checkout Session for subscription (Embedded Checkout)
-    logger.info('creating_checkout_session', { customerId: customer.id, plan, price: planConfig.priceId });
+    // Create Checkout Session for subscription
+    logger.info('creating_checkout_session', { customerId: customer.id, plan, amount: planConfig.amount });
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       line_items: [
         {
-          price: planConfig.priceId,
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: planConfig.name,
+              description: `${planConfig.name} - $${(planConfig.amount / 100).toFixed(2)}/month`
+            },
+            unit_amount: planConfig.amount,
+            recurring: {
+              interval: 'month',
+              interval_count: 1
+            }
+          },
           quantity: 1
         }
       ],
