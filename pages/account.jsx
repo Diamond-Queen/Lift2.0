@@ -378,6 +378,28 @@ export default function Account() {
                         Upgrade
                       </Link>
                     )}
+                    {(sub.status === 'active' || sub.status === 'trialing') && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={cancelingSubscription}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            marginLeft: 0,
+                            background: '#dc2626',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            cursor: cancelingSubscription ? 'not-allowed' : 'pointer',
+                            opacity: cancelingSubscription ? 0.6 : 1
+                          }}
+                        >
+                          {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
