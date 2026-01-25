@@ -312,12 +312,16 @@ Layout preferences:
       prompt = `
 You are a professional resume writer. Your task is to generate a JSON object representing a polished resume based on the raw, unstructured user inputs provided below.
 
---- CRITICAL INSTRUCTION ---
+--- CRITICAL INSTRUCTIONS ---
 1.  **Strict Output:** You MUST output only the JSON object. Do not include any commentary, markdown fence (e.g., \`\`\`json), or explanations.
 2.  **Required Structure:** The JSON MUST strictly conform to the structure below.
-  3.  **Synthesis Only (No New Entities):** You may expand phrasing and summarize from hints. If some fields are missing (email, phone, address, linkedin), leave them empty strings.
-  4.  **Skill Inference:** You may infer a list of generic professional skills (e.g., communication, problem-solving) only if the raw "Skills" list is empty.
-  5.  **No New Entities:** Do NOT invent company names, school names, degree titles, or certifications that are not present in the user's raw input. If input is missing for 'experience', 'education', or 'certifications', return an empty array [] for those fields.
+3.  **Synthesis and Expansion:** You MUST expand and professionalize the user's raw input. This is crucial:
+    - **Objective field (CRITICAL):** Transform the "About Yourself/Career Direction" raw input into a compelling, 2-3 sentence professional summary (150-200 characters). Even if the user provided a short phrase, expand it into a complete professional objective statement that highlights career goals and value proposition.
+    - **Skills field (IMPORTANT):** Polish and contextualize the provided skills. Add related technical or soft skills that complement the provided list. For example, if user provides "Python", expand to include "Data Analysis", "Problem-solving", etc.
+    - **Experience & Education:** Enhance phrasing, fix grammar, and add context. Do NOT invent new jobs or degrees.
+4.  **Skill Expansion:** You may infer related or complementary skills based on provided skills. For example: JavaScript → React, Node.js, Web Development. Communication → Presentation, Writing, Stakeholder Engagement.
+5.  **No Entity Fabrication:** Do NOT invent company names, school names, degree titles, or certifications. If input is missing for 'experience', 'education', or 'certifications', return empty arrays.
+6.  **Omit Empty Fields:** IMPORTANT - Do NOT include empty/N/A/blank values. If email, phone, address, or linkedin are not provided or are blank, do NOT include them in the output.
 
 --- RAW USER INPUT ---
 Name: ${name}
@@ -325,10 +329,10 @@ Email: ${email}
 Phone: ${phone}
 Address: ${address || "N/A"}
 LinkedIn/Portfolio: ${linkedin || "N/A"}
-About Yourself/Career Direction (Source for Summary): ${objective || "N/A"}
+About Yourself/Career Direction (EXPAND THIS INTO A PROFESSIONAL OBJECTIVE): ${objective || "N/A"}
 Experience (Title | Company | Dates | Details per line): ${experience || "N/A"}
 Education (Degree | School | Dates per line): ${education || "N/A"}
-Skills (Comma separated list): ${skills || "N/A"}
+Skills (Comma separated list - EXPAND WITH RELATED SKILLS): ${skills || "N/A"}
 Certifications (Comma separated list): ${certifications || "N/A"}
 
 --- REQUIRED JSON FORMAT ---
@@ -338,14 +342,14 @@ Certifications (Comma separated list): ${certifications || "N/A"}
   "phone": "${phone || ''}",
   "address": "${address || ""}",
   "linkedin": "${linkedin || ""}",
-  "objective": "A compelling, synthesized professional summary goes here.",
+  "objective": "A compelling, expanded 2-3 sentence professional summary derived from the raw input. Should highlight career goals and value proposition.",
   "experience": [
     { "title": "Job Title", "company": "Company Name", "dates": "Start - End Date", "details": "Key accomplishment or responsibility." }
   ],
   "education": [
     { "degree": "Degree/Major", "school": "Institution Name", "dates": "Start - End Date" }
   ],
-  "skills": ["Skill 1", "Skill 2"],
+  "skills": ["Skill 1", "Related Skill 1", "Related Skill 2", "Skill 2"],
   "certifications": ["Certification 1", "Certification 2"]
 }${formatInstructions}${toneDirective}
 
@@ -456,6 +460,26 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
       // Use expanded objective and skills
       result.objective = expanded.objective || result.objective;
       result.skills = expanded.skills && expanded.skills.length > 0 ? expanded.skills : (result.skills || []);
+    }
+
+    // Filter out empty/falsy fields from result - don't show N/A or empty values
+    if (type === 'resume') {
+      // Remove empty contact fields
+      if (!result.email || result.email === 'N/A' || (typeof result.email === 'string' && result.email.trim() === '')) delete result.email;
+      if (!result.phone || result.phone === 'N/A' || (typeof result.phone === 'string' && result.phone.trim() === '')) delete result.phone;
+      if (!result.address || result.address === 'N/A' || (typeof result.address === 'string' && result.address.trim() === '')) delete result.address;
+      if (!result.linkedin || result.linkedin === 'N/A' || (typeof result.linkedin === 'string' && result.linkedin.trim() === '')) delete result.linkedin;
+      
+      // Filter empty arrays
+      if (!Array.isArray(result.experience) || result.experience.length === 0) delete result.experience;
+      if (!Array.isArray(result.education) || result.education.length === 0) delete result.education;
+      if (!Array.isArray(result.skills) || result.skills.length === 0) delete result.skills;
+      if (!Array.isArray(result.certifications) || result.certifications.length === 0) delete result.certifications;
+    } else if (type === 'cover') {
+      // For cover letters, ensure paragraphs exist and are not empty
+      if (Array.isArray(result.paragraphs)) {
+        result.paragraphs = result.paragraphs.filter(p => p && (typeof p === 'string' && p.trim().length > 0));
+      }
     }
 
     // Enforce no new entities: if raw inputs are missing, keep arrays empty
