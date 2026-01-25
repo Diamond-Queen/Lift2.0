@@ -168,7 +168,7 @@ Sincerely,
   const fetchJobs = async () => {
     setLoadingJobs(true);
     try {
-      const res = await fetch('/api/content/classes');
+      const res = await fetch('/api/content/jobs');
       if (res.ok) {
         const data = await res.json();
         setJobs(data.data || []);
@@ -249,10 +249,10 @@ Sincerely,
     if (!newJobName.trim()) return;
     setLoadingJobs(true);
     try {
-      const res = await fetch('/api/content/classes', {
+      const res = await fetch('/api/content/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newJobName, color: newJobColor })
+        body: JSON.stringify({ title: newJobName })
       });
       if (res.ok) {
         const data = await res.json();
@@ -275,10 +275,10 @@ Sincerely,
     if (!editingJobName.trim()) return;
     setLoadingJobs(true);
     try {
-      const res = await fetch('/api/content/classes', {
+      const res = await fetch('/api/content/jobs', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId: jobId, name: editingJobName, color: editingJobColor })
+        body: JSON.stringify({ jobId, title: editingJobName })
       });
       if (res.ok) {
         const data = await res.json();
@@ -300,10 +300,10 @@ Sincerely,
     if (!confirm("Delete this job and all its documents?")) return;
     setLoadingJobs(true);
     try {
-      const res = await fetch('/api/content/classes', {
+      const res = await fetch('/api/content/jobs', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId: jobId })
+        body: JSON.stringify({ jobId })
       });
       if (res.ok) {
         // Clear localStorage for all content types for this job

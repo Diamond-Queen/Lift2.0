@@ -432,6 +432,12 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     let result;
     try {
       result = JSON.parse(jsonMatch[0]);
+      logger.info('career_api_response_parsed', { 
+        provider: aiResponse.provider,
+        objective: result.objective ? result.objective.slice(0, 80) : 'null',
+        skills_count: Array.isArray(result.skills) ? result.skills.length : 0,
+        skills_sample: Array.isArray(result.skills) ? result.skills.slice(0, 3) : []
+      });
     } catch (parseErr) {
       logger.error('career_json_parse_error', { message: parseErr.message, provider: aiResponse.provider });
       // Use template fallback instead of error
@@ -445,6 +451,8 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
     // For resumes, apply the smart expansion logic from buildResumeTemplate
     // This ensures objectives are expanded and skills are properly enriched
     if (type === 'resume') {
+      // IMPORTANT: Always re-expand using buildResumeTemplate to ensure consistent, quality expansions
+      // Use ORIGINAL user input for objective/skills, not the API response, to guarantee proper expansion
       logger.info('resume_applying_expansion', {
         api_result_objective: result.objective ? result.objective.slice(0, 50) : 'null',
         api_result_skills: Array.isArray(result.skills) ? result.skills.slice(0, 2) : result.skills,
@@ -452,16 +460,18 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
         user_input_skills: skills ? String(skills).slice(0, 50) : 'null'
       });
       
+      // CRITICAL: Use user input objective/skills for expansion, not API response
+      // This ensures our professional expansion logic is applied consistently
       const expanded = buildResumeTemplate({ 
         name: result.name || name || '',
         email: result.email || email || '',
         phone: result.phone || phone || '',
         address: result.address || address || '',
         linkedin: result.linkedin || linkedin || '',
-        objective: result.objective || objective || '',
+        objective: objective || result.objective || '', // Prefer original user input
         experience: result.experience || experience || [],
         education: result.education || education || [],
-        skills: result.skills || skills || [],
+        skills: skills || result.skills || [], // Prefer original user input
         certifications: result.certifications || certifications || []
       });
       
@@ -470,7 +480,7 @@ User's Thoughts/Input to Expand: ${paragraphs || "N/A"}
         expanded_skills: Array.isArray(expanded.skills) ? expanded.skills.slice(0, 3) : null
       });
       
-      // Use expanded objective and skills
+      // Use expanded values - they're guaranteed to be properly expanded
       result.objective = expanded.objective || result.objective;
       result.skills = expanded.skills && expanded.skills.length > 0 ? expanded.skills : (result.skills || []);
       
