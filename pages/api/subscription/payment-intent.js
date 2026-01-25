@@ -143,7 +143,7 @@ async function handler(req, res) {
 
     // Create Checkout Session for subscription
     logger.info('creating_checkout_session', { customerId: customer.id, plan, amount: planConfig.amount });
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       customer: customer.id,
       line_items: [
         {
@@ -173,15 +173,15 @@ async function handler(req, res) {
 
     logger.info('checkout_session_created', {
       userId: user.id,
-      sessionId: session.id,
+      sessionId: checkoutSession.id,
       plan
     });
-    auditLog('checkout_session_created', user.id, { plan, sessionId: session.id, ip });
+    auditLog('checkout_session_created', user.id, { plan, sessionId: checkoutSession.id, ip });
 
     return res.json({
       ok: true,
       data: {
-        redirectUrl: session.url
+        redirectUrl: checkoutSession.url
       }
     });
   } catch (err) {
