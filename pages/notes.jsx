@@ -34,7 +34,7 @@ export default function Notes() {
             // Check subscription tier via user.preferences
             const plan = user?.preferences?.subscriptionPlan || null;
             if (plan === 'career') {
-              alert('Notes requires Notes Only ($5/month) or Full Access ($10/month). You currently have Career Only access.');
+              alert('Notes requires Notes Only ($7/month) or Full Access ($10/month). You currently have Career Only access.');
               router.replace('/subscription/plans');
               return;
             }

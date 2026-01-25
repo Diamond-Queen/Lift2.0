@@ -18,7 +18,7 @@ export default function Subscription() {
   const [loading, setLoading] = useState(false);
 
   const planDetails = {
-    career: { name: 'Career Only', price: 9, features: ['Lift Career', 'Resume builder', 'Cover letter generator'] },
+    career: { name: 'Career Only', price: 7, features: ['Lift Career', 'Resume builder', 'Cover letter generator'] },
     full: { name: 'Full Access', price: 10, features: ['Lift Career', 'Lift Notes', 'AI study notes', 'Resume & cover letters'] }
   };
 

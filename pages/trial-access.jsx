@@ -164,7 +164,7 @@ export default function TrialAccessGate() {
             </p>
 
             <div style={{ textAlign: 'center', fontSize: '0.85em', color: 'var(--text-muted)' }}>
-              <p style={{ margin: '10px 0' }}>💰 <strong>Career Only:</strong> $9/month</p>
+              <p style={{ margin: '10px 0' }}>💰 <strong>Career Only:</strong> $7/month</p>
               <p style={{ margin: '10px 0' }}>🎓 <strong>Full Access:</strong> $10/month</p>
             </div>
           </div>
