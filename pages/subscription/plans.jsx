@@ -39,25 +39,8 @@ export default function SubscriptionPlans() {
     setSelectedPlan(planId);
     setError('');
     try {
-      const response = await fetch('/api/subscription/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planId })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error || 'Checkout failed');
-        setLoading(false);
-        setSelectedPlan(null);
-        return;
-      }
-      if (data.data.url) {
-        window.location.href = data.data.url;
-      } else {
-        setError('No checkout URL returned');
-        setLoading(false);
-        setSelectedPlan(null);
-      }
+      // Navigate to embedded checkout page
+      router.push(`/subscription/checkout?plan=${planId}`);
     } catch (err) {
       setError(err.message || 'An error occurred');
       setLoading(false);

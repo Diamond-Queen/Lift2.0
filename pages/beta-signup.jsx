@@ -227,11 +227,11 @@ export default function BetaSignup() {
         return;
       }
 
-      // If server returned a redirect (Stripe checkout) for a one-time beta payment,
-      // redirect them to the Stripe checkout page.
+      // If server returned a redirect (embedded checkout) for the $3 beta payment,
+      // redirect them to our embedded checkout page.
       try {
         const redirect = data?.data?.redirect;
-        if (redirect && redirect.method === 'stripe' && redirect.url) {
+        if (redirect && redirect.method === 'stripe') {
           // Send non-blocking copy to Formspree then redirect
           (async () => {
             try {
@@ -250,8 +250,8 @@ export default function BetaSignup() {
             }
           })();
 
-          // Redirect to Stripe checkout
-          window.location.assign(redirect.url);
+          // Redirect to embedded checkout
+          router.push(`/beta/checkout?trialType=${trialType}`);
           return;
         }
       } catch (e) {
@@ -303,8 +303,8 @@ export default function BetaSignup() {
           </p>
           <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: "10px" }}>
             {trialType === "school"
-              ? "You have 14 days of free access for your school."
-              : "You have 3-4 days of free access to explore the platform."}
+              ? "You have 14 days of free premium access for your school."
+              : "You have 7 days of free premium access to explore the platform."}
           </p>
         </div>
       </div>
@@ -322,8 +322,7 @@ export default function BetaSignup() {
             marginBottom: "20px",
           }}
         >
-          Be part of shaping the future of Lift. Get early access and help us
-          improve!
+          Be part of shaping the future of Lift. One-time $3 payment to unlock extended trial access.
         </p>
 
         {!trialType ? (
@@ -347,8 +346,7 @@ export default function BetaSignup() {
             >
               <h3 style={{ margin: "0 0 8px 0" }}>🏫 School Beta (14 days)</h3>
               <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9em" }}>
-                For schools and educational institutions. Get 2 weeks of free
-                access.
+                For schools and educational institutions. $3 one-time payment → 14 days of free premium access.
               </p>
             </div>
 
@@ -368,9 +366,9 @@ export default function BetaSignup() {
                 (e.currentTarget.style.borderColor = "var(--border-color)")
               }
             >
-              <h3 style={{ margin: "0 0 8px 0" }}>🚀 Social Beta (3-4 days)</h3>
+              <h3 style={{ margin: "0 0 8px 0" }}>🚀 Social Beta (7 days)</h3>
               <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9em" }}>
-                For individuals and organizations. Quick trial to experience Lift.
+                For individuals and organizations. $3 one-time payment → 7 days of free premium access.
               </p>
             </div>
           </div>
@@ -393,7 +391,7 @@ export default function BetaSignup() {
               <p style={{ textAlign: "center", color: "var(--text-muted)" }}>
                 {trialType === "school"
                   ? " School Beta Program (14 days free)"
-                  : " Social Beta Program (3-4 days free)"}
+                  : " Social Beta Program (7 days free)"}
               </p>
             </div>
 

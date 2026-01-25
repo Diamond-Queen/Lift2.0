@@ -140,7 +140,7 @@ async function handler(req, res) {
 
     // Calculate trial end date
     const now = new Date();
-    const daysToAdd = trialType === 'school' ? 14 : 4;
+    const daysToAdd = trialType === 'school' ? 14 : 7;
     const trialEndsAt = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
 
     const betaTesterData = {
