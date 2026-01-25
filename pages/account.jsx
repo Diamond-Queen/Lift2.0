@@ -199,13 +199,18 @@ export default function Account() {
         setSubscription(null);
         setAccountType('Individual');
         setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');
-        setTimeout(() => setUiStatus({ type: null, text: '' }), 3000);
+        // Refresh after 2 seconds to reload user data
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       } else {
+        console.error('Cancel subscription error:', data);
         setUiStatus({ type: 'error', text: `❌ ${data.error || 'Failed to cancel'}` });
+        setCancelingSubscription(false);
       }
     } catch (err) {
+      console.error('Cancel subscription exception:', err);
       setUiStatus({ type: 'error', text: '❌ Error canceling subscription' });
-    } finally {
       setCancelingSubscription(false);
     }
   }
