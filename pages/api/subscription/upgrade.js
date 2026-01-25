@@ -89,11 +89,11 @@ async function handler(req, res) {
       return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
     }
 
-    // Check if user has an existing subscription
+    // Check if user has an existing subscription (accept multiple statuses)
     const existingSub = await prisma.subscription.findFirst({
       where: {
         userId: user.id,
-        status: { in: ['active', 'trialing'] }
+        status: { in: ['active', 'trialing', 'incomplete', 'incomplete_expired', 'past_due'] }
       }
     });
 
