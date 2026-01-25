@@ -44,12 +44,11 @@ async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // List all content items for user (optionally filtered by type, classId, or jobId)
-      const { type, classId, jobId } = req.query;
+      // List all content items for user (optionally filtered by type or classId)
+      const { type, classId } = req.query;
       const where = { userId };
       if (type) where.type = type;
       if (classId) where.classId = classId;
-      if (jobId) where.jobId = jobId;
 
       const items = prisma
         ? await prisma.contentItem.findMany({
@@ -57,11 +56,11 @@ async function handler(req, res) {
             orderBy: { createdAt: 'desc' }
           })
         : (await pool.query(
-            `SELECT id, title, type, "classId", "jobId", "createdAt", "updatedAt" 
+            `SELECT id, title, type, "classId", "createdAt", "updatedAt" 
              FROM "ContentItem" 
-             WHERE "userId" = $1 ${type ? 'AND type = $2' : ''} ${classId ? `AND "classId" = $${type ? 3 : 2}` : ''} ${jobId ? `AND "jobId" = $${type ? classId ? 4 : 3 : classId ? 3 : 2}` : ''}
+             WHERE "userId" = $1 ${type ? 'AND type = $2' : ''} ${classId ? `AND "classId" = $${type ? 3 : 2}` : ''}
              ORDER BY "createdAt" DESC`,
-            [userId, ...(type ? [type] : []), ...(classId ? [classId] : []), ...(jobId ? [jobId] : [])]
+            [userId, ...(type ? [type] : []), ...(classId ? [classId] : [])]
           )).rows;
 
       return res.json({ ok: true, data: items });
@@ -69,7 +68,7 @@ async function handler(req, res) {
 
     if (req.method === 'POST') {
       // Create a new content item
-      const { type, title, originalInput, classId, jobId, summaries, metadata } = req.body || {};
+      const { type, title, originalInput, classId, summaries, metadata } = req.body || {};
       if (!type || !['note', 'resume', 'cover_letter'].includes(type)) {
         return res.status(400).json({ ok: false, error: 'Invalid content type' });
       }
@@ -125,19 +124,18 @@ async function handler(req, res) {
                 title: title.trim(),
                 originalInput,
                 classId: classId || null,
-                jobId: jobId || null,
                 summaries: summaries || null,
                 metadata: metadata || null
               }
             })
           : (await pool.query(
-              `INSERT INTO "ContentItem" (id, "userId", type, title, "originalInput", "classId", "jobId", summaries, metadata, "createdAt", "updatedAt")
-               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+              `INSERT INTO "ContentItem" (id, "userId", type, title, "originalInput", "classId", summaries, metadata, "createdAt", "updatedAt")
+               VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
                RETURNING *`,
-              [userId, type, title.trim(), originalInput, classId || null, jobId || null, JSON.stringify(summaries || null), JSON.stringify(metadata || null)]
+              [userId, type, title.trim(), originalInput, classId || null, JSON.stringify(summaries || null), JSON.stringify(metadata || null)]
             )).rows[0];
 
-        logger.info('content_item_created', { userId, type, title: title.trim(), classId: classId || null, jobId: jobId || null });
+        logger.info('content_item_created', { userId, type, title: title.trim(), classId: classId || null });
         return res.json({ ok: true, data: newItem });
       } catch (e) {
         logger.error('content_create_error', { message: e.message });

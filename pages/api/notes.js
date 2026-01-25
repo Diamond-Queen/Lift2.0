@@ -129,13 +129,13 @@ async function handler(req, res) {
     const flashcardInstruction = flashcardDifficultyMap[flashcardDifficulty] || flashcardDifficultyMap['medium'];
 
     const flashcardsPromise = generateCompletion({
-      prompt: `TASK: Generate study flashcards in JSON format. ${flashcardInstruction} Return at least 5-8 cards (fewer if the content is very limited, more if detailed). For minimal input (like a single topic), generate 4-5 basic cards. CRITICAL: Return ONLY this JSON structure, nothing else - no explanation, no markdown, just pure JSON:
+      prompt: `TASK: Generate study flashcards in JSON format. ${flashcardInstruction} Generate between 8-16 flashcards: aim for 10-14 cards for most content, minimum 8 and maximum 16. CRITICAL: Return ONLY this JSON structure, nothing else - no explanation, no markdown, just pure JSON:
 [{"question":"...","answer":"..."}]
 
 Generate flashcards from this content:
 ${notes}`,
       // For short notes, be more lenient with token limits
-      maxTokens: notes.length < 100 ? 500 : 1000,
+      maxTokens: notes.length < 100 ? 500 : 1500,
       type: 'json',
       context: { type: 'flashcards', notes, flashcardDifficulty }
     });
