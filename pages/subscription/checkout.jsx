@@ -105,8 +105,7 @@ export default function CheckoutPage() {
                 background: '#1a1a1a',
                 borderRadius: '8px',
                 border: '2px solid #8b7500',
-                padding: '2rem',
-                minHeight: '500px'
+                padding: '2rem'
               }}>
                 <EmbeddedCheckout />
               </div>
