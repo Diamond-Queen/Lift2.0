@@ -99,13 +99,12 @@ async function handler(req, res) {
 
     // Dev mode: return mock data
     if (devMode) {
-      const mockIntentId = `pi_dev_${user.id}_${Date.now()}`;
+      const mockSecret = `pi_dev_${user.id}_${Date.now()}_secret_${Math.random().toString(36).substr(2, 9)}`;
       logger.info('payment_intent_dev_mode', { userId: user.id, plan });
       return res.json({
         ok: true,
         data: {
-          clientSecret: `${mockIntentId}_secret_dev`,
-          intentId: mockIntentId
+          clientSecret: mockSecret
         }
       });
     }
@@ -131,37 +130,35 @@ async function handler(req, res) {
       });
     }
 
-    // Create Payment Intent for subscription
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Create Checkout Session for subscription (Embedded Checkout)
+    const session = await stripe.checkout.sessions.create({
       customer: customer.id,
-      amount: planConfig.amount * 100, // Amount in cents
-      currency: 'usd',
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never'
-      },
+      line_items: [
+        {
+          price: planConfig.price,
+          quantity: 1
+        }
+      ],
+      mode: 'subscription',
+      ui_mode: 'embedded',
+      return_url: `${process.env.NEXTAUTH_URL}/subscription/checkout?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         userId: user.id,
-        plan: plan,
-        type: 'subscription'
-      },
-      description: `${planConfig.name} Subscription Trial (3 days free)`
+        plan: plan
+      }
     });
 
-    logger.info('payment_intent_created', {
+    logger.info('checkout_session_created', {
       userId: user.id,
-      intentId: paymentIntent.id,
+      sessionId: session.id,
       plan
     });
-    auditLog('payment_intent_created', user.id, { plan, intentId: paymentIntent.id, ip });
+    auditLog('checkout_session_created', user.id, { plan, sessionId: session.id, ip });
 
     return res.json({
       ok: true,
       data: {
-        clientSecret: paymentIntent.client_secret,
-        intentId: paymentIntent.id,
-        amount: planConfig.amount,
-        planName: planConfig.name
+        clientSecret: session.client_secret
       }
     });
   } catch (err) {

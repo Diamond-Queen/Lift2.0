@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -39,8 +39,11 @@ export default function CheckoutPage() {
         });
 
         const data = await res.json();
+        console.log('Payment intent response:', data);
         if (res.ok) {
-          setClientSecret(data.data.clientSecret);
+          const secret = data.data?.clientSecret || data.clientSecret;
+          console.log('Client secret:', secret);
+          setClientSecret(secret);
         } else {
           setError(data.error || 'Failed to initialize checkout');
         }
@@ -54,6 +57,15 @@ export default function CheckoutPage() {
 
     fetchPaymentIntent();
   }, [plan]);
+
+  const checkoutOptions = useMemo(() => ({
+    clientSecret,
+    onComplete: async () => {
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
+    }
+  }), [clientSecret, router]);
 
   if (status === 'loading' || loading) {
     return (
@@ -91,28 +103,17 @@ export default function CheckoutPage() {
           {clientSecret && (
             <EmbeddedCheckoutProvider 
               stripe={stripePromise} 
-              options={{ 
-                clientSecret,
-                onComplete: async () => {
-                  // Wait a moment for backend to process
-                  setTimeout(() => {
-                    router.push('/dashboard');
-                  }, 1500);
-                }
-              }}
+              options={checkoutOptions}
             >
               <div style={{
                 background: '#1a1a1a',
                 borderRadius: '8px',
                 border: '2px solid #8b7500',
                 padding: '2rem',
-                minHeight: '600px',
-                display: 'flex',
-                flexDirection: 'column'
+                width: '100%',
+                boxSizing: 'border-box'
               }}>
-                <div style={{ flex: 1, minHeight: '500px' }}>
-                  <EmbeddedCheckout />
-                </div>
+                <EmbeddedCheckout />
               </div>
             </EmbeddedCheckoutProvider>
           )}
