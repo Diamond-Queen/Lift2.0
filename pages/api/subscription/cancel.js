@@ -82,7 +82,7 @@ async function handler(req, res) {
       if (prisma) {
         await prisma.subscription.update({
           where: { id: subscription.id },
-          data: { status: 'canceled', canceledAt: new Date() }
+          data: { status: 'canceled' }
         });
       }
       logger.info('dev_subscription_canceled', { userId: user.id, subscriptionId: subscription.id });
@@ -97,8 +97,7 @@ async function handler(req, res) {
       await prisma.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: 'canceled',
-          canceledAt: new Date()
+          status: 'canceled'
         }
       });
     }
@@ -121,7 +120,7 @@ async function handler(req, res) {
         if (sub) {
           await prisma.subscription.update({
             where: { id: sub.id },
-            data: { status: 'canceled', canceledAt: new Date() }
+            data: { status: 'canceled' }
           });
         }
       }
