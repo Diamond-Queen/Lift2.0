@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
+import Tesseract from "tesseract.js";
 import styles from "../styles/Notes.module.css";
 import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 import { useStudyMode } from "../lib/StudyModeContext";
@@ -500,6 +501,59 @@ export default function NotesUI() {
     }, 50);
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      setTimeout(() => setError(''), 2000);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      setError('🔄 Extracting text from image... This may take a moment.');
+      
+      // Use Tesseract.js to extract text from image (client-side OCR)
+      const result = await Tesseract.recognize(file, 'eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing') {
+            const progress = Math.round(m.progress * 100);
+            setError(`🔄 Processing... ${progress}%`);
+          }
+        },
+      });
+
+      const extractedText = result.data.text.trim();
+
+      if (!extractedText) {
+        setError('❌ No text could be extracted from the image. Try a clearer photo.');
+        setLoading(false);
+        return;
+      }
+
+      // Format extracted text into markdown with basic structure
+      const formattedText = extractedText
+        .split('\n')
+        .filter(line => line.trim()) // Remove empty lines
+        .map(line => line.trim())
+        .join('\n');
+
+      // Set the extracted text as input
+      setInput(formattedText);
+      setError('✓ Text extracted from image!');
+      setTimeout(() => setError(''), 2000);
+      setLoading(false);
+    } catch (err) {
+      console.error('OCR Error:', err);
+      setError('Failed to extract text: ' + (err.message || 'Unknown error'));
+      setLoading(false);
+    }
+  };
+
   const copySummary = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -701,6 +755,36 @@ export default function NotesUI() {
           })()}
 
           <textarea className={styles.textarea} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste notes, type, or upload a file..." />
+
+          {/* Image upload button */}
+          <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1rem',
+              background: 'linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%)',
+              color: '#8b7500',
+              border: '2px solid #1f003bff',
+              borderRadius: '8px',
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+              transition: 'all 0.2s'
+            }}>
+              📸 Extract from Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={loading}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+              (Upload photo of handwritten/printed notes)
+            </span>
+          </div>
 
           {/* Input validation warning */}
           {input.trim() && input.trim().length < 50 && (

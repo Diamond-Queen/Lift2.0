@@ -50,7 +50,8 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^8.0.7",
-    "stripe": "^20.1.0"
+    "stripe": "^20.1.0",
+    "tesseract.js": "^5.1.1"
   },
   "overrides": {
     "hono": "4.10.3"
