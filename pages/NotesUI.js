@@ -756,36 +756,6 @@ export default function NotesUI() {
 
           <textarea className={styles.textarea} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste notes, type, or upload a file..." />
 
-          {/* Image upload button */}
-          <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-            <label style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.6rem 1rem',
-              background: 'linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%)',
-              color: '#8b7500',
-              border: '2px solid #1f003bff',
-              borderRadius: '8px',
-              fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-              transition: 'all 0.2s'
-            }}>
-              📸 Extract from Image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={loading}
-                style={{ display: 'none' }}
-              />
-            </label>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
-              (Upload photo of handwritten/printed notes)
-            </span>
-          </div>
-
           {/* Input validation warning */}
           {input.trim() && input.trim().length < 50 && (
             <div style={{ 
@@ -840,6 +810,10 @@ export default function NotesUI() {
             <label style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', flex: '1 1 auto', minWidth: '100px', justifyContent: 'center' }}>
               Upload
               <input type="file" accept=".pdf,.pptx" onChange={handleFileChange} disabled={loading} style={{ display: 'none' }} />
+            </label>
+            <label style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.65rem 1rem', borderRadius: '8px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', flex: '1 1 auto', minWidth: '100px', justifyContent: 'center', opacity: loading ? 0.6 : 1 }}>
+              Image
+              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={loading} style={{ display: 'none' }} />
             </label>
           </div>
 
