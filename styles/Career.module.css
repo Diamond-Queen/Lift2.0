@@ -159,15 +159,17 @@
   border-radius: 0;
   box-shadow: none;
   display: block;
-  page-break-after: always;
   padding: 0;
   margin: 0;
   width: 100%;
+  min-height: auto;
+  overflow: visible;
 }
 
 /* Ensure elements take up space properly */
 .printableResume > * {
   margin: 0;
+  display: block;
 }
 
 /* Header - Name */
@@ -184,7 +186,7 @@
 
 /* Contact Info */
 .printableResume .contact {
-  font-size: 9pt;
+  font-size: 10pt;
   color: #333;
   margin: 0 0 0.4rem 0;
   padding: 0;
@@ -192,6 +194,8 @@
   text-align: center;
   line-height: 1.3;
   border: none;
+  font-family: 'Times New Roman', Times, serif;
+  display: block;
 }
 
 /* Title/Subtitle under name */
@@ -218,6 +222,7 @@
   border-bottom: 1px solid #333;
   padding-top: 0.3rem;
   padding-bottom: 0.3rem;
+  display: block;
 }
 
 .printableResume .objectiveSection strong {
@@ -630,7 +635,6 @@
 
 /* Print Styling */
 @media print {
-  /* Hide all non-essential elements */
   body {
     background: white !important;
     color: black !important;
@@ -638,7 +642,11 @@
     padding: 0 !important;
   }
   
-  .container,
+  /* Hide form controls and UI elements */
+  .container {
+    display: none !important;
+  }
+  
   .pageTitle,
   .btnAction,
   .printBtn,
@@ -650,120 +658,117 @@
   
   /* Show the result card and printable content */
   .resultCard {
-    background: white !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0.5in !important;
-    box-shadow: none !important;
-  }
-  
-  /* Show only the printable resume/cover letter */
-  .printableResume,
-  .printableCover {
     display: block !important;
     visibility: visible !important;
-  }
-  
-  .printableCover, .printableResume {
-    visibility: visible !important;
-    box-shadow: none !important;
+    background: white !important;
     border: none !important;
     margin: 0 !important;
     padding: 0.5in 0.75in !important;
-    background: white !important;
-    color: black !important;
-    position: static !important;
-    overflow: visible !important;
-    width: 100% !important;
+    box-shadow: none !important;
+    width: 100%;
+    max-width: 100%;
   }
   
   .printableResume {
     display: block !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    font-size: 12pt !important;
-    line-height: 1.5 !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: white !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    page-break-after: always;
+  }
+  
+  .printableResume > * {
+    display: block !important;
+    visibility: visible !important;
+    margin: 0 !important;
   }
   
   .printableResume h1 {
     font-size: 22pt !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-weight: bold !important;
     margin: 0 0 0.2in 0 !important;
     padding: 0 !important;
     text-align: center !important;
-    font-weight: bold !important;
-    font-family: 'Times New Roman', Times, serif !important;
+    color: #000 !important;
+    page-break-after: avoid;
   }
   
   .printableResume .contact {
-    text-align: center !important;
     font-size: 10pt !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    text-align: center !important;
     margin: 0 0 0.3in 0 !important;
     padding: 0 !important;
-    font-weight: normal !important;
-    border: none !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    line-height: 1.4 !important;
+    color: #000 !important;
+    page-break-after: avoid;
   }
   
   .printableResume .objectiveSection {
+    font-size: 12pt !important;
+    font-family: 'Times New Roman', Times, serif !important;
     padding: 0.2in 0 !important;
     margin: 0.3in 0 !important;
     line-height: 1.5 !important;
-    font-size: 12pt !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    color: #333 !important;
+    color: #000 !important;
     border-top: 1px solid #000 !important;
     border-bottom: 1px solid #000 !important;
+    page-break-inside: avoid;
   }
   
   .printableResume .objectiveSection strong {
-    display: block;
     font-size: 11pt !important;
-    color: #000;
-    margin-bottom: 0.15in;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     font-family: 'Times New Roman', Times, serif !important;
+    font-weight: bold !important;
+    display: block !important;
+    margin-bottom: 0.1in;
+    text-transform: uppercase;
+    color: #000;
   }
   
   .printableResume h2 {
     font-size: 11pt !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    font-weight: bold !important;
     margin: 0.25in 0 0.15in 0 !important;
     padding: 0 !important;
-    border: none !important;
-    color: #000 !important;
     text-transform: uppercase !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
     border-bottom: 1px solid #000 !important;
+    color: #000 !important;
     page-break-after: avoid;
-    font-family: 'Times New Roman', Times, serif !important;
   }
   
   .sectionItem {
-    page-break-inside: avoid;
-    margin-bottom: 0.15in !important;
-    padding: 0 !important;
     font-size: 12pt !important;
     font-family: 'Times New Roman', Times, serif !important;
     line-height: 1.45 !important;
+    margin-bottom: 0.15in !important;
+    page-break-inside: avoid;
+    color: #000 !important;
   }
   
   .sectionItem strong {
-    font-weight: 700 !important;
-    color: #000 !important;
-    display: block !important;
     font-size: 12pt !important;
-    margin-bottom: 0.02in !important;
     font-family: 'Times New Roman', Times, serif !important;
+    font-weight: bold !important;
+    display: block !important;
+    margin-bottom: 0.02in;
+    color: #000 !important;
   }
   
   .sectionItem p {
-    margin: 0 0 0 0 !important;
-    color: #333 !important;
     font-size: 12pt !important;
     font-family: 'Times New Roman', Times, serif !important;
     line-height: 1.45 !important;
+    margin: 0 !important;
+    color: #000 !important;
   }
   
   .skillsCertsContainer {
@@ -782,17 +787,21 @@
     background: white !important;
     color: #000 !important;
     border: 1pt solid #333 !important;
-    border-radius: 0px !important;
+    display: inline-block !important;
   }
   
-  .printableResume ul, 
+  .printableResume ul,
   .printableResume ol {
-    margin: 0.05in 0 0.05in 0.2in !important;
+    margin: 0 0 0.1in 0.3in !important;
     padding: 0 !important;
+    font-size: 12pt !important;
+    font-family: 'Times New Roman', Times, serif !important;
   }
   
   .printableResume li {
-    margin: 0.02in 0 !important;
+    font-size: 12pt !important;
+    font-family: 'Times New Roman', Times, serif !important;
+    margin-bottom: 0.05in !important;
     page-break-inside: avoid;
   }
   
