@@ -643,15 +643,32 @@
 
 /* Print Styling */
 @media print {
-  /* Hide everything by default */
-  * {
+  /* Hide all non-essential elements */
+  body,
+  .container,
+  .pageTitle,
+  .btnAction,
+  .printBtn,
+  .input,
+  .textarea,
+  .select,
+  .resultCard > div:not(.printableResume),
+  .resultCard > div:not(.printableCover) {
     display: none !important;
   }
   
   /* Show only the printable resume/cover letter and their contents */
   .printableResume,
-  .printableResume *,
-  .printableCover,
+  .printableCover {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  .printableResume * {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
   .printableCover * {
     display: block !important;
     visibility: visible !important;
