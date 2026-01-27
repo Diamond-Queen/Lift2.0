@@ -1,0 +1,1071 @@
+/* =================== Global Container =================== */
+.container {
+  padding: 2rem;
+  max-width: 48rem;
+  margin: 0 auto;
+  font-family: 'Inter', 'Helvetica', sans-serif;
+  background: #000000;
+  color: #ffffff;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.pageTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* =================== Form Inputs =================== */
+.input {
+  width: 100%;
+  border: 1px solid #8b7500;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  background: #1a1a1a;
+  color: #ffffff;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.input:focus {
+  border-color: #8b7500;
+  box-shadow: 0 0 0 2px rgba(139, 117, 0, 0.2);
+  outline: none;
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid #8b7500;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  background: #1a1a1a;
+  color: #ffffff;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.textarea:focus {
+  border-color: #8b7500;
+  box-shadow: 0 0 0 2px rgba(139, 117, 0, 0.2);
+  outline: none;
+}
+
+.select {
+  width: 100%;
+  border: 1px solid #8b7500;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  background: #1a1a1a;
+  color: #ffffff;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.select:focus {
+  border-color: #8b7500;
+  box-shadow: 0 0 0 2px rgba(139, 117, 0, 0.2);
+  outline: none;
+}
+
+/* =================== Buttons =================== */
+.btnAction {
+  padding: 1.1rem 2rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 1.05rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+}
+
+.btnPurple {
+  background: linear-gradient(135deg, #8b7500 0%, #b8960d 100%);
+  color: #000000;
+  position: relative;
+  overflow: hidden;
+  font-weight: 700;
+}
+
+.btnPurple::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #b8960d 0%, #8b7500 100%);
+  transition: left 0.4s ease;
+  z-index: -1;
+}
+
+.btnPurple:hover::before {
+  left: 0;
+}
+
+.btnAction:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+}
+
+.btnAction:active {
+  transform: translateY(-1px);
+}
+
+.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.5; }
+}
+
+.error {
+  color: crimson;
+  margin-top: 0.5rem;
+}
+
+/* =================== Result Card =================== */
+.resultCard {
+  margin-top: 2rem;
+  padding: 2rem;
+  background: #1a1a1a;
+  border: 1px solid #8b7500;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  color: #ffffff;
+}
+
+/* =================== Printable Resume - Two Column Layout =================== */
+.printableResume {
+  background: #fff;
+  color: #2d2d2d;
+  line-height: 1.6;
+  font-size: 10pt;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 11in;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-auto-flow: dense;
+  page-break-after: always;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+/* Ensure elements take up space properly */
+.printableResume > * {
+  margin: 0;
+}
+
+.printableResume h1 {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 32pt;
+  font-weight: 900;
+  margin: 0.4rem 0 0 0;
+  padding: 0 1.2rem 0 1.2rem;
+  color: #000;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.printableResume h1 + p {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 10pt;
+  font-weight: 400;
+  padding: 0 1.2rem 0.8rem 1.2rem;
+  margin: 0;
+  text-align: center;
+  letter-spacing: 2px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+/* Contact Section - Left Column */
+.printableResume .contact {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  font-size: 9pt;
+  color: #555;
+  margin: 0;
+  padding: 1.2rem;
+  font-weight: 500;
+  line-height: 1.8;
+  border-right: 1px solid #999;
+}
+
+/* Objective/Summary Section - Right Column */
+.printableResume .objectiveSection {
+  grid-column: 2;
+  grid-row: 3;
+  padding: 0.8rem 1.2rem;
+  margin: 0;
+  line-height: 1.6;
+  font-size: 9.5pt;
+  color: #555;
+  border-top: 1px solid #999;
+  border-bottom: 1px solid #999;
+}
+
+.printableResume .objectiveSection strong {
+  display: block;
+  font-size: 10pt;
+  color: #000;
+  margin-bottom: 0.3rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Section Headers */
+.printableResume h2 {
+  grid-column: 2;
+  font-size: 10pt;
+  margin: 0.8rem 0 0.4rem 0;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  color: #000;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-top: 1px solid #999;
+}
+
+.printableResume h2:first-of-type {
+  margin-top: 0;
+}
+
+/* Left Column Sections (Contact, Education, Skills, Languages) */
+.printableResume > div:not(.skillsCertsContainer) {
+  padding: 0 1.2rem;
+}
+
+.sectionItem {
+  margin-bottom: 0.6rem;
+  padding-bottom: 0;
+  border-bottom: none;
+  font-size: 9.5pt;
+  line-height: 1.5;
+}
+
+.sectionItem strong {
+  font-weight: 700;
+  color: #000;
+  display: block;
+  font-size: 9.5pt;
+  margin-bottom: 0.1rem;
+}
+
+.sectionItem p {
+  margin: 0.1rem 0 0 0;
+  color: #666;
+  font-size: 9pt;
+  line-height: 1.4;
+}
+
+/* Skills Container */
+.skillsCertsContainer {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 1.2rem;
+  padding: 0;
+}
+
+.skillsCertsContainer p {
+  background: #f5f5f5;
+  padding: 0.3rem 0.6rem;
+  border-radius: 3px;
+  font-size: 9pt;
+  margin: 0;
+  border: 1px solid #ddd;
+  color: #333;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Experience Items */
+.printableResume .sectionItem strong {
+  font-size: 9.5pt;
+  margin-bottom: 0.15rem;
+}
+
+/* =================== Template Variations =================== */
+
+/* Professional Template */
+.printableResume[data-template="professional"] {
+  font-family: 'Calibri', 'Arial', sans-serif;
+}
+
+.printableResume[data-template="professional"] h1 {
+  font-size: 28pt;
+  letter-spacing: -0.5px;
+  color: #1a1a1a;
+}
+
+.printableResume[data-template="professional"] h2 {
+  border-left: 3px solid #1a1a1a;
+  padding-left: 0.6rem;
+  text-transform: uppercase;
+  font-size: 9.5pt;
+  margin-top: 0.6rem;
+}
+
+.printableResume[data-template="professional"] .contact {
+  border-right: 2px solid #1a1a1a;
+}
+
+.printableResume[data-template="professional"] .skillsCertsContainer p {
+  background: #fff;
+  border: 1px solid #999;
+}
+
+/* Modern Template */
+.printableResume[data-template="modern"] {
+  font-family: 'Segoe UI', 'Helvetica', sans-serif;
+}
+
+.printableResume[data-template="modern"] h1 {
+  color: #2c3e50;
+  font-size: 30pt;
+}
+
+.printableResume[data-template="modern"] h2 {
+  color: #2c3e50;
+  border-left: 4px solid #3498db;
+  padding-left: 0.8rem;
+  text-transform: uppercase;
+  font-size: 9.5pt;
+}
+
+.printableResume[data-template="modern"] .contact {
+  border-right: 2px solid #3498db;
+}
+
+.printableResume[data-template="modern"] .skillsCertsContainer p {
+  background: #ecf0f1;
+  border: 1px solid #bdc3c7;
+}
+
+.printableResume[data-template="modern"] .objectiveSection {
+  border-top: 2px solid #3498db;
+  border-bottom: 2px solid #3498db;
+}
+
+/* Technical Template */
+.printableResume[data-template="technical"] {
+  font-family: 'Courier New', monospace;
+}
+
+.printableResume[data-template="technical"] h1 {
+  font-size: 24pt;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.printableResume[data-template="technical"] h1 + p {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 8.5pt;
+}
+
+.printableResume[data-template="technical"] h2 {
+  color: #000;
+  background: #f0f0f0;
+  border-left: 2px solid #000;
+  padding-left: 0.6rem;
+  text-transform: uppercase;
+  font-size: 8.5pt;
+  letter-spacing: 1px;
+}
+
+.printableResume[data-template="technical"] .contact {
+  border-right: 2px solid #000;
+  font-family: 'Courier New', monospace;
+  font-size: 8.5pt;
+}
+
+.printableResume[data-template="technical"] .skillsCertsContainer p {
+  background: #f5f5f5;
+  border: 1px solid #333;
+  border-radius: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 8.5pt;
+}
+
+/* Minimalist Template */
+.printableResume[data-template="minimalist"] {
+  font-family: 'Georgia', serif;
+}
+
+.printableResume[data-template="minimalist"] h1 {
+  font-size: 26pt;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: #000;
+}
+
+.printableResume[data-template="minimalist"] h1 + p {
+  letter-spacing: 1.5px;
+  font-weight: 400;
+  font-size: 9.5pt;
+}
+
+.printableResume[data-template="minimalist"] .contact {
+  border-right: 1px solid #666;
+  font-size: 9pt;
+}
+
+.printableResume[data-template="minimalist"] h2 {
+  border: none;
+  border-top: 1px solid #666;
+  padding-top: 0.4rem;
+  text-transform: none;
+  font-size: 10pt;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.printableResume[data-template="minimalist"] .skillsCertsContainer p {
+  background: transparent;
+  border: none;
+  padding: 0.2rem 0;
+  font-size: 9pt;
+  border-bottom: 1px solid #ddd;
+}
+
+.printableResume[data-template="minimalist"] .objectiveSection {
+  border: none;
+  border-top: 1px solid #666;
+  border-bottom: 1px solid #666;
+}
+
+/* Executive Template */
+.printableResume[data-template="executive"] {
+  font-family: 'Garamond', 'Times New Roman', serif;
+}
+
+.printableResume[data-template="executive"] h1 {
+  font-size: 28pt;
+  color: #1a1a1a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.printableResume[data-template="executive"] h1 + p {
+  letter-spacing: 2px;
+  font-size: 9pt;
+  font-weight: 500;
+}
+
+.printableResume[data-template="executive"] .contact {
+  border-right: 3px double #8b7500;
+  font-size: 9pt;
+}
+
+.printableResume[data-template="executive"] h2 {
+  border-left: 4px solid #8b7500;
+  border-top: 1px solid #8b7500;
+  padding-left: 0.8rem;
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.printableResume[data-template="executive"] .skillsCertsContainer p {
+  background: #f9f7f4;
+  border: 1px solid #8b7500;
+}
+
+.printableResume[data-template="executive"] .objectiveSection {
+  border-top: 2px solid #8b7500;
+  border-bottom: 2px solid #8b7500;
+}
+
+/* Creative Template */
+.printableResume[data-template="creative"] {
+  font-family: 'Trebuchet MS', 'Arial', sans-serif;
+}
+
+.printableResume[data-template="creative"] h1 {
+  font-size: 30pt;
+  color: #d32f2f;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.printableResume[data-template="creative"] h1 + p {
+  color: #d32f2f;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.printableResume[data-template="creative"] .contact {
+  border-right: 3px solid #d32f2f;
+  background: #f5f5f5;
+}
+
+.printableResume[data-template="creative"] h2 {
+  color: #d32f2f;
+  background: #f5f5f5;
+  border-left: 4px solid #d32f2f;
+  padding-left: 0.8rem;
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.printableResume[data-template="creative"] .skillsCertsContainer p {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border: 2px solid #ff6f00;
+  border-radius: 4px;
+}
+
+.printableResume[data-template="creative"] .objectiveSection {
+  border-top: 2px solid #d32f2f;
+  border-bottom: 2px solid #d32f2f;
+  background: #f5f5f5;
+}
+
+/* =================== Cover Letter =================== */
+/* =================== Canva-Style Cover Letter =================== */
+.printableCover {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  max-width: 700px;
+  margin: 2rem auto;
+  font-family: 'Inter', sans-serif;
+  color: #222;
+}
+
+/* Letterhead Section */
+.letterhead {
+  background: linear-gradient(90deg, #6a5af9, #b8871f);
+  color: #fff;
+  text-align: center;
+  padding: 1.8rem 2rem 1.2rem;
+}
+
+.letterName {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.contactRow {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  opacity: 0.95;
+}
+
+.contactRow span {
+  margin: 0 0.4rem;
+}
+
+/* Letter Body */
+.letterBody {
+  padding: 2.5rem 3rem;
+  background: #fff;
+  border-radius: 0 0 16px 16px;
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.date {
+  text-align: right;
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.recipient {
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.letterBody p {
+  margin-bottom: 1.2rem;
+}
+
+.letterBody strong {
+  font-weight: 700;
+  color: #111;
+}
+
+/* Footer Contact (bottom of letter) */
+.footerContact {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.footerContact span {
+  margin-right: 0.5rem;
+}
+
+/* Print Styling */
+@media print {
+  body * {
+    visibility: visible;
+  }
+  
+  .printBtn, .btnAction, .container > div:not(.printableResume):not(.printableCover),
+  .input, .textarea, .select, .pageTitle {
+    visibility: hidden;
+    display: none !important;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+  
+  .printableCover, .printableResume {
+    visibility: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 8.5in !important;
+    height: 11in !important;
+    max-width: 100% !important;
+    background: white !important;
+    color: black !important;
+    page-break-after: avoid;
+    position: static !important;
+  }
+  
+  .printableResume {
+    display: grid !important;
+    grid-template-columns: 260px 1fr !important;
+    font-size: 10pt;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+  
+  .printableResume h1 {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    font-size: 26pt !important;
+    margin: 0.2in 0 0 0 !important;
+    padding: 0 0.8rem !important;
+    page-break-after: avoid;
+  }
+  
+  .printableResume h1 + p {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    margin: 0 !important;
+    padding: 0 0.8rem 0.3in 0.8rem !important;
+    font-size: 9pt !important;
+  }
+  
+  .printableResume .contact {
+    grid-column: 1 !important;
+    grid-row: 1 / 4 !important;
+    font-size: 8.5pt !important;
+    margin: 0 !important;
+    padding: 0.8rem !important;
+    font-weight: 500;
+    line-height: 1.6;
+    border-right: 1px solid #999 !important;
+  }
+  
+  .printableResume .objectiveSection {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    padding: 0.3in 0.8rem !important;
+    margin: 0 !important;
+    line-height: 1.5;
+    font-size: 9pt !important;
+    color: #333 !important;
+    border-top: 1px solid #999 !important;
+    border-bottom: 1px solid #999 !important;
+    page-break-inside: avoid;
+  }
+  
+  .printableResume .objectiveSection strong {
+    display: block;
+    font-size: 9pt;
+    color: #000;
+    margin-bottom: 0.15rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .printableResume h2 {
+    grid-column: 2 !important;
+    font-size: 9pt !important;
+    margin: 0.2in 0 0.1in 0 !important;
+    padding: 0.3rem 0.8rem !important;
+    border: none !important;
+    color: #000 !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    border-top: 1px solid #999 !important;
+    page-break-after: avoid;
+  }
+  
+  .printableResume > div:not(.skillsCertsContainer) {
+    grid-column: 2 !important;
+    padding: 0 0.8rem !important;
+    margin: 0 !important;
+  }
+  
+  .sectionItem {
+    page-break-inside: avoid;
+    margin-bottom: 0.3rem !important;
+    padding-bottom: 0 !important;
+    border: none !important;
+    font-size: 9pt !important;
+    line-height: 1.4;
+  }
+  
+  .sectionItem strong {
+    font-weight: 700 !important;
+    color: #000 !important;
+    display: block;
+    font-size: 9pt !important;
+    margin-bottom: 0.08rem !important;
+  }
+  
+  .sectionItem p {
+    margin: 0.05rem 0 0 0 !important;
+    color: #555 !important;
+    font-size: 8.5pt !important;
+    line-height: 1.4;
+  }
+  
+  .skillsCertsContainer {
+    grid-column: 2 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+    margin: 0.15rem 0.8rem !important;
+    padding: 0 !important;
+  }
+  
+  .skillsCertsContainer p {
+    font-size: 8.5pt !important;
+    padding: 0.2rem 0.4rem !important;
+    margin: 0 !important;
+    border-radius: 2px !important;
+    background: #f5f5f5 !important;
+    color: #333 !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  .printableResume ul, 
+  .printableResume ol {
+    margin: 0.05in 0 0.05in 0.2in !important;
+    padding: 0 !important;
+  }
+  
+  .printableResume li {
+    margin: 0.02in 0 !important;
+    page-break-inside: avoid;
+  }
+  
+  /* Template-specific print overrides */
+  .printableResume[data-template="professional"] .contact {
+    border-right: 2px solid #1a1a1a !important;
+  }
+  
+  .printableResume[data-template="professional"] h2 {
+    border-left: 3px solid #1a1a1a !important;
+    padding-left: 0.5rem !important;
+    border-top: none !important;
+  }
+  
+  .printableResume[data-template="modern"] .contact {
+    border-right: 2px solid #3498db !important;
+  }
+  
+  .printableResume[data-template="modern"] h2 {
+    border-left: 3px solid #3498db !important;
+    padding-left: 0.5rem !important;
+    border-top: none !important;
+    color: #2c3e50 !important;
+  }
+  
+  .printableResume[data-template="modern"] .objectiveSection {
+    border-top: 1px solid #3498db !important;
+    border-bottom: 1px solid #3498db !important;
+  }
+  
+  .printableResume[data-template="technical"] .contact {
+    border-right: 2px solid #000 !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 8pt !important;
+  }
+  
+  .printableResume[data-template="technical"] h1 {
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    font-size: 22pt !important;
+  }
+  
+  .printableResume[data-template="technical"] h1 + p {
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    font-size: 8pt !important;
+  }
+  
+  .printableResume[data-template="technical"] h2 {
+    background: #f0f0f0 !important;
+    border-left: 2px solid #000 !important;
+    padding-left: 0.5rem !important;
+    text-transform: uppercase !important;
+    font-size: 8.5pt !important;
+    border-top: none !important;
+  }
+  
+  .printableResume[data-template="technical"] .skillsCertsContainer p {
+    background: #f5f5f5 !important;
+    border: 1px solid #333 !important;
+    font-family: 'Courier New', monospace !important;
+    font-size: 8pt !important;
+  }
+  
+  .printableResume[data-template="minimalist"] h1 {
+    font-size: 24pt !important;
+    font-weight: 400 !important;
+    letter-spacing: 0 !important;
+  }
+  
+  .printableResume[data-template="minimalist"] h1 + p {
+    letter-spacing: 1px !important;
+    font-weight: 400 !important;
+    font-size: 8.5pt !important;
+  }
+  
+  .printableResume[data-template="minimalist"] .contact {
+    border-right: 1px solid #666 !important;
+    font-size: 8.5pt !important;
+  }
+  
+  .printableResume[data-template="minimalist"] h2 {
+    border: none !important;
+    border-top: 1px solid #666 !important;
+    text-transform: none !important;
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    padding-top: 0.2rem !important;
+  }
+  
+  .printableResume[data-template="minimalist"] .skillsCertsContainer p {
+    background: transparent !important;
+    border: none !important;
+    padding: 0.15rem 0 !important;
+    font-size: 8.5pt !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+  
+  .printableResume[data-template="minimalist"] .objectiveSection {
+    border-top: 1px solid #666 !important;
+    border-bottom: 1px solid #666 !important;
+  }
+  
+  .printableResume[data-template="executive"] .contact {
+    border-right: 2px double #8b7500 !important;
+    font-size: 8pt !important;
+  }
+  
+  .printableResume[data-template="executive"] h1 {
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    font-size: 24pt !important;
+  }
+  
+  .printableResume[data-template="executive"] h1 + p {
+    letter-spacing: 1.5px !important;
+    font-size: 8pt !important;
+    font-weight: 500 !important;
+  }
+  
+  .printableResume[data-template="executive"] h2 {
+    border-left: 3px solid #8b7500 !important;
+    border-top: 1px solid #8b7500 !important;
+    padding-left: 0.5rem !important;
+    font-size: 9pt !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+  
+  .printableResume[data-template="executive"] .objectiveSection {
+    border-top: 1px solid #8b7500 !important;
+    border-bottom: 1px solid #8b7500 !important;
+  }
+  
+  .printableResume[data-template="executive"] .skillsCertsContainer p {
+    background: #f9f7f4 !important;
+    border: 1px solid #8b7500 !important;
+  }
+  
+  .printableResume[data-template="creative"] .contact {
+    border-right: 2px solid #d32f2f !important;
+    background: #f5f5f5 !important;
+  }
+  
+  .printableResume[data-template="creative"] h1 {
+    color: #d32f2f !important;
+    font-size: 28pt !important;
+    font-weight: 900 !important;
+  }
+  
+  .printableResume[data-template="creative"] h1 + p {
+    color: #d32f2f !important;
+    font-weight: 600 !important;
+    letter-spacing: 1px !important;
+  }
+  
+  .printableResume[data-template="creative"] h2 {
+    color: #d32f2f !important;
+    background: #f5f5f5 !important;
+    border-left: 3px solid #d32f2f !important;
+    border-top: none !important;
+    padding-left: 0.5rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+  }
+  
+  .printableResume[data-template="creative"] .skillsCertsContainer p {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+    border: 1px solid #ff6f00 !important;
+  }
+  
+  /* Cover letter print styles */
+  .printableCover {
+    display: block !important;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  
+  .letterhead {
+    background: white !important;
+    border-bottom: 1pt solid #666 !important;
+    color: #000 !important;
+  }
+  
+  .letterName {
+    font-size: 12pt !important;
+    margin: 0 !important;
+    font-weight: 700 !important;
+  }
+  
+  .contactRow {
+    font-size: 9pt !important;
+    color: #000 !important;
+  }
+  
+  .letterBody {
+    padding: 0.3in !important;
+    background: white !important;
+  }
+  
+  .letterBody p {
+    margin: 0.08in 0 !important;
+    page-break-inside: avoid;
+  }
+  
+  @page {
+    margin: 0.5in;
+    size: letter;
+  }
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .input, .textarea, .select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .btnAction {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+  }
+  
+  .printableResume, .printableCover {
+    padding: 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+  
+  .printableResume h1, .printableCover h1 {
+    font-size: 1.5rem;
+  }
+  
+  .printableResume h2, .printableCover h2 {
+    font-size: 1.1rem;
+  }
+}
+
+/* =================== Study Mode Active State - Overrides theme =================== */
+.studyModeActive {
+  background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a2e 100%) !important;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.studyModeActive .pageTitle {
+  color: #a78bfa;
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+.studyModeActive .input,
+.studyModeActive .textarea,
+.studyModeActive .select {
+  background: rgba(30, 30, 50, 0.8);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #e0e0ff;
+}
+
+.studyModeActive .resultCard,
+.studyModeActive .printableResume,
+.studyModeActive .printableCover {
+  background: rgba(30, 30, 50, 0.7);
+  border-color: rgba(167, 139, 250, 0.3);
+  backdrop-filter: blur(10px);
+  color: #e0e0ff;
+}
+
+
