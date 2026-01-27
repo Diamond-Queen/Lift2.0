@@ -1,13 +1,15 @@
 /* =================== Global Container =================== */
 .container {
   padding: 2rem;
-  max-width: 48rem;
+  max-width: none;
   margin: 0 auto;
   font-family: 'Inter', 'Helvetica', sans-serif;
   background: #000000;
   color: #ffffff;
-  height: 100vh;
+  min-height: 100vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .pageTitle {
