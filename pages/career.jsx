@@ -865,7 +865,7 @@ Sincerely,
       {result && (
         <div className={styles.resultCard}>
           {type === "resume" && result.name && (
-            <div className={styles.printableResume}>
+            <div className={styles.printableResume} data-template={resumeTemplate}>
               <h1>{result.name}</h1>
               <p className={styles.contact}>{result.email} | {result.phone}{result.address && ` | ${result.address}`}</p>
               {result.linkedin && <p>LinkedIn / Portfolio: {result.linkedin}</p>}
