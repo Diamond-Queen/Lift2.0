@@ -647,6 +647,7 @@ Sincerely,
 
       {/* Sidebar toggle fixed under the global HomeFab/logo */}
       <button
+        className={styles.sidebarToggle}
         onClick={() => setSidebarOpen((v) => !v)}
         aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         style={{
@@ -771,14 +772,14 @@ Sincerely,
         </aside>
 
         {/* Main Content Area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className={styles.mainContent} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <h1 className={styles.pageTitle}>Lift Career</h1>
 
         {/* Job Color Header */}
         {selectedJobId && (() => {
           const selectedJob = jobs.find(j => j.id === selectedJobId);
           return selectedJob ? (
-            <div style={{ padding: '0.75rem', borderLeft: `4px solid ${selectedJob.color || '#8b7500'}`, background: `rgba(${parseInt(selectedJob.color?.slice(1, 3), 16)}, ${parseInt(selectedJob.color?.slice(3, 5), 16)}, ${parseInt(selectedJob.color?.slice(5, 7), 16)}, 0.02)`, borderRadius: '8px', marginBottom: '1.5rem' }}>
+            <div className={styles.jobColorHeader} style={{ padding: '0.75rem', borderLeft: `4px solid ${selectedJob.color || '#8b7500'}`, background: `rgba(${parseInt(selectedJob.color?.slice(1, 3), 16)}, ${parseInt(selectedJob.color?.slice(3, 5), 16)}, ${parseInt(selectedJob.color?.slice(5, 7), 16)}, 0.02)`, borderRadius: '8px', marginBottom: '1.5rem' }}>
               <span style={{ color: selectedJob.color || '#8b7500', fontWeight: 600, fontSize: '1rem' }}>Job: {selectedJob.name}</span>
             </div>
           ) : null;

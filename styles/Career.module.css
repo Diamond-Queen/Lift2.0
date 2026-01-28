@@ -645,11 +645,20 @@
 @media print {
   /* Show container but adjust for printing */
   .container {
-    display: flex !important;
+    display: block !important;
     background: white !important;
     color: black !important;
     padding: 0 !important;
     margin: 0 !important;
+    width: 100%;
+  }
+  
+  /* Hide main content wrapper */
+  .mainContent {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   /* Hide sidebar and form controls */
@@ -660,6 +669,8 @@
   }
   
   .formSection,
+  .jobColorHeader,
+  .sidebarToggle,
   .pageTitle,
   .btnAction,
   .printBtn,
@@ -675,7 +686,7 @@
     visibility: visible !important;
     background: white !important;
     border: none !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     box-shadow: none !important;
     width: 8.5in;
@@ -689,7 +700,7 @@
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
-    padding: 1in !important;
+    padding: 0.75in !important;
     border: none !important;
     box-shadow: none !important;
     overflow: visible !important;
