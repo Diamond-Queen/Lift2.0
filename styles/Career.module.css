@@ -675,23 +675,28 @@
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    width: 100%;
-    max-width: 100%;
+    width: 8.5in;
   }
   
   .printableResume {
     display: block !important;
     visibility: visible !important;
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 8.5in !important;
     background: white !important;
     color: #000 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 auto !important;
+    padding: 1in !important;
     border: none !important;
     box-shadow: none !important;
     overflow: visible !important;
     page-break-after: always;
+  }
+  
+  /* Set proper page margins for printing */
+  @page {
+    margin: 0;
+    size: letter;
   }
   
   .printableResume > * {

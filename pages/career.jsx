@@ -672,105 +672,107 @@ Sincerely,
       </button>
 
       <div className={`${styles.container} ${studyMode ? styles.studyModeActive : ''}`}>
-        <h1 className={styles.pageTitle}>Lift Career</h1>
-
-        {/* Sidebar: Job Manager + Saved Documents */}
+        {/* Sidebar: Only Jobs */}
         <aside className={styles.sidebar} style={{ display: sidebarOpen ? 'block' : 'none', width: 320, flexShrink: 0 }}>
-        {/* Job Manager */}
-        <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(139, 117, 0, 0.12), rgba(139, 117, 0, 0.05))', borderRadius: '10px', border: '1px solid rgba(139, 117, 0, 0.2)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Jobs</h2>
-            <button
-              onClick={() => setShowJobForm(!showJobForm)}
-              style={{ padding: '0.5rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
-            >
-              {showJobForm ? '✕ Cancel' : '+ New Job'}
-            </button>
-          </div>
-
-          {showJobForm && (
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
-              <input
-                type="text"
-                placeholder="Job name (e.g., Software Engineer @ Google)"
-                value={newJobName}
-                onChange={(e) => setNewJobName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateJob(); }}
-                autoFocus
-                style={{ flex: 1, padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem' }}
-              />
-              <input
-                type="color"
-                value={newJobColor}
-                onChange={(e) => setNewJobColor(e.target.value)}
-                title="Choose job color"
-                style={{ width: '50px', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }}
-              />
-              <button onClick={handleCreateJob} disabled={loadingJobs} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: loadingJobs ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingJobs ? 0.6 : 1 }}>
-                {loadingJobs ? '...' : 'Create'}
+          {/* Job Manager */}
+          <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(139, 117, 0, 0.12), rgba(139, 117, 0, 0.05))', borderRadius: '10px', border: '1px solid rgba(139, 117, 0, 0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Jobs</h2>
+              <button
+                onClick={() => setShowJobForm(!showJobForm)}
+                style={{ padding: '0.5rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+              >
+                {showJobForm ? '✕ Cancel' : '+ New Job'}
               </button>
             </div>
-          )}
 
-          {jobs.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '1rem 0' }}>No jobs. Create one to start!</p>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
-              {jobs.map((job) => (
-                <div
-                  key={job.id}
-                  onClick={() => !editingJobId && setSelectedJobId(job.id)}
-                  style={{ padding: '1rem', background: selectedJobId === job.id ? 'rgba(139, 117, 0, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${job.color || '#8b7500'}`, border: selectedJobId === job.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingJobId === job.id ? 'default' : 'pointer', transition: 'all 0.2s' }}
-                >
-                  {editingJobId === job.id ? (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                      <input
-                        type="text"
-                        value={editingJobName}
-                        onChange={(e) => setEditingJobName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameJob(job.id); if (e.key === 'Escape') setEditingJobId(null); }}
-                        autoFocus
-                        style={{ flex: 1, padding: '0.5rem', border: '1px solid var(--accent)', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.9rem' }}
-                      />
-                      <input
-                        type="color"
-                        value={editingJobColor}
-                        onChange={(e) => setEditingJobColor(e.target.value)}
-                        style={{ width: '40px', height: '32px', border: '1px solid var(--card-border)', borderRadius: '4px', cursor: 'pointer' }}
-                      />
-                      <button onClick={() => handleRenameJob(job.id)} disabled={loadingJobs} style={{ padding: '0.5rem 0.75rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>✓</button>
-                      <button onClick={() => setEditingJobId(null)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-color)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600 }}>{job.name}</span>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button onClick={(e) => { e.stopPropagation(); setEditingJobId(job.id); setEditingJobName(job.name); setEditingJobColor(job.color || '#8b7500'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.15)', color: '#8b7500', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
+            {showJobForm && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
+                <input
+                  type="text"
+                  placeholder="Job name (e.g., Software Engineer @ Google)"
+                  value={newJobName}
+                  onChange={(e) => setNewJobName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCreateJob(); }}
+                  autoFocus
+                  style={{ flex: 1, padding: '0.65rem 0.75rem', border: '1px solid var(--card-border)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '1rem' }}
+                />
+                <input
+                  type="color"
+                  value={newJobColor}
+                  onChange={(e) => setNewJobColor(e.target.value)}
+                  title="Choose job color"
+                  style={{ width: '50px', height: '40px', border: '1px solid var(--card-border)', borderRadius: '6px', cursor: 'pointer' }}
+                />
+                <button onClick={handleCreateJob} disabled={loadingJobs} style={{ padding: '0.65rem 1rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '6px', cursor: loadingJobs ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: loadingJobs ? 0.6 : 1 }}>
+                  {loadingJobs ? '...' : 'Create'}
+                </button>
+              </div>
+            )}
+
+            {jobs.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', margin: '1rem 0' }}>No jobs. Create one to start!</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                {jobs.map((job) => (
+                  <div
+                    key={job.id}
+                    onClick={() => !editingJobId && setSelectedJobId(job.id)}
+                    style={{ padding: '1rem', background: selectedJobId === job.id ? 'rgba(139, 117, 0, 0.15)' : 'rgba(255, 255, 255, 0.03)', borderLeft: `4px solid ${job.color || '#8b7500'}`, border: selectedJobId === job.id ? '1px solid var(--accent)' : '1px solid var(--card-border)', borderRadius: '8px', cursor: editingJobId === job.id ? 'default' : 'pointer', transition: 'all 0.2s' }}
+                  >
+                    {editingJobId === job.id ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                        <input
+                          type="text"
+                          value={editingJobName}
+                          onChange={(e) => setEditingJobName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleRenameJob(job.id); if (e.key === 'Escape') setEditingJobId(null); }}
+                          autoFocus
+                          style={{ flex: 1, padding: '0.5rem', border: '1px solid var(--accent)', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.9rem' }}
+                        />
+                        <input
+                          type="color"
+                          value={editingJobColor}
+                          onChange={(e) => setEditingJobColor(e.target.value)}
+                          style={{ width: '40px', height: '32px', border: '1px solid var(--card-border)', borderRadius: '4px', cursor: 'pointer' }}
+                        />
+                        <button onClick={() => handleRenameJob(job.id)} disabled={loadingJobs} style={{ padding: '0.5rem 0.75rem', background: 'var(--accent)', color: 'var(--accent-contrast)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>✓</button>
+                        <button onClick={() => setEditingJobId(null)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-color)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600 }}>{job.name}</span>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingJobId(job.id); setEditingJobName(job.name); setEditingJobColor(job.color || '#8b7500'); }} title="Rename" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.2)', color: 'var(--accent)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteJob(job.id); }} title="Delete" style={{ padding: '0.4rem 0.6rem', background: 'rgba(139, 117, 0, 0.15)', color: '#8b7500', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>Delete</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Saved Documents */}
+          {selectedJobId && savedItems.length > 0 && (
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
+              <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Saved Documents ({savedItems.length})</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {savedItems.map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(139, 117, 0, 0.1)', borderRadius: '6px' }}>
+                    <span style={{ flex: 1, cursor: 'pointer', fontWeight: 500 }} onClick={() => handleLoadDocument(item)}>{item.title}</span>
+                    <button onClick={() => handleDeleteDocument(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(139, 117, 0, 0.15)', color: '#8b7500', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>
-
-        {/* Saved Documents */}
-        {selectedJobId && savedItems.length > 0 && (
-          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Saved Documents ({savedItems.length})</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {savedItems.map((item) => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(139, 117, 0, 0.1)', borderRadius: '6px' }}>
-                  <span style={{ flex: 1, cursor: 'pointer', fontWeight: 500 }} onClick={() => handleLoadDocument(item)}>{item.title}</span>
-                  <button onClick={() => handleDeleteDocument(item.id)} style={{ padding: '0.5rem 0.75rem', background: 'rgba(139, 117, 0, 0.15)', color: '#8b7500', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>Remove</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         </aside>
+
+        {/* Main Content Area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <h1 className={styles.pageTitle}>Lift Career</h1>
 
         {/* Job Color Header */}
         {selectedJobId && (() => {
@@ -988,6 +990,7 @@ Sincerely,
           </button>
         </div>
       )}
+        </div>
       </div>
     </>
   );
