@@ -3,6 +3,7 @@
   padding: 2rem;
   max-width: none;
   margin: 0 auto;
+  margin-top: 6rem;
   font-family: 'Inter', 'Helvetica', sans-serif;
   background: #000000;
   color: #ffffff;
@@ -657,6 +658,7 @@
     display: none !important;
   }
   
+  .formSection,
   .pageTitle,
   .btnAction,
   .printBtn,

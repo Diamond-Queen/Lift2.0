@@ -784,30 +784,31 @@ Sincerely,
           ) : null;
         })()}
 
-      <select className={styles.input} value={type} onChange={handleChange(setType)} disabled={loading}>
-        <option value="resume">Resume</option>
-        <option value="cover">Cover Letter</option>
-      </select>
+      <div className={styles.formSection}>
+        <select className={styles.input} value={type} onChange={handleChange(setType)} disabled={loading}>
+          <option value="resume">Resume</option>
+          <option value="cover">Cover Letter</option>
+        </select>
 
-      {/* Info Box */}
-      <div style={{ 
-        padding: '12px 16px', 
-        backgroundColor: 'rgba(139, 117, 0, 0.1)', 
-        border: '1px solid rgba(139, 117, 0, 0.3)',
-        borderRadius: '8px',
-        marginBottom: '16px',
-        fontSize: '14px',
-        lineHeight: 1.6
-      }}>
-        <strong>Tip:</strong> Fill in your information, and click Generate. 
-        The AI will create a professional {type === 'resume' ? 'resume' : 'cover letter'} based on your selected style.
-        {type === 'resume' && <span> Use commas or | to separate experience/education details.</span>}
-      </div>
+        {/* Info Box */}
+        <div style={{ 
+          padding: '12px 16px', 
+          backgroundColor: 'rgba(139, 117, 0, 0.1)', 
+          border: '1px solid rgba(139, 117, 0, 0.3)',
+          borderRadius: '8px',
+          marginBottom: '16px',
+          fontSize: '14px',
+          lineHeight: 1.6
+        }}>
+          <strong>Tip:</strong> Fill in your information, and click Generate. 
+          The AI will create a professional {type === 'resume' ? 'resume' : 'cover letter'} based on your selected style.
+          {type === 'resume' && <span> Use commas or | to separate experience/education details.</span>}
+        </div>
 
-      {/* Common Fields */}
-      <input type="text" placeholder="Full Name" className={styles.input} value={name} onChange={handleChange(setName)} disabled={loading} />
-      <input type="email" placeholder="Email" className={styles.input} value={email} onChange={handleChange(setEmail)} disabled={loading} />
-      <input type="text" placeholder="Phone" className={styles.input} value={phone} onChange={handleChange(setPhone)} disabled={loading} />
+        {/* Common Fields */}
+        <input type="text" placeholder="Full Name" className={styles.input} value={name} onChange={handleChange(setName)} disabled={loading} />
+        <input type="email" placeholder="Email" className={styles.input} value={email} onChange={handleChange(setEmail)} disabled={loading} />
+        <input type="text" placeholder="Phone" className={styles.input} value={phone} onChange={handleChange(setPhone)} disabled={loading} />
 
       {/* Resume Fields */}
       {type === "resume" && (
@@ -862,6 +863,7 @@ Sincerely,
           </button>
         </>
       )}
+      </div>
 
       {/* Display Result */}
       {result && (
