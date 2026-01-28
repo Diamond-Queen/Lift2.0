@@ -7,6 +7,7 @@ import { musicUrls, getAudioStreamUrl } from "../lib/musicUrls";
 
 export default function Career() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [togglePos, setTogglePos] = useState({ top: 72, left: 16 });
   const { status } = useSession();
   const router = useRouter();
   
@@ -366,6 +367,31 @@ Sincerely,
     setupAudio();
   }, [studyMode, studyMusic]);
 
+  // Position the sidebar toggle directly below the global HomeFab/logo (like NotesUI)
+  useEffect(() => {
+    const compute = () => {
+      try {
+        const el = document.querySelector('.homeFab');
+        if (el) {
+          const r = el.getBoundingClientRect();
+          const top = Math.max(8, Math.round(r.top + r.height + 8));
+          const left = Math.max(8, Math.round(r.left));
+          setTogglePos({ top, left });
+        }
+      } catch (e) {}
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    window.addEventListener('scroll', compute, { passive: true });
+    const obs = new MutationObserver(compute);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('scroll', compute);
+      obs.disconnect();
+    };
+  }, []);
+
   // Enter/exit fullscreen based on studyMode
   useEffect(() => {
     // Reflect study mode globally for CSS overrides
@@ -665,8 +691,8 @@ Sincerely,
         aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
         style={{
           position: 'fixed',
-          top: 72,
-          left: 16,
+          top: togglePos.top,
+          left: togglePos.left,
           zIndex: 9998,
           background: 'var(--accent)',
           color: 'var(--accent-contrast)',
@@ -883,7 +909,7 @@ Sincerely,
       {result && (
         <div className={`${styles.resultCard} ${type === 'resume' ? styles.resultCardFull : ''}`}>
           {type === "resume" && result.name && (
-            <div className={styles.printableResume} data-template={resumeTemplate}>
+            <div className={`${styles.printableResume} ${isSparseResume ? styles.compactResume : ''}`} data-template={resumeTemplate}>
               <h1>{result.name}</h1>
               <p className={styles.contact}>{result.email} | {result.phone}{result.address && ` | ${result.address}`}</p>
               {isSparseResume && (

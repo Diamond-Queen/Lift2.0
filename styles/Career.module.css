@@ -239,6 +239,24 @@
   .sparseResume { min-height: auto !important; padding: 0.75in !important; }
 }
 
+/* Compact single-column for minimal input: narrower readable column, left-aligned content */
+.compactResume {
+  max-width: 6.8in;
+  margin: 0.5rem auto;
+  padding: 0.85rem 1rem !important;
+  font-size: 11.5pt;
+  line-height: 1.45;
+}
+
+/* Ensure compact resume still prints as letter-sized */
+@media print {
+  .compactResume {
+    max-width: 8.5in !important;
+    padding: 0.75in !important;
+    margin: 0 !important;
+  }
+}
+
 /* Header - Name */
 .printableResume h1 {
   font-size: 24pt;
@@ -748,18 +766,19 @@
     margin: 0 auto !important;
     padding: 0 !important;
     box-shadow: none !important;
-    width: 8.5in;
+    width: calc(100% - 1in) !important; /* page width minus 1in total margins */
   }
   
   .printableResume {
     display: block !important;
     visibility: visible !important;
-    width: 8.5in !important;
-    max-width: 8.5in !important;
+    width: calc(100% - 1in) !important;
+    max-width: calc(100% - 1in) !important;
     background: #ffffff !important;
     color: #000000 !important;
-    margin: 0 !important;
-    padding: 0.75in !important;
+    margin: 0.5in auto !important;
+    padding: 0.5in !important;
+    box-sizing: border-box !important;
     border: none !important;
     box-shadow: none !important;
     overflow: visible !important;
@@ -768,7 +787,7 @@
   
   /* Set proper page margins for printing */
   @page {
-    margin: 0;
+    margin: 0.5in;
     size: letter;
   }
 
