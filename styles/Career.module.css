@@ -827,6 +827,15 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  /* Force all resume descendants to black in print to avoid grey text */
+  .printableResume,
+  .printableResume * {
+    color: #000000 !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   
   .printableResume > * {
     display: block !important;
