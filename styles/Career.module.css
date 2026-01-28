@@ -13,6 +13,20 @@
   gap: 2rem;
 }
 
+/* Sidebar (fixed) and main content layout for desktop */
+.sidebar {
+  position: fixed;
+  top: 116px; /* sits below the homeFab + toggle */
+  left: 16px;
+  width: 320px;
+  flex-shrink: 0;
+  z-index: 9990;
+}
+
+.mainContent {
+  margin-left: 352px; /* sidebar width + gap */
+}
+
 .pageTitle {
   font-size: 2.5rem;
   font-weight: 800;
@@ -712,11 +726,25 @@
     margin: 0;
     size: letter;
   }
+
+  /* Force all resume descendants to print black on white */
+  .printableResume,
+  .printableResume * {
+    color: #000000 !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   
   .printableResume > * {
     display: block !important;
     visibility: visible !important;
     margin: 0 !important;
+  }
+
+  /* Hide global homeFab (logo) in print */
+  :global(.homeFab) {
+    display: none !important;
   }
   
   .printableResume h1 {
@@ -1047,6 +1075,14 @@
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
+  }
+  /* On small screens the sidebar should flow normally */
+  .sidebar {
+    position: static;
+    width: auto;
+  }
+  .mainContent {
+    margin-left: 0;
   }
   
   .input, .textarea, .select {
