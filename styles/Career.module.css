@@ -3,7 +3,6 @@
   padding: 2rem;
   max-width: none;
   margin: 0 auto;
-  margin-top: 6rem;
   font-family: 'Inter', 'Helvetica', sans-serif;
   background: #000000;
   color: #ffffff;
@@ -656,6 +655,8 @@
   /* Hide sidebar and form controls */
   .sidebar {
     display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
   }
   
   .formSection,
@@ -683,11 +684,11 @@
   .printableResume {
     display: block !important;
     visibility: visible !important;
-    width: 100% !important;
+    width: 8.5in !important;
     max-width: 8.5in !important;
-    background: white !important;
-    color: #000 !important;
-    margin: 0 auto !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
     padding: 1in !important;
     border: none !important;
     box-shadow: none !important;
