@@ -9,7 +9,8 @@
   min-height: 100vh;
   overflow-y: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 2rem;
 }
 
 .pageTitle {
@@ -149,6 +150,9 @@
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   color: #ffffff;
+  flex: 1;
+  display: block;
+  width: 100%;
 }
 
 /* =================== Printable Resume - Single Column Layout =================== */
@@ -161,11 +165,13 @@
   border-radius: 0;
   box-shadow: none;
   display: block;
-  padding: 0;
+  padding: 1in;
   margin: 0;
   width: 100%;
+  max-width: 8.5in;
   min-height: auto;
   overflow: visible;
+  page-break-after: always;
 }
 
 /* Ensure elements take up space properly */
@@ -644,8 +650,25 @@
     padding: 0 !important;
   }
   
-  /* Hide form controls and UI elements */
+  /* Hide all fixed positioned elements (logo, navigation buttons) */
+  [style*="position: fixed"],
+  button[style*="position"],
+  nav,
+  header {
+    display: none !important;
+  }
+  
+  /* Show container but adjust for printing */
   .container {
+    display: flex !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Hide sidebar and form controls */
+  aside {
     display: none !important;
   }
   
@@ -665,7 +688,7 @@
     background: white !important;
     border: none !important;
     margin: 0 !important;
-    padding: 0.5in 0.75in !important;
+    padding: 0 !important;
     box-shadow: none !important;
     width: 100%;
     max-width: 100%;
