@@ -643,21 +643,6 @@
 
 /* Print Styling */
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  /* Hide all fixed positioned elements (logo, navigation buttons) */
-  [style*="position: fixed"],
-  button[style*="position"],
-  nav,
-  header {
-    display: none !important;
-  }
-  
   /* Show container but adjust for printing */
   .container {
     display: flex !important;
@@ -668,7 +653,7 @@
   }
   
   /* Hide sidebar and form controls */
-  aside {
+  .sidebar {
     display: none !important;
   }
   

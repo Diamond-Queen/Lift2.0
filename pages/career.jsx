@@ -675,7 +675,7 @@ Sincerely,
         <h1 className={styles.pageTitle}>Lift Career</h1>
 
         {/* Sidebar: Job Manager + Saved Documents */}
-        <aside style={{ display: sidebarOpen ? 'block' : 'none', width: 320, flexShrink: 0 }}>
+        <aside className={styles.sidebar} style={{ display: sidebarOpen ? 'block' : 'none', width: 320, flexShrink: 0 }}>
         {/* Job Manager */}
         <div style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'linear-gradient(135deg, rgba(139, 117, 0, 0.12), rgba(139, 117, 0, 0.05))', borderRadius: '10px', border: '1px solid rgba(139, 117, 0, 0.2)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
