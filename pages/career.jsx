@@ -630,6 +630,19 @@ Sincerely,
     }
   };
 
+  // Detect sparse resume content (few sections) so we can render a nicer letterhead-style view
+  const isSparseResume = (() => {
+    if (type !== 'resume' || !result) return false;
+    const hasObjective = Boolean(result.objective && String(result.objective).trim());
+    const expCount = Array.isArray(result.experience) ? result.experience.length : (result.experience ? 1 : 0);
+    const eduCount = Array.isArray(result.education) ? result.education.length : (result.education ? 1 : 0);
+    const skillsCount = Array.isArray(result.skills) ? result.skills.length : (result.skills ? 1 : 0);
+    const other = Boolean(result.linkedin || result.address || result.certifications);
+    const filledSections = [hasObjective, expCount > 0, eduCount > 0, skillsCount > 0, other].filter(Boolean).length;
+    // If fewer than 2 substantive sections beyond contact info, treat as sparse
+    return filledSections < 2;
+  })();
+
   return (
     <>
       {/* Music Player - Hidden audio element */}
@@ -772,7 +785,7 @@ Sincerely,
         </aside>
 
         {/* Main Content Area */}
-        <div className={styles.mainContent} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className={styles.mainContent} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', marginLeft: sidebarOpen ? undefined : 0 }}>
           <h1 className={styles.pageTitle}>Lift Career</h1>
 
         {/* Job Color Header */}
@@ -868,11 +881,14 @@ Sincerely,
 
       {/* Display Result */}
       {result && (
-        <div className={styles.resultCard}>
+        <div className={`${styles.resultCard} ${type === 'resume' ? styles.resultCardFull : ''}`}>
           {type === "resume" && result.name && (
             <div className={styles.printableResume} data-template={resumeTemplate}>
               <h1>{result.name}</h1>
               <p className={styles.contact}>{result.email} | {result.phone}{result.address && ` | ${result.address}`}</p>
+              {isSparseResume && (
+                <div className={styles.sparseHint} role="note">Add an objective, experience, or education to make this a full one-page resume. Use the inputs on the left.</div>
+              )}
               {result.linkedin && <p>LinkedIn / Portfolio: {result.linkedin}</p>}
               {result.objective && <div className={styles.objectiveSection}><strong>Professional Summary:</strong> {result.objective}</div>}
 

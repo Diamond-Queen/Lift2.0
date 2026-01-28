@@ -1,6 +1,6 @@
 /* =================== Global Container =================== */
 .container {
-  padding: 2rem;
+  padding: 1rem 2rem;
   max-width: none;
   margin: 0 auto;
   font-family: 'Inter', 'Helvetica', sans-serif;
@@ -25,6 +25,7 @@
 
 .mainContent {
   margin-left: 352px; /* sidebar width + gap */
+  transition: margin-left 240ms ease;
 }
 
 .pageTitle {
@@ -169,6 +170,14 @@
   width: 100%;
 }
 
+/* When showing the printable resume, expand the card to full-width and remove inner chrome */
+.resultCardFull {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* =================== Printable Resume - Single Column Layout =================== */
 .printableResume {
   background: #fff;
@@ -179,10 +188,10 @@
   border-radius: 0;
   box-shadow: none;
   display: block;
-  padding: 1in;
+  padding: 1.25rem; /* smaller on-screen padding so it reads like a page */
   margin: 0;
   width: 100%;
-  max-width: 8.5in;
+  max-width: none; /* allow it to fill available width on-screen */
   min-height: auto;
   overflow: visible;
   page-break-after: always;
@@ -192,6 +201,42 @@
 .printableResume > * {
   margin: 0;
   display: block;
+}
+
+/* Make sure inner blocks expand to available width on screen */
+.printableResume > * {
+  width: 100%;
+}
+
+/* Sparse resume: center content and show a friendly hint on-screen */
+.sparseResume {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 160px);
+  padding: 2.25rem;
+}
+
+.sparseResume h1 {
+  font-size: 34pt;
+  text-align: center;
+}
+
+.sparseHint {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #d0c8b0;
+  background: rgba(139,117,0,0.06);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(139,117,0,0.12);
+}
+
+/* Hide the on-screen hint in print so sparse resumes still print cleanly */
+@media print {
+  .sparseHint { display: none !important; }
+  .sparseResume { min-height: auto !important; padding: 0.75in !important; }
 }
 
 /* Header - Name */
@@ -727,11 +772,10 @@
     size: letter;
   }
 
-  /* Force all resume descendants to print black on white */
-  .printableResume,
-  .printableResume * {
+  /* Default printable resume color; allow template-specific colors to override where appropriate */
+  .printableResume {
     color: #000000 !important;
-    background: transparent !important;
+    background: #ffffff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
