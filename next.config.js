@@ -2,7 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   // Optimize for serverless environments (Vercel)
-  output: 'standalone',
+  // Avoid `standalone` output on Windows due to invalid filename issues when
+  // Next copies traced node_modules files (colons and other chars).
+  // Use standalone output on non-Windows platforms only.
+  ...(process.platform === 'win32' ? {} : { output: 'standalone' }),
   // Turbopack configuration
   turbopack: {
     root: __dirname,
