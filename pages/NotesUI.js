@@ -402,19 +402,42 @@ export default function NotesUI() {
 
   const extractTextFromPdf = async (file) => {
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
-    let workerSrc;
+    // Prefer a blob URL created from the public worker file so `workerSrc` is a string.
     try {
-      const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
-      workerSrc = workerModule?.default || workerModule;
+      const resp = await fetch('/pdf.worker.min.mjs');
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        const blob = new Blob([buf], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = blobUrl;
+      } else {
+        // Fallback: attempt direct imports (may return a URL string in some bundlers)
+        try {
+          const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
+        } catch (err) {
+          try {
+            const workerModule = await import('pdfjs-dist/build/pdf.worker.min.js');
+            pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
+          } catch (err2) {
+            // Last resort: use public path string
+            pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+          }
+        }
+      }
     } catch (err) {
       try {
-        const workerModule = await import('pdfjs-dist/build/pdf.worker.min.js');
-        workerSrc = workerModule?.default || workerModule;
+        const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
       } catch (err2) {
-        workerSrc = '/pdf.worker.min.mjs';
+        try {
+          const workerModule = await import('pdfjs-dist/build/pdf.worker.min.js');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
+        } catch (err3) {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        }
       }
     }
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
