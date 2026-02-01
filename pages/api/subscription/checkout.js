@@ -124,11 +124,14 @@ async function handler(req, res) {
           // For dev mode, we use a fake customer ID based on user ID
           const devCustomerId = `dev_cus_${user.id}`;
           
+          // In dev mode we create a pending subscription record but do NOT
+          // mark the user as having an active subscription. This prevents
+          // accidental access grants in non-webhook flows (e.g. back-button).
           await prisma.subscription.upsert({
             where: { stripeCustomerId: devCustomerId },
             update: {
               plan,
-              status: 'trialing',
+              status: 'pending',
               trialEndsAt: trialEnds,
               userId: user.id
             },
@@ -136,28 +139,15 @@ async function handler(req, res) {
               stripeCustomerId: devCustomerId,
               userId: user.id,
               plan,
-              status: 'trialing',
+              status: 'pending',
               trialEndsAt: trialEnds
-            }
-          });
-          const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { preferences: true } });
-          const currentPrefs = existing?.preferences || {};
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              onboarded: true,
-              preferences: { ...currentPrefs, subscriptionPlan: plan }
             }
           });
         } else if (pool) {
           // Fallback SQL if Prisma unavailable
           await pool.query(
             'INSERT INTO "Subscription" (id, "userId", plan, status, "trialEndsAt", "createdAt") VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())',
-            [user.id, plan, 'trialing', trialEnds]
-          );
-          await pool.query(
-            `UPDATE "User" SET onboarded = TRUE, preferences = COALESCE(preferences, '{}'::jsonb) || $2::jsonb WHERE id = $1`,
-            [user.id, JSON.stringify({ subscriptionPlan: plan })]
+            [user.id, plan, 'pending', trialEnds]
           );
         }
       } catch (e) {

@@ -1,10 +1,6 @@
 // pages/Notes.js
-'use client';
 
 import dynamic from 'next/dynamic';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
-import { useEffect } from 'react';
 
 const NotesDynamic = dynamic(() => import('./NotesUI'), {
   ssr: false,
@@ -12,52 +8,43 @@ const NotesDynamic = dynamic(() => import('./NotesUI'), {
 });
 
 export default function Notes() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/login');
-      return;
-    }
-    if (status === 'authenticated') {
-      (async () => {
-        try {
-          const res = await fetch('/api/user');
-          if (res.ok) {
-            const data = await res.json();
-            const user = data?.data?.user;
-            if (user && !user.onboarded) {
-              router.replace('/onboarding');
-              return;
-            }
-            // Check subscription tier via user.preferences
-            const plan = user?.preferences?.subscriptionPlan || null;
-            if (plan === 'career') {
-              alert('Notes requires Notes Only ($7/month) or Full Access ($10/month). You currently have Career Only access.');
-              router.replace('/subscription/plans');
-              return;
-            }
-          }
-        } catch (e) {
-          // ignore
-        }
-      })();
-    }
-  }, [status, router]);
-
-  if (status === 'loading') {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <p>Checking authentication...</p>
-      </div>
-    );
-  }
-  
-  if (status === 'unauthenticated' || !session) {
-    return null;
-  }
-
   return <NotesDynamic />;
-  // Consider moving upsell into NotesUI for richer placement.
+}
+
+export async function getServerSideProps(context) {
+  const { req, res } = context;
+  try {
+    const { getServerSession } = await import('next-auth/next');
+    const { authOptions } = require('../lib/authOptions');
+    const session = await getServerSession(req, res, authOptions);
+
+    if (!session || !session.user?.email) {
+      return { redirect: { destination: '/login', permanent: false } };
+    }
+
+    const prisma = require('../lib/prisma');
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 }, betaTester: true }
+    });
+
+    if (!user) return { redirect: { destination: '/signup', permanent: false } };
+    if (!user.onboarded) return { redirect: { destination: '/onboarding', permanent: false } };
+
+    const hasSubscription = Boolean(
+      (user.subscriptions && user.subscriptions.length > 0 && ['active', 'trialing'].includes(user.subscriptions[0].status)) ||
+      (user.preferences && user.preferences.subscriptionPlan)
+    );
+
+    const beta = user.betaTester;
+    const betaActive = Boolean(beta && beta.status === 'active' && new Date(beta.trialEndsAt) > new Date());
+
+    if (!hasSubscription && !betaActive) {
+      return { redirect: { destination: '/subscription/plans', permanent: false } };
+    }
+
+    return { props: {} };
+  } catch (err) {
+    return { props: {} };
+  }
 }

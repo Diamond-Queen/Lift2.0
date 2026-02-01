@@ -478,3 +478,57 @@ export default function Dashboard() {
     </>
   );
 }
+
+export async function getServerSideProps(context) {
+  const { req, res } = context;
+  let session = null;
+  try {
+    const { getServerSession } = await import('next-auth/next');
+    // lazy-require to avoid potential circular imports
+    const { authOptions } = require('../lib/authOptions');
+    session = await getServerSession(req, res, authOptions);
+  } catch (e) {
+    // ignore - handled below
+  }
+
+  if (!session || !session.user?.email) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    };
+  }
+
+  const prisma = require('../lib/prisma');
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 }, betaTester: true },
+    });
+
+    if (!user) {
+      return { redirect: { destination: '/signup', permanent: false } };
+    }
+
+    if (!user.onboarded) {
+      return { redirect: { destination: '/onboarding', permanent: false } };
+    }
+
+    const hasSubscription = Boolean(
+      (user.subscriptions && user.subscriptions.length > 0 && ['active', 'trialing'].includes(user.subscriptions[0].status)) ||
+        (user.preferences && user.preferences.subscriptionPlan)
+    );
+
+    const beta = user.betaTester;
+    const betaActive = Boolean(beta && beta.status === 'active' && new Date(beta.trialEndsAt) > new Date());
+
+    if (!hasSubscription && !betaActive) {
+      return { redirect: { destination: '/subscription/plans', permanent: false } };
+    }
+
+    return { props: {} };
+  } catch (err) {
+    return { props: {} };
+  }
+}
