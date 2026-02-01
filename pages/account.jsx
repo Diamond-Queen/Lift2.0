@@ -184,7 +184,7 @@ export default function Account() {
   }
 
   const handleCancelSubscription = async () => {
-    if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access to premium features and your account will be permanently deleted.')) {
+    if (!window.confirm('Cancel subscription? This will cancel your Stripe subscription, remove access to paid features, and may not issue an automatic refund. For refunds, contact support. Continue?')) {
       return;
     }
 
@@ -212,7 +212,7 @@ export default function Account() {
   }
 
   const handleCancelBetaTrial = async () => {
-    if (!window.confirm('Are you sure you want to cancel your beta trial? You will lose access to Lift.')) {
+    if (!window.confirm('Cancel beta trial? This will delete your beta enrollment. If you paid, billing may still have occurred — refunds are not automatic. Contact support to request a refund. Continue?')) {
       return;
     }
 
@@ -377,6 +377,9 @@ export default function Account() {
                 >
                   {cancelingSubscription ? 'Canceling...' : 'Cancel Subscription'}
                 </button>
+                <div style={{ fontSize: '0.85rem', color: '#ffd7b5', marginTop: '0.5rem' }}>
+                  Canceling will stop recurring charges and remove access. Refunds are handled by Stripe and are not automatic — contact support if you need one.
+                </div>
               </div>
             </div>
           )}
@@ -437,6 +440,9 @@ export default function Account() {
                 >
                   {cancelingBeta ? 'Canceling...' : 'Cancel Trial'}
                 </button>
+                <div style={{ fontSize: '0.85rem', color: '#cfe8ff', marginTop: '0.5rem' }}>
+                  Canceling the trial will remove your beta access. If you completed payment, refunds are not automatic — contact support to request one.
+                </div>
               </div>
             </div>
           )}

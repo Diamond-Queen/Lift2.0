@@ -64,11 +64,18 @@ async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Invalid plan selected' });
   }
 
-  // Hardcoded price IDs from environment for security
+  // Price configuration: prefer Stripe Price IDs from env, fallback to amounts
   const PLAN_CONFIG = {
-    career: { name: 'Career Only', amount: 700 }, // $7.00
-    notes: { name: 'Notes Only', amount: 700 }, // $7.00
-    full: { name: 'Full Access', amount: 1000 } // $10.00
+    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 700 }, // $7.00
+    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 700 }, // $7.00
+    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1000 } // $10.00
+  };
+
+  // Normalize amount to cents: if someone provides dollars (e.g. 7), convert to 700
+  const toCents = (amt) => {
+    if (typeof amt !== 'number') return amt;
+    if (amt > 0 && amt < 100) return Math.round(amt * 100);
+    return Math.round(amt);
   };
 
   const planConfig = PLAN_CONFIG[plan];
@@ -142,26 +149,33 @@ async function handler(req, res) {
     }
 
     // Create Checkout Session for subscription
-    logger.info('creating_checkout_session', { customerId: customer.id, plan, amount: planConfig.amount });
+    const unitAmount = toCents(planConfig.amount);
+    let lineItem;
+    if (planConfig.price) {
+      lineItem = { price: planConfig.price, quantity: 1 };
+      logger.info('creating_checkout_session_with_priceid', { customerId: customer.id, plan, priceId: planConfig.price });
+    } else {
+      lineItem = {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: planConfig.name,
+            description: `${planConfig.name} - $${(unitAmount / 100).toFixed(2)}/month`
+          },
+          unit_amount: unitAmount,
+          recurring: {
+            interval: 'month',
+            interval_count: 1
+          }
+        },
+        quantity: 1
+      };
+      logger.info('creating_checkout_session', { customerId: customer.id, plan, amount: unitAmount });
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customer.id,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: planConfig.name,
-              description: `${planConfig.name} - $${(planConfig.amount / 100).toFixed(2)}/month`
-            },
-            unit_amount: planConfig.amount,
-            recurring: {
-              interval: 'month',
-              interval_count: 1
-            }
-          },
-          quantity: 1
-        }
-      ],
+      line_items: [lineItem],
       mode: 'subscription',
       success_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=success`,
       cancel_url: `${process.env.NEXTAUTH_URL}/subscription/plans?checkout=cancelled`,

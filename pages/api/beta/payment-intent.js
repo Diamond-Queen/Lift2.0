@@ -63,7 +63,14 @@ async function handler(req, res) {
   }
 
   // Hardcoded amount for security
-  const BETA_AMOUNT = 300; // $3.00 in cents
+  let BETA_AMOUNT = 300; // $3.00 in cents
+  // Normalize if configured in dollars by mistake
+  if (typeof process.env.BETA_AMOUNT !== 'undefined') {
+    const parsed = Number(process.env.BETA_AMOUNT);
+    if (!Number.isNaN(parsed)) {
+      BETA_AMOUNT = parsed > 0 && parsed < 100 ? Math.round(parsed * 100) : Math.round(parsed);
+    }
+  }
 
   try {
     const user = prisma
@@ -114,21 +121,28 @@ async function handler(req, res) {
       });
     }
 
+    const betaPriceId = process.env.STRIPE_PRICE_BETA || null;
+    let lineItem;
+    if (betaPriceId) {
+      lineItem = { price: betaPriceId, quantity: 1 };
+      logger.info('creating_beta_checkout_with_priceid', { userId: user.id, betaPriceId });
+    } else {
+      lineItem = {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Beta Program Access (${trialType} trial)`,
+            description: `${trialType === 'school' ? 14 : 7} days free premium features`
+          },
+          unit_amount: BETA_AMOUNT
+        },
+        quantity: 1
+      };
+    }
+
     const session_obj = await stripe.checkout.sessions.create({
       customer: customer.id,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Beta Program Access (${trialType} trial)`,
-              description: `${trialType === 'school' ? 14 : 7} days free premium features`
-            },
-            unit_amount: BETA_AMOUNT
-          },
-          quantity: 1
-        }
-      ],
+      line_items: [lineItem],
       mode: 'payment',
       success_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=success`,
       cancel_url: `${process.env.NEXTAUTH_URL}/beta-signup?checkout=cancelled`,

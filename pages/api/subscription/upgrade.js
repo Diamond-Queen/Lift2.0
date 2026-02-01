@@ -64,11 +64,17 @@ async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Invalid plan selected' });
   }
 
-  // Hardcoded price IDs from environment for security
+  // Price configuration: prefer Stripe Price IDs from env, fallback to amounts
   const PLAN_CONFIG = {
-    career: { name: 'Career Only', amount: 700 }, // $7.00
-    notes: { name: 'Notes Only', amount: 700 }, // $7.00
-    full: { name: 'Full Access', amount: 1000 } // $10.00
+    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 700 }, // $7.00
+    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 700 }, // $7.00
+    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1000 } // $10.00
+  };
+
+  const toCents = (amt) => {
+    if (typeof amt !== 'number') return amt;
+    if (amt > 0 && amt < 100) return Math.round(amt * 100);
+    return Math.round(amt);
   };
 
   const newPlanConfig = PLAN_CONFIG[newPlan];
@@ -136,25 +142,32 @@ async function handler(req, res) {
 
     // Create a new Checkout Session for the upgrade
     // This will allow the user to confirm the plan change and handle any proration
+    const unitAmount = toCents(newPlanConfig.amount);
+    let lineItem;
+    if (newPlanConfig.price) {
+      lineItem = { price: newPlanConfig.price, quantity: 1 };
+      logger.info('creating_upgrade_checkout_with_priceid', { userId: user.id, currentPlan: existingSub.plan, newPlan, priceId: newPlanConfig.price });
+    } else {
+      lineItem = {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: newPlanConfig.name,
+            description: `${newPlanConfig.name} - $${(unitAmount / 100).toFixed(2)}/month`
+          },
+          unit_amount: unitAmount,
+          recurring: {
+            interval: 'month',
+            interval_count: 1
+          }
+        },
+        quantity: 1
+      };
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: stripeSubscription.customer,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: newPlanConfig.name,
-              description: `${newPlanConfig.name} - $${(newPlanConfig.amount / 100).toFixed(2)}/month`
-            },
-            unit_amount: newPlanConfig.amount,
-            recurring: {
-              interval: 'month',
-              interval_count: 1
-            }
-          },
-          quantity: 1
-        }
-      ],
+      line_items: [lineItem],
       mode: 'subscription',
       success_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=success&upgraded=true`,
       cancel_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=cancelled`,

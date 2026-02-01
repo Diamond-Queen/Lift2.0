@@ -1,4 +1,5 @@
 const prisma = require('../../../lib/prisma');
+const stripe = require('../../../lib/stripe');
 const { getServerSession } = require('next-auth/next');
 const logger = require('../../../lib/logger');
 const {
@@ -69,16 +70,52 @@ async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'User is not in beta program' });
     }
 
-    // Cancel beta trial by disconnecting the BetaTester relationship
+    // Cancel beta trial by removing the BetaTester record.
+    // The BetaTester -> User relation is required, so attempting to
+    // `disconnect` violates the relation. Delete the BetaTester instead.
     if (prisma) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          betaTester: {
-            disconnect: true
+      try {
+        await prisma.betaTester.delete({ where: { id: user.betaTester.id } });
+      } catch (e) {
+        await prisma.betaTester.update({ where: { id: user.betaTester.id }, data: { status: 'expired' } }).catch(() => {});
+      }
+
+      // Also cancel any active subscriptions for this user (Stripe + DB).
+      try {
+        const subs = await prisma.subscription.findMany({ where: { userId: user.id } });
+        for (const s of subs || []) {
+          // Try to cancel on Stripe if possible
+          if (s?.stripeSubscriptionId && stripe) {
+            try {
+              await stripe.subscriptions.del(s.stripeSubscriptionId);
+            } catch (stripeErr) {
+              logger.warn('stripe_cancel_failed', { userId: user.id, subscriptionId: s.stripeSubscriptionId, message: stripeErr.message });
+            }
+          }
+
+          // Mark subscription canceled in our DB
+          try {
+            await prisma.subscription.update({ where: { id: s.id }, data: { status: 'canceled' } });
+          } catch (dbErr) {
+            logger.warn('db_mark_subscription_canceled_failed', { userId: user.id, subscriptionId: s.id, message: dbErr.message });
           }
         }
-      });
+
+        // Remove subscription plan from user preferences if present
+        try {
+          const u = await prisma.user.findUnique({ where: { id: user.id }, select: { preferences: true } });
+          const prefs = u?.preferences || {};
+          if (prefs && prefs.subscriptionPlan) {
+            delete prefs.subscriptionPlan;
+            delete prefs.subscriptionPrice;
+            await prisma.user.update({ where: { id: user.id }, data: { preferences: prefs } });
+          }
+        } catch (prefErr) {
+          logger.warn('failed_to_remove_subscription_pref', { userId: user.id, message: prefErr.message });
+        }
+      } catch (e) {
+        logger.warn('beta_cancel_subscription_cleanup_failed', { userId: user.id, message: e.message });
+      }
     }
 
     logger.info('beta_trial_canceled', { userId: user.id });
