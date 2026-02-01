@@ -10,6 +10,7 @@ import UnlockModal from "../components/UnlockModal";
 import { exportToPdf, exportToPptx, exportToDocx, exportToTxt } from "../lib/export";
 
 export default function NotesUI() {
+  const MAX_NOTES = 1000000; // 1 million characters
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [togglePos, setTogglePos] = useState({ top: 72, left: 16 });
   // Core state
@@ -269,6 +270,10 @@ export default function NotesUI() {
       setError('Select a class first');
       return;
     }
+    if (input.length > MAX_NOTES) {
+      setError('Notes exceed maximum length of 1,000,000 characters. Cannot save.');
+      return;
+    }
     const title = (input || '').split('\n')[0].slice(0, 80) || `Note ${new Date().toLocaleString()}`;
     try {
       const res = await fetch('/api/content/items', {
@@ -467,7 +472,19 @@ export default function NotesUI() {
         throw new Error("Unsupported file type. Use PDF or PPTX.");
       }
       if (!extractedText.trim()) throw new Error("No readable text found.");
-      setInput((prev) => prev ? prev.trim() + "\n\n" + extractedText.trim() : extractedText.trim());
+      // Append but ensure we don't exceed MAX_NOTES. If necessary, truncate extractedText to fit.
+      setInput((prev) => {
+        const base = prev ? prev.trim() + "\n\n" : "";
+        const candidate = base + extractedText.trim();
+        if (candidate.length > MAX_NOTES) {
+          const allowed = MAX_NOTES - base.length;
+          const truncated = allowed > 0 ? extractedText.trim().slice(0, allowed) : '';
+          setError('⚠ Extracted text truncated to fit 1,000,000 character limit.');
+          setTimeout(() => setError(''), 4000);
+          return base + truncated;
+        }
+        return candidate;
+      });
       e.target.value = "";
     } catch (err) {
       console.error(err);
@@ -480,6 +497,10 @@ export default function NotesUI() {
   const handleGenerate = async () => {
     if (!input.trim()) {
       setError("Please add notes or upload a file first.");
+      return;
+    }
+    if (input.length > MAX_NOTES) {
+      setError('Notes exceed maximum length of 1,000,000 characters. Shorten input.');
       return;
     }
     // Only allow generation if a class is selected
@@ -577,9 +598,21 @@ export default function NotesUI() {
         .map(line => line.trim())
         .join('\n');
 
-      // Set the extracted text as input
-      setInput(formattedText);
-      setError('✓ Text extracted from image!');
+      // Set the extracted text as input, truncating if necessary to respect MAX_NOTES
+      setInput((prev) => {
+        const base = prev ? prev.trim() + "\n\n" : "";
+        const candidate = base + formattedText;
+        if (candidate.length > MAX_NOTES) {
+          const allowed = MAX_NOTES - base.length;
+          const truncated = allowed > 0 ? formattedText.slice(0, allowed) : '';
+          setError('⚠ Extracted text truncated to fit 1,000,000 character limit.');
+          setTimeout(() => setError(''), 4000);
+          return base + truncated;
+        }
+        setError('✓ Text extracted from image!');
+        setTimeout(() => setError(''), 2000);
+        return candidate;
+      });
       setTimeout(() => setError(''), 2000);
       setLoading(false);
     } catch (err) {
@@ -789,7 +822,22 @@ export default function NotesUI() {
             );
           })()}
 
-          <textarea className={styles.textarea} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Paste notes, type, or upload a file..." />
+                  <textarea
+                    className={styles.textarea}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Paste notes, type, or upload a file..."
+                    maxLength={MAX_NOTES}
+                  />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div style={{ color: input.length > MAX_NOTES ? '#ff6b6b' : 'var(--text-muted)', fontSize: '0.9rem' }}>
+                      {input.length.toLocaleString()} / {MAX_NOTES.toLocaleString()} characters
+                    </div>
+                    {input.length > MAX_NOTES && (
+                      <div style={{ color: '#ff6b6b', fontSize: '0.9rem' }}>Input exceeds maximum allowed length.</div>
+                    )}
+                  </div>
 
           {/* Input validation warning */}
           {input.trim() && input.trim().length < 50 && (
@@ -808,10 +856,10 @@ export default function NotesUI() {
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-            <button className={styles.secondaryButton} onClick={handleGenerate} disabled={loading} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700 }}>
+            <button className={styles.secondaryButton} onClick={handleGenerate} disabled={loading || input.length > MAX_NOTES} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700 }}>
               {loading ? 'Generating…' : 'Generate Notes'}
             </button>
-            <button className={styles.secondaryButton} onClick={handleSaveNote} disabled={loading || !selectedClassId} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700, opacity: !selectedClassId ? 0.6 : 1 }}>
+            <button className={styles.secondaryButton} onClick={handleSaveNote} disabled={loading || !selectedClassId || input.length > MAX_NOTES} style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#8b7500', border: '2px solid #1f003bff', padding: '0.9rem 1.25rem', borderRadius: '12px', fontWeight: 700, opacity: !selectedClassId ? 0.6 : 1 }}>
               {loading ? 'Saving…' : 'Save Note'}
             </button>
           </div>

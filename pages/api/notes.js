@@ -98,7 +98,7 @@ async function handler(req, res) {
 
     const { notes } = req.body;
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
-    if (notes.length > 400000) return res.status(413).json({ error: 'Notes too long (max 400k characters)' });
+    if (notes.length > 1000000) return res.status(413).json({ error: 'Notes too long (max 1,000,000 characters)' });
 
     // --- Generate summary and flashcards in parallel (10 second timeout) ---
     const timeout = new Promise((_, reject) => 
