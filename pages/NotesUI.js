@@ -17,8 +17,10 @@ export default function NotesUI() {
   const [input, setInput] = useState("");
   const [summaries, setSummaries] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
+  const [quiz, setQuiz] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [includeQuizOption, setIncludeQuizOption] = useState(false);
   const { studyMode, setStudyMode, studyMusic, setStudyMusic } = useStudyMode();
   const [musicLoaded, setMusicLoaded] = useState(false);
   const audioRef = useRef(null);
@@ -138,6 +140,7 @@ export default function NotesUI() {
       if (classGenerations[selectedClassId]) {
         setSummaries(classGenerations[selectedClassId].summaries || []);
         setFlashcards(classGenerations[selectedClassId].flashcards || []);
+        setQuiz(classGenerations[selectedClassId].quiz || []);
       } else {
         // Try to restore from localStorage for this class
         const key = `class_${selectedClassId}_notes`;
@@ -148,12 +151,22 @@ export default function NotesUI() {
             setInput(data.input || "");
             setSummaries(data.summaries || []);
             setFlashcards(data.flashcards || []);
+            setQuiz(data.quiz || []);
             // Also update classGenerations so it persists in memory
             setClassGenerations(prev => ({
               ...prev,
               [selectedClassId]: {
                 summaries: data.summaries || [],
                 flashcards: data.flashcards || []
+              }
+            }));
+            // include quiz in memory cache
+            setClassGenerations(prev => ({
+              ...prev,
+              [selectedClassId]: {
+                summaries: data.summaries || [],
+                flashcards: data.flashcards || [],
+                quiz: data.quiz || []
               }
             }));
           } catch (e) {
@@ -174,16 +187,17 @@ export default function NotesUI() {
 
   // Auto-save notes for the current class whenever input, summaries, or flashcards change
   useEffect(() => {
-    if (selectedClassId && (input || summaries.length > 0 || flashcards.length > 0)) {
+    if (selectedClassId && (input || summaries.length > 0 || flashcards.length > 0 || quiz.length > 0)) {
       const key = `class_${selectedClassId}_notes`;
       const dataToSave = {
         input,
         summaries,
-        flashcards
+        flashcards,
+        quiz
       };
       localStorage.setItem(key, JSON.stringify(dataToSave));
     }
-  }, [selectedClassId, input, summaries, flashcards]);
+  }, [selectedClassId, input, summaries, flashcards, quiz]);
 
   const handleCreateClass = async () => {
     if (!newClassName.trim()) return;
@@ -245,6 +259,7 @@ export default function NotesUI() {
     // if summaries/flashcards were saved, restore them
     if (item.summaries) setSummaries(item.summaries || []);
     if (item.metadata && item.metadata.flashcards) setFlashcards(item.metadata.flashcards || []);
+    if (item.metadata && item.metadata.quiz) setQuiz(item.metadata.quiz || []);
   };
 
   const handleDeleteNote = async (itemId) => {
@@ -285,7 +300,7 @@ export default function NotesUI() {
           originalInput: input, 
           type: 'note', 
           summaries: summaries.length > 0 ? summaries : null, 
-          metadata: { flashcards: flashcards.length > 0 ? flashcards : null } 
+          metadata: { flashcards: flashcards.length > 0 ? flashcards : null, quiz: quiz.length > 0 ? quiz : null } 
         })
       });
       if (res.ok) {
@@ -517,7 +532,7 @@ export default function NotesUI() {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: input }),
+        body: JSON.stringify({ notes: input, includeQuiz: includeQuizOption }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -525,12 +540,14 @@ export default function NotesUI() {
       } else {
         const newSummaries = data.summaries || [];
         const newFlashcards = (data.flashcards || []).slice(0, 12).map((q) => ({ ...q, flipped: false }));
+        const newQuiz = (data.quiz || []).slice(0, 12).map((q) => ({ ...q, revealed: false }));
         setSummaries(newSummaries);
         setFlashcards(newFlashcards);
+        setQuiz(newQuiz);
         // Store per-class - only for the currently selected class
         setClassGenerations(prev => ({
           ...prev,
-          [selectedClassId]: { summaries: newSummaries, flashcards: newFlashcards }
+          [selectedClassId]: { summaries: newSummaries, flashcards: newFlashcards, quiz: newQuiz }
         }));
       }
     } catch (err) {
@@ -660,6 +677,31 @@ export default function NotesUI() {
           content += `${i + 1}. Q: ${card.question}\n   A: ${card.answer}\n\n`;
         });
       }
+      if (quiz.length > 0) {
+        content += 'QUIZ / PRACTICE PROBLEMS\n' + '='.repeat(50) + '\n';
+        quiz.forEach((item, i) => {
+          content += `${i + 1}. Q: ${item.question}\n`;
+          if (Array.isArray(item.options) && item.options.length > 0) {
+            item.options.forEach((opt, oi) => {
+              const letter = String.fromCharCode(65 + oi);
+              content += `   ${letter}) ${opt}\n`;
+            });
+            // Indicate correct option if available
+            if (typeof item.correctIndex === 'number') {
+              const letter = String.fromCharCode(65 + item.correctIndex);
+              content += `   Correct: ${letter}\n`;
+            } else if (item.correctOption) {
+              content += `   Correct: ${item.correctOption}\n`;
+            } else if (item.answer) {
+              content += `   Answer: ${item.answer}\n`;
+            }
+          } else {
+            content += `   A: ${item.answer || '---'}\n`;
+          }
+          if (item.solution) content += `   Solution: ${item.solution}\n`;
+          content += '\n';
+        });
+      }
       
       const timestamp = new Date().toISOString().split('T')[0];
       const filename = `lift-notes-${timestamp}`;
@@ -691,6 +733,18 @@ export default function NotesUI() {
     setFlashcards((prev) =>
       prev.map((card, i) => (i === index ? { ...card, flipped: !card.flipped } : card))
     );
+  };
+
+  const toggleQuizReveal = (index) => {
+    setQuiz(prev => prev.map((q, i) => i === index ? { ...q, revealed: !q.revealed } : q));
+  };
+
+  const handleSelectQuizOption = (qIndex, optIndex) => {
+    setQuiz(prev => prev.map((q, i) => {
+      if (i !== qIndex) return q;
+      const correct = typeof q.correctIndex === 'number' ? (optIndex === q.correctIndex) : (q.options && q.options[optIndex] === q.answer);
+      return { ...q, selected: optIndex, revealed: true, correct };
+    }));
   };
 
   return (
@@ -864,6 +918,14 @@ export default function NotesUI() {
             </button>
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={includeQuizOption} onChange={(e) => setIncludeQuizOption(e.target.checked)} />
+              <span style={{ fontSize: '0.95rem', color: 'var(--text-color)' }}>Include practice quiz</span>
+            </label>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Generate practice problems and answers from notes</div>
+          </div>
+
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
             <select
               value={exportFormat}
@@ -945,6 +1007,61 @@ export default function NotesUI() {
                       <div className={styles.flashcardFront}><p>{card.question}</p></div>
                       <div className={styles.flashcardBack}><p>{card.answer}</p></div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {quiz.length > 0 && (
+            <div className={styles.section}>
+              <div className="quizHeader" style={{ display: 'flex', alignItems: 'center' }}>
+                <h2 style={{ margin: 0 }}>Practice Quiz ({quiz.length})</h2>
+                <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', gap: '0.5rem' }}>
+                  <div className="quizScore">{quiz.filter(q => q.correct).length}/{quiz.filter(q => typeof q.selected === 'number').length || quiz.length}</div>
+                  <div className="quizProgress" style={{ width: 160 }}>
+                    <div className="fill" style={{ width: `${Math.round((quiz.filter(q => typeof q.selected === 'number').length / quiz.length) * 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+              <div className="mcqList">
+                {quiz.map((item, idx) => (
+                  <div key={idx} className="mcqCard">
+                    <div className="mcqQuestion">{idx + 1}. {item.question}</div>
+                    {Array.isArray(item.options) && item.options.length > 0 ? (
+                      <div className="mcqOptions">
+                        {item.options.map((opt, oIdx) => {
+                          const letter = String.fromCharCode(65 + oIdx);
+                          const selected = item.selected === oIdx;
+                          const isCorrectOpt = (typeof item.correctIndex === 'number' && item.correctIndex === oIdx) || (item.correctOption === letter);
+                          const optClass = item.revealed ? (isCorrectOpt ? 'mcqOption correct' : (selected ? 'mcqOption incorrect' : 'mcqOption')) : 'mcqOption';
+                          return (
+                            <button key={oIdx} className={optClass} onClick={() => handleSelectQuizOption(idx, oIdx)} disabled={item.revealed} aria-pressed={selected}>
+                              <strong>{letter}.</strong> {opt}
+                            </button>
+                          );
+                        })}
+                        {item.revealed && (
+                          <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+                            <div><strong>Answer:</strong> {item.answer || (Array.isArray(item.options) && typeof item.correctIndex === 'number' ? item.options[item.correctIndex] : '---')}</div>
+                            {item.solution && <div style={{ marginTop: '0.5rem' }}><strong>Solution:</strong> {item.solution}</div>}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          {item.revealed && (
+                            <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+                              <div><strong>Answer:</strong> {item.answer}</div>
+                              {item.solution && <div style={{ marginTop: '0.5rem' }}><strong>Solution:</strong> {item.solution}</div>}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ marginLeft: '1rem' }}>
+                          <button onClick={() => toggleQuizReveal(idx)} style={{ padding: '0.45rem 0.6rem', background: 'rgba(139, 117, 0, 0.15)', color: 'var(--accent)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>{item.revealed ? 'Hide' : 'Show'}</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

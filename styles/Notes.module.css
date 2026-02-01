@@ -358,6 +358,65 @@
   transform: rotateY(180deg);
 }
 
+/* Quiz / MCQ styles */
+.quizHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.quizScore {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  color: white;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.mcqList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.mcqCard {
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+.mcqQuestion { font-weight: 700; margin-bottom: 0.5rem; }
+.mcqOptions { display: flex; flex-direction: column; gap: 0.5rem; }
+.mcqOption {
+  text-align: left;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+}
+.mcqOption:hover { transform: translateY(-2px); background: rgba(255,255,255,0.02); }
+.mcqOption.correct { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.25); }
+.mcqOption.incorrect { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.18); }
+.mcqOption strong { margin-right: 0.6rem; }
+
+/* Small progress bar */
+.quizProgress {
+  height: 8px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 999px;
+  overflow: hidden;
+  flex: 1 1 auto;
+  margin-left: 1rem;
+}
+.quizProgress > .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6a5af9, #b8871f);
+  width: 0%;
+  transition: width 400ms ease;
+}
+
 /* Study Mode Toggle Button - Cute design */
 .studyModeToggle {
   position: fixed;
