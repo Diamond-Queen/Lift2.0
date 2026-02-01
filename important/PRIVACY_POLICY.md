@@ -279,6 +279,13 @@ For privacy concerns or questions:
 **Lift Technologies & Jamyiah Williams - Privacy Committed**
 
 **Last Updated: January 25, 2026**
+ 
+## Password Reset & Refunds (Reference)
+
+- **Password Reset**: We provide a password reset flow that sends a one-time token to the email address on file. Reset tokens are short-lived and single-use. A password reset changes only your login credentials and does not remove or modify your account data or subscription status. For more details see our Terms of Service (Password Reset Policy).
+
+- **Refunds**: Our refund policies for subscriptions and payments are described in our Terms of Service (Refund Policy). In general, refunds are not issued for partial billing periods, free trials, or promotional credits, except in limited circumstances such as billing errors or fraud. To request a refund, contact us at williams.lift101@gmail.com.
+
 1.1 Information You Provide
 
 Name and email address

@@ -59,6 +59,7 @@ export default function Login() {
           {error && (
             <div id="login-error" className={styles.errorMessage} role="alert" aria-live="assertive">{error}</div>
           )}
+          <Link href="/forgot-password" className={styles.loginLink}>Forgot your password?</Link>
         </form>
       </div>
     </div>

@@ -35,6 +35,13 @@ You are responsible for safeguarding your credentials. You agree not to share yo
 ### 3.3 Account Termination
 We reserve the right to suspend or terminate accounts that violate these Terms, our Security Policy, or applicable law.
 
+### 3.4 Password Reset Policy
+- If you forget your password, you may request a password reset via the "Forgot password" flow in the application. We will send a one-time reset link to the email address on file.
+- Reset tokens expire after a limited time (typically 1 hour). For security, reset links are single-use and will be invalidated after use or expiration.
+- A password reset updates only your account credentials; it does not delete or modify your account data, subscription status, or stored content.
+- Existing sessions (for example, logged-in devices) may remain valid until they expire. If you want to invalidate all active sessions after a password change, contact support at williams.lift101@gmail.com and we can assist with forcing sign-out on all devices.
+- Do not share reset emails or tokens. If you did not request a reset, please contact support immediately.
+
 ## 4. ACCEPTABLE USE
 
 You agree NOT to:
@@ -98,6 +105,14 @@ Nothing in these Terms grants you a license or ownership interest in any intelle
 - We will work with you to resolve payment issues within 14 days
 - Chargebacks will be investigated and may result in account suspension
 - Repeated chargebacks may result in permanent account termination and legal action
+
+### 7.6 Refund Policy
+- General: We do not provide refunds for partial months, unused features, or paid trials. All subscription cancellations take effect at the end of the current billing cycle unless otherwise specified.
+- Limited exceptions: Refunds may be considered only in limited circumstances, such as billing errors, duplicate charges, or proven fraudulent transactions. To request a refund, contact us at williams.lift101@gmail.com within 14 days of the charge and provide relevant details (transaction ID, date, reason).
+- Investigation and approval: All refund requests are reviewed case-by-case. If approved, refunds will be issued to the original payment method and may take 5–10 business days to appear on your statement depending on your bank or card issuer.
+- No refunds for trials or promotional credits: Free trials, promotional credits, and discounts are not refundable.
+- Chargebacks: If you initiate a chargeback with your bank or card issuer, we will investigate and may suspend or terminate your account pending resolution. If the chargeback is reversed in our favor, you remain responsible for the unpaid balance and any applicable fees.
+
 
 ## 8. THIRD-PARTY APIs AND SERVICES
 
