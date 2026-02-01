@@ -96,7 +96,7 @@ async function handler(req, res) {
       logger.error('Failed to load notes preferences', { error: err.message });
     }
 
-    const { notes, includeQuiz } = req.body;
+    const { notes, includeQuiz, quizDifficulty = 'medium' } = req.body;
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 1000000) return res.status(413).json({ error: 'Notes too long (max 1,000,000 characters)' });
 
@@ -141,8 +141,15 @@ ${notes}`,
     });
 
     // Optional: generate practice quiz questions (problems + answers)
+    const quizDifficultyMap = {
+      easy: 'Use straightforward, single-step problems suitable for quick practice. Avoid multi-step solutions.',
+      medium: 'Include a balanced mix of single- and multi-step problems that require some reasoning.',
+      hard: 'Create challenging, multi-step problems that require deeper reasoning and show key solution steps.'
+    };
+    const difficultyInstruction = quizDifficultyMap[quizDifficulty] || quizDifficultyMap['medium'];
+
     const quizPromise = includeQuiz ? generateCompletion({
-      prompt: `TASK: Generate a set of multiple-choice practice problems based on the following notes. Output MUST be a JSON array ONLY (no explanation, no titles, no markdown). Each item must be an object with these keys: 
+      prompt: `TASK: Generate a set of multiple-choice practice problems based on the following notes. ${difficultyInstruction} Output MUST be a JSON array ONLY (no explanation, no titles, no markdown). Each item must be an object with these keys: 
 - "question": string (clear problem statement, include units when relevant),
 - "options": array of 3-5 distinct string choices (plausible distractors specific to the subject),
 - "correctOption": single uppercase letter ("A","B","C", etc.) pointing to the correct option,
@@ -162,7 +169,7 @@ Requirements:
 Notes:\n\n${notes}`,
       maxTokens: 2200,
       type: 'json',
-      context: { type: 'quiz', notes }
+      context: { type: 'quiz', notes, quizDifficulty }
     }) : Promise.resolve({ content: '[]' });
 
     const [summaryResp, flashcardsResp, quizResp] = await Promise.race([

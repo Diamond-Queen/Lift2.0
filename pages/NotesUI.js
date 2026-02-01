@@ -21,6 +21,7 @@ export default function NotesUI() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [includeQuizOption, setIncludeQuizOption] = useState(false);
+  const [quizDifficulty, setQuizDifficulty] = useState('medium');
   const { studyMode, setStudyMode, studyMusic, setStudyMusic } = useStudyMode();
   const [musicLoaded, setMusicLoaded] = useState(false);
   const audioRef = useRef(null);
@@ -152,21 +153,15 @@ export default function NotesUI() {
             setSummaries(data.summaries || []);
             setFlashcards(data.flashcards || []);
             setQuiz(data.quiz || []);
+            setQuizDifficulty(data.quizDifficulty || 'medium');
             // Also update classGenerations so it persists in memory
             setClassGenerations(prev => ({
               ...prev,
               [selectedClassId]: {
                 summaries: data.summaries || [],
-                flashcards: data.flashcards || []
-              }
-            }));
-            // include quiz in memory cache
-            setClassGenerations(prev => ({
-              ...prev,
-              [selectedClassId]: {
-                summaries: data.summaries || [],
                 flashcards: data.flashcards || [],
-                quiz: data.quiz || []
+                quiz: data.quiz || [],
+                quizDifficulty: data.quizDifficulty || 'medium'
               }
             }));
           } catch (e) {
@@ -193,7 +188,8 @@ export default function NotesUI() {
         input,
         summaries,
         flashcards,
-        quiz
+        quiz,
+        quizDifficulty
       };
       localStorage.setItem(key, JSON.stringify(dataToSave));
     }
@@ -260,6 +256,7 @@ export default function NotesUI() {
     if (item.summaries) setSummaries(item.summaries || []);
     if (item.metadata && item.metadata.flashcards) setFlashcards(item.metadata.flashcards || []);
     if (item.metadata && item.metadata.quiz) setQuiz(item.metadata.quiz || []);
+    if (item.metadata && item.metadata.quizDifficulty) setQuizDifficulty(item.metadata.quizDifficulty || 'medium');
   };
 
   const handleDeleteNote = async (itemId) => {
@@ -300,7 +297,7 @@ export default function NotesUI() {
           originalInput: input, 
           type: 'note', 
           summaries: summaries.length > 0 ? summaries : null, 
-          metadata: { flashcards: flashcards.length > 0 ? flashcards : null, quiz: quiz.length > 0 ? quiz : null } 
+          metadata: { flashcards: flashcards.length > 0 ? flashcards : null, quiz: quiz.length > 0 ? quiz : null, quizDifficulty: quizDifficulty || null } 
         })
       });
       if (res.ok) {
@@ -532,7 +529,7 @@ export default function NotesUI() {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: input, includeQuiz: includeQuizOption }),
+        body: JSON.stringify({ notes: input, includeQuiz: includeQuizOption, quizDifficulty }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -547,7 +544,7 @@ export default function NotesUI() {
         // Store per-class - only for the currently selected class
         setClassGenerations(prev => ({
           ...prev,
-          [selectedClassId]: { summaries: newSummaries, flashcards: newFlashcards, quiz: newQuiz }
+          [selectedClassId]: { summaries: newSummaries, flashcards: newFlashcards, quiz: newQuiz, quizDifficulty }
         }));
       }
     } catch (err) {
@@ -971,6 +968,17 @@ export default function NotesUI() {
               <span className={styles.quizCheckboxText}>Include practice quiz</span>
             </label>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Generate practice problems and answers from notes</div>
+            <select
+              value={quizDifficulty}
+              onChange={(e) => setQuizDifficulty(e.target.value)}
+              disabled={!includeQuizOption}
+              title="Quiz difficulty"
+              style={{ marginLeft: 'auto', background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', color: '#bfa23a', border: '2px solid #1f003bff', padding: '0.35rem 0.6rem', borderRadius: '8px', fontWeight: 600, cursor: includeQuizOption ? 'pointer' : 'not-allowed', fontSize: '0.85rem' }}
+            >
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
