@@ -742,7 +742,53 @@ export default function NotesUI() {
   const handleSelectQuizOption = (qIndex, optIndex) => {
     setQuiz(prev => prev.map((q, i) => {
       if (i !== qIndex) return q;
-      const correct = typeof q.correctIndex === 'number' ? (optIndex === q.correctIndex) : (q.options && q.options[optIndex] === q.answer);
+      // Determine correctness robustly:
+      let correct = false;
+
+      // 1) If correctIndex provided, simple index compare
+      if (typeof q.correctIndex === 'number') {
+        correct = (optIndex === q.correctIndex);
+      } else if (q.correctOption) {
+        // 2) If correctOption letter provided, compare letter
+        try {
+          const expected = String(q.correctOption).trim().toUpperCase().charAt(0);
+          const selectedLetter = String.fromCharCode(65 + optIndex);
+          correct = expected === selectedLetter;
+        } catch (e) {
+          correct = false;
+        }
+      } else if (q.answer) {
+        // 3) Fallback: compare normalized strings or numeric equivalence
+        const normalize = (s) => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        const sel = normalize(q.options && q.options[optIndex] ? q.options[optIndex] : '');
+        const ans = normalize(q.answer);
+
+        // Numeric check: parse fractions like '1/2' and decimals
+        const parseNumber = (str) => {
+          if (!str) return NaN;
+          // fraction like 1/2
+          const frac = str.match(/^(?:[-+])?\d+\s*\/\s*\d+$/);
+          if (frac) {
+            try {
+              const parts = str.split('/').map(p => parseFloat(p));
+              return parts[0] / parts[1];
+            } catch (e) { return NaN; }
+          }
+          const n = parseFloat(str.replace(/[^0-9eE+\-\.]/g, ''));
+          return Number.isFinite(n) ? n : NaN;
+        };
+
+        const selNum = parseNumber(sel);
+        const ansNum = parseNumber(ans);
+        if (!Number.isNaN(selNum) && !Number.isNaN(ansNum)) {
+          // Accept numeric answers within a small tolerance
+          correct = Math.abs(selNum - ansNum) < 1e-6;
+        } else {
+          // Last resort: exact normalized string match
+          correct = sel === ans;
+        }
+      }
+
       return { ...q, selected: optIndex, revealed: true, correct };
     }));
   };
