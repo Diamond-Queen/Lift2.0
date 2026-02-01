@@ -919,9 +919,10 @@ export default function NotesUI() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={includeQuizOption} onChange={(e) => setIncludeQuizOption(e.target.checked)} />
-              <span style={{ fontSize: '0.95rem', color: 'var(--text-color)' }}>Include practice quiz</span>
+            <label className={styles.quizCheckboxLabel}>
+              <input type="checkbox" className={styles.quizCheckbox} checked={includeQuizOption} onChange={(e) => setIncludeQuizOption(e.target.checked)} />
+              <span className={styles.customCheckbox} aria-hidden="true" />
+              <span className={styles.quizCheckboxText}>Include practice quiz</span>
             </label>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Generate practice problems and answers from notes</div>
           </div>
@@ -1014,26 +1015,26 @@ export default function NotesUI() {
           )}
           {quiz.length > 0 && (
             <div className={styles.section}>
-              <div className="quizHeader" style={{ display: 'flex', alignItems: 'center' }}>
+              <div className={styles.quizHeader} style={{ display: 'flex', alignItems: 'center' }}>
                 <h2 style={{ margin: 0 }}>Practice Quiz ({quiz.length})</h2>
                 <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', gap: '0.5rem' }}>
-                  <div className="quizScore">{quiz.filter(q => q.correct).length}/{quiz.filter(q => typeof q.selected === 'number').length || quiz.length}</div>
-                  <div className="quizProgress" style={{ width: 160 }}>
-                    <div className="fill" style={{ width: `${Math.round((quiz.filter(q => typeof q.selected === 'number').length / quiz.length) * 100)}%` }} />
+                  <div className={styles.quizScore}>{quiz.filter(q => q.correct).length}/{quiz.filter(q => typeof q.selected === 'number').length || quiz.length}</div>
+                  <div className={styles.quizProgress} style={{ width: 160 }}>
+                    <div className={styles.fill} style={{ width: `${Math.round((quiz.filter(q => typeof q.selected === 'number').length / quiz.length) * 100)}%` }} />
                   </div>
                 </div>
               </div>
-              <div className="mcqList">
+              <div className={styles.mcqList}>
                 {quiz.map((item, idx) => (
-                  <div key={idx} className="mcqCard">
-                    <div className="mcqQuestion">{idx + 1}. {item.question}</div>
+                  <div key={idx} className={styles.mcqCard}>
+                    <div className={styles.mcqQuestion}>{idx + 1}. {item.question}</div>
                     {Array.isArray(item.options) && item.options.length > 0 ? (
-                      <div className="mcqOptions">
+                      <div className={styles.mcqOptions}>
                         {item.options.map((opt, oIdx) => {
                           const letter = String.fromCharCode(65 + oIdx);
                           const selected = item.selected === oIdx;
                           const isCorrectOpt = (typeof item.correctIndex === 'number' && item.correctIndex === oIdx) || (item.correctOption === letter);
-                          const optClass = item.revealed ? (isCorrectOpt ? 'mcqOption correct' : (selected ? 'mcqOption incorrect' : 'mcqOption')) : 'mcqOption';
+                          const optClass = [styles.mcqOption, item.revealed ? (isCorrectOpt ? styles.correct : (selected ? styles.incorrect : '')) : ''].filter(Boolean).join(' ');
                           return (
                             <button key={oIdx} className={optClass} onClick={() => handleSelectQuizOption(idx, oIdx)} disabled={item.revealed} aria-pressed={selected}>
                               <strong>{letter}.</strong> {opt}
