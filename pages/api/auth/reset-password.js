@@ -1,6 +1,6 @@
-const prisma = require('../../../../lib/prisma');
-const { setSecureHeaders, trackIpRateLimit, validateRequest, auditLog } = require('../../../../lib/security');
-const { extractClientIp } = require('../../../../lib/ip');
+const prisma = require('../../../lib/prisma');
+const { setSecureHeaders, trackIpRateLimit, validateRequest, auditLog } = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
 const argon2 = require('argon2');
 const { Prisma } = require('@prisma/client');
 

@@ -1,7 +1,7 @@
-const prisma = require('../../../../lib/prisma');
-const { setSecureHeaders, trackIpRateLimit, validateRequest, auditLog } = require('../../../../lib/security');
-const { extractClientIp } = require('../../../../lib/ip');
-const { sendEmailNotification } = require('../../../../lib/notify');
+const prisma = require('../../../lib/prisma');
+const { setSecureHeaders, trackIpRateLimit, validateRequest, auditLog } = require('../../../lib/security');
+const { extractClientIp } = require('../../../lib/ip');
+const { sendEmailNotification } = require('../../../lib/notify');
 const crypto = require('crypto');
 
 module.exports = async function handler(req, res) {
