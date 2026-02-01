@@ -4,7 +4,7 @@
     "build": "prisma generate && node scripts/run_migrations.js && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate && node ./scripts/patch_prisma_dev.js || true",
+    "postinstall": "prisma generate && node ./scripts/patch_prisma_dev.js && node ./scripts/copy_pdf_worker.js || true",
     "sync:codes": "node ./scripts/sync_school_codes.js",
     "test": "jest",
     "test:browsers": "playwright test",

@@ -402,7 +402,19 @@ export default function NotesUI() {
 
   const extractTextFromPdf = async (file) => {
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+    let workerSrc;
+    try {
+      const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
+      workerSrc = workerModule?.default || workerModule;
+    } catch (err) {
+      try {
+        const workerModule = await import('pdfjs-dist/build/pdf.worker.min.js');
+        workerSrc = workerModule?.default || workerModule;
+      } catch (err2) {
+        workerSrc = '/pdf.worker.min.mjs';
+      }
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let text = "";
