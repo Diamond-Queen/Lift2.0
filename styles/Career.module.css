@@ -1167,7 +1167,7 @@
   }
 
   /* Aggressive print overrides to prevent grey output from other rules or browser quirks */
-  html, body, .printableResume, .printableResume * {
+  html, body, .printableResume, .printableResume *, .printableCover, .printableCover * {
     color: #000000 !important;
     background: #ffffff !important;
     opacity: 1 !important;
