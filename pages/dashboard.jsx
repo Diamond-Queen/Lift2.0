@@ -149,24 +149,24 @@ export default function Dashboard() {
               setAccessDenied(true);
               setDenyReason('trial-expired');
               return;
-            }
-          } else if (trialRes.status === 401) {
-            // Not in beta program - check if user has school access or paid subscription
-            // Use the user data we already fetched above
-            console.log('[dashboard] Not in beta (401), checking school/paid access:', { userSchoolId, hasPaidSub });
-            
-            // School members get instant access - no payment needed
-            if (userSchoolId) {
-              console.log('[dashboard] User has schoolId, allowing entry');
-              // Fall through to render dashboard
-            } else if (hasPaidSub) {
-              console.log('[dashboard] User has paid subscription, allowing entry');
-              // Fall through to render dashboard
-            } else {
-              console.log('[dashboard] No school or paid access, denying access');
-              setAccessDenied(true);
-              setDenyReason('not-enrolled');
-              return;
+            } else if (!trial) {
+              // User is not in beta program - check if user has school access or paid subscription
+              // Use the user data we already fetched above
+              console.log('[dashboard] Not in beta (no trial), checking school/paid access:', { userSchoolId, hasPaidSub });
+              
+              // School members get instant access - no payment needed
+              if (userSchoolId) {
+                console.log('[dashboard] User has schoolId, allowing entry');
+                // Fall through to render dashboard
+              } else if (hasPaidSub) {
+                console.log('[dashboard] User has paid subscription, allowing entry');
+                // Fall through to render dashboard
+              } else {
+                console.log('[dashboard] No school or paid access, denying access');
+                setAccessDenied(true);
+                setDenyReason('not-enrolled');
+                return;
+              }
             }
           }
         } catch (err) {
