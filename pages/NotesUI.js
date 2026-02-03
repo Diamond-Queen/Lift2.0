@@ -142,6 +142,7 @@ export default function NotesUI() {
         setSummaries(classGenerations[selectedClassId].summaries || []);
         setFlashcards(classGenerations[selectedClassId].flashcards || []);
         setQuiz(classGenerations[selectedClassId].quiz || []);
+        setQuizDifficulty(classGenerations[selectedClassId].quizDifficulty || 'medium');
       } else {
         // Try to restore from localStorage for this class
         const key = `class_${selectedClassId}_notes`;
@@ -168,12 +169,17 @@ export default function NotesUI() {
             console.error('Failed to restore from localStorage:', e);
             setSummaries([]);
             setFlashcards([]);
+            setQuiz([]);
             setInput("");
+            setQuizDifficulty('medium');
           }
         } else {
+          // New class with no saved data - clear everything
           setSummaries([]);
           setFlashcards([]);
+          setQuiz([]);
           setInput("");
+          setQuizDifficulty('medium');
         }
       }
       setError("");
