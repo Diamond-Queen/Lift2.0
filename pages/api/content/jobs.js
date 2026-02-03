@@ -69,36 +69,40 @@ async function handler(req, res) {
       try {
         const userWithSub = await prisma.user.findUnique({
           where: { id: userId },
-          select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+          select: { schoolId: true, subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
         });
         
-        const activeSub = userWithSub?.subscriptions?.[0];
-        const plan = activeSub?.plan;
-        
-        // Notes Only plan cannot create jobs
-        if (plan === 'notes') {
-          return res.status(403).json({ 
-            ok: false, 
-            error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to manage jobs.' 
-          });
-        }
-        
-        // Career Only and Notes plan have a 4-job limit; Full Access and beta are unlimited
-        if (plan && plan !== 'full' && plan !== 'career') {
-          const jobCount = await prisma.job.count({ where: { userId } });
-          if (jobCount >= 4) {
+        // School members get full access
+        const hasSchoolAccess = !!userWithSub?.schoolId;
+        if (!hasSchoolAccess) {
+          const activeSub = userWithSub?.subscriptions?.[0];
+          const plan = activeSub?.plan;
+          
+          // Notes Only plan cannot create jobs
+          if (plan === 'notes') {
             return res.status(403).json({ 
               ok: false, 
-              error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+              error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to manage jobs.' 
             });
           }
-        } else if (plan === 'career') {
-          const jobCount = await prisma.job.count({ where: { userId } });
-          if (jobCount >= 4) {
-            return res.status(403).json({ 
-              ok: false, 
-              error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
-            });
+          
+          // Career Only and Notes plan have a 4-job limit; Full Access and beta are unlimited
+          if (plan && plan !== 'full' && plan !== 'career') {
+            const jobCount = await prisma.job.count({ where: { userId } });
+            if (jobCount >= 4) {
+              return res.status(403).json({ 
+                ok: false, 
+                error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+              });
+            }
+          } else if (plan === 'career') {
+            const jobCount = await prisma.job.count({ where: { userId } });
+            if (jobCount >= 4) {
+              return res.status(403).json({ 
+                ok: false, 
+                error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+              });
+            }
           }
         }
       } catch (err) {

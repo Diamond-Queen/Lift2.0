@@ -81,33 +81,37 @@ async function handler(req, res) {
       try {
         const userWithSub = await prisma.user.findUnique({
           where: { id: userId },
-          select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+          select: { schoolId: true, subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
         });
         
-        const activeSub = userWithSub?.subscriptions?.[0];
-        const plan = activeSub?.plan;
-        
-        // Notes Only plan: limit notes to 4
-        if (plan === 'notes' && type === 'note') {
-          const noteCount = await prisma.contentItem.count({ where: { userId, type: 'note' } });
-          if (noteCount >= 4) {
-            return res.status(403).json({ 
-              ok: false, 
-              error: 'You have reached the 4 note limit on your current plan. Upgrade to Full Access for unlimited notes.' 
-            });
+        // School members get full access
+        const hasSchoolAccess = !!userWithSub?.schoolId;
+        if (!hasSchoolAccess) {
+          const activeSub = userWithSub?.subscriptions?.[0];
+          const plan = activeSub?.plan;
+          
+          // Notes Only plan: limit notes to 4
+          if (plan === 'notes' && type === 'note') {
+            const noteCount = await prisma.contentItem.count({ where: { userId, type: 'note' } });
+            if (noteCount >= 4) {
+              return res.status(403).json({ 
+                ok: false, 
+                error: 'You have reached the 4 note limit on your current plan. Upgrade to Full Access for unlimited notes.' 
+              });
+            }
           }
-        }
-        
-        // Career Only plan: limit resumes and cover letters to 4 total
-        if (plan === 'career' && (type === 'resume' || type === 'cover_letter')) {
-          const careerCount = await prisma.contentItem.count({ 
-            where: { userId, type: { in: ['resume', 'cover_letter'] } } 
-          });
-          if (careerCount >= 4) {
-            return res.status(403).json({ 
-              ok: false, 
-              error: 'You have reached the 4 document limit on your current plan. Upgrade to Full Access for unlimited career documents.' 
+          
+          // Career Only plan: limit resumes and cover letters to 4 total
+          if (plan === 'career' && (type === 'resume' || type === 'cover_letter')) {
+            const careerCount = await prisma.contentItem.count({ 
+              where: { userId, type: { in: ['resume', 'cover_letter'] } } 
             });
+            if (careerCount >= 4) {
+              return res.status(403).json({ 
+                ok: false, 
+                error: 'You have reached the 4 document limit on your current plan. Upgrade to Full Access for unlimited career documents.' 
+              });
+            }
           }
         }
       } catch (err) {

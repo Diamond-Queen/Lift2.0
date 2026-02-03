@@ -72,47 +72,51 @@ async function handler(req, res) {
       try {
         const userWithSub = await prisma.user.findUnique({
           where: { id: userId },
-          select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+          select: { schoolId: true, subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
         });
         
-        const activeSub = userWithSub?.subscriptions?.[0];
-        const plan = activeSub?.plan;
-        
-        // Career Only plan cannot create classes (notes feature)
-        if (plan === 'career' && classType === 'class') {
-          return res.status(403).json({ 
-            ok: false, 
-            error: 'Notes feature is not included in your Career Only plan. Upgrade to Full Access to organize notes by class.' 
-          });
-        }
-        
-        // Notes Only plan cannot create jobs (career feature)
-        if (plan === 'notes' && classType === 'job') {
-          return res.status(403).json({ 
-            ok: false, 
-            error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to manage jobs.' 
-          });
-        }
-        
-        // Notes Only plan has a 4-class limit; Full Access and beta are unlimited
-        if (plan === 'notes' && classType === 'class') {
-          const classCount = await prisma.class.count({ where: { userId, type: 'class' } });
-          if (classCount >= 4) {
+        // School members get full access
+        const hasSchoolAccess = !!userWithSub?.schoolId;
+        if (!hasSchoolAccess) {
+          const activeSub = userWithSub?.subscriptions?.[0];
+          const plan = activeSub?.plan;
+          
+          // Career Only plan cannot create classes (notes feature)
+          if (plan === 'career' && classType === 'class') {
             return res.status(403).json({ 
               ok: false, 
-              error: 'You have reached the 4 class limit on your current plan. Upgrade to Full Access for unlimited classes.' 
+              error: 'Notes feature is not included in your Career Only plan. Upgrade to Full Access to organize notes by class.' 
             });
           }
-        }
-        
-        // Career Only plan has a 4-job limit; Full Access and beta are unlimited
-        if (plan === 'career' && classType === 'job') {
-          const jobCount = await prisma.class.count({ where: { userId, type: 'job' } });
-          if (jobCount >= 4) {
+          
+          // Notes Only plan cannot create jobs (career feature)
+          if (plan === 'notes' && classType === 'job') {
             return res.status(403).json({ 
               ok: false, 
-              error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+              error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to manage jobs.' 
             });
+          }
+          
+          // Notes Only plan has a 4-class limit; Full Access and beta are unlimited
+          if (plan === 'notes' && classType === 'class') {
+            const classCount = await prisma.class.count({ where: { userId, type: 'class' } });
+            if (classCount >= 4) {
+              return res.status(403).json({ 
+                ok: false, 
+                error: 'You have reached the 4 class limit on your current plan. Upgrade to Full Access for unlimited classes.' 
+              });
+            }
+          }
+          
+          // Career Only plan has a 4-job limit; Full Access and beta are unlimited
+          if (plan === 'career' && classType === 'job') {
+            const jobCount = await prisma.class.count({ where: { userId, type: 'job' } });
+            if (jobCount >= 4) {
+              return res.status(403).json({ 
+                ok: false, 
+                error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+              });
+            }
           }
         }
       } catch (err) {
