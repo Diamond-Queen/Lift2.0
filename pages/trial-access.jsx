@@ -167,6 +167,11 @@ export default function TrialAccessGate() {
               <p style={{ margin: '10px 0' }}>💰 <strong>Career Only:</strong> $7/month</p>
               <p style={{ margin: '10px 0' }}>🎓 <strong>Full Access:</strong> $10/month</p>
             </div>
+
+            <Link href="/onboarding" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center', marginTop: '8px' }}>
+              Choose another option
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Use a school code, rejoin beta, or pick an individual plan</div>
+            </Link>
           </div>
 
           <Link href="/account" style={{ 

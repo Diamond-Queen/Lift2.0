@@ -130,25 +130,60 @@ function TrialExpirationCheck() {
   const { status } = useSession();
   const router = useRouter();
   const [showExpiredModal, setShowExpiredModal] = useState(false);
+  const [banner, setBanner] = useState(null);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
 
     const checkTrialStatus = async () => {
       try {
-        const res = await fetch('/api/user');
-        if (!res.ok) return;
-        
-        const data = await res.json();
-        const user = data?.data?.user;
-        
-        if (user?.subscriptions && user.subscriptions.length > 0) {
-          const sub = user.subscriptions[0];
-          if (sub.status === 'trialing' && sub.trialEndsAt) {
-            const trialEndTime = new Date(sub.trialEndsAt).getTime();
-            const nowTime = new Date().getTime();
-            if (nowTime > trialEndTime) {
+        // Check user subscriptions for trial timing
+        const [userRes, betaRes] = await Promise.allSettled([
+          fetch('/api/user'),
+          fetch('/api/beta/status')
+        ]);
+
+        let dismissed = false;
+        try { dismissed = localStorage.getItem('trialBannerDismissed') === 'true'; } catch(e) {}
+
+        if (userRes.status === 'fulfilled' && userRes.value.ok) {
+          const data = await userRes.value.json();
+          const user = data?.data?.user;
+          if (user?.subscriptions && user.subscriptions.length > 0) {
+            const sub = user.subscriptions[0];
+            if (sub.trialEndsAt) {
+              const trialEndTime = new Date(sub.trialEndsAt).getTime();
+              const nowTime = Date.now();
+              const msLeft = trialEndTime - nowTime;
+              const hoursLeft = Math.round(msLeft / (1000 * 60 * 60));
+              if (msLeft <= 0) {
+                setShowExpiredModal(true);
+                if (!dismissed) setBanner({ type: 'expired', text: 'Your free trial has ended.' });
+                return;
+              } else if (msLeft <= 48 * 60 * 60 * 1000) {
+                if (!dismissed) setBanner({ type: 'ending', text: `Your trial ends in ~${hoursLeft} hours.` });
+              }
+            }
+          }
+        }
+
+        // Check beta status separately
+        if (betaRes.status === 'fulfilled' && betaRes.value.ok) {
+          const data = await betaRes.value.json();
+          const trial = data?.data?.trial;
+          if (trial) {
+            if (trial.status === 'trial-expired') {
               setShowExpiredModal(true);
+              if (!dismissed) setBanner({ type: 'beta-expired', text: 'Your beta trial has ended.' });
+              return;
+            }
+            if (trial.status === 'trial-active' && trial.endsAt) {
+              const trialEndTime = new Date(trial.endsAt).getTime();
+              const msLeft = trialEndTime - Date.now();
+              const hoursLeft = Math.round(msLeft / (1000 * 60 * 60));
+              if (msLeft <= 48 * 60 * 60 * 1000 && msLeft > 0 && !dismissed) {
+                setBanner({ type: 'ending', text: `Your beta trial ends in ~${hoursLeft} hours.` });
+              }
             }
           }
         }
@@ -159,6 +194,24 @@ function TrialExpirationCheck() {
 
     checkTrialStatus();
   }, [status]);
+
+  if (banner) {
+    return (
+      <div style={{ position: 'fixed', top: 64, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
+        <div style={{ width: '100%', maxWidth: '960px', margin: '0.5rem', background: '#fff6f0', border: '1px solid #ffd8b5', padding: '0.75rem 1rem', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ flex: 1, color: '#5b3b00' }}>
+            <strong style={{ display: 'block', fontSize: '0.98rem' }}>{banner.type === 'ending' ? 'Trial Ending Soon' : 'Trial Expired'}</strong>
+            <div style={{ fontSize: '0.9rem', color: '#6b4a00' }}>{banner.text} We recommend upgrading or choosing another access option.</div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => router.push('/subscription/plans')} style={{ padding: '0.5rem 0.9rem', background: '#8b7500', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>View Plans</button>
+            <button onClick={() => router.push('/onboarding')} style={{ padding: '0.5rem 0.9rem', background: '#fff', color: '#8b7500', border: '1px solid #8b7500', borderRadius: '6px', cursor: 'pointer' }}>Choose Another Option</button>
+            <button onClick={() => { try { localStorage.setItem('trialBannerDismissed', 'true'); } catch(e){} setBanner(null); }} style={{ padding: '0.4rem 0.6rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b4a00' }}>✕</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!showExpiredModal) return null;
 

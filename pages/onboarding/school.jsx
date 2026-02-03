@@ -28,7 +28,10 @@ export default function SchoolCodeOnboarding() {
         setLoading(false);
         return;
       }
-      // Success - mark onboarded and redirect to dashboard
+      // Success - refresh user data and redirect to dashboard so school access is recognized immediately
+      try {
+        await fetch('/api/user');
+      } catch (e) {}
       router.push('/dashboard');
     } catch (err) {
       setError('Network error. Please try again.');
