@@ -44,6 +44,7 @@ export default async function handler(req, res) {
       : await findUserByEmail(session.user.email);
     if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
     const { password, ...safe } = user;
+    logger.info(`[user_api] Returning user: email=${safe.email}, schoolId=${safe.schoolId}, onboarded=${safe.onboarded}`);
     return res.json({ ok: true, data: { user: safe } });
   } catch (err) {
     logger.error('user_fetch_error', { message: err.message });

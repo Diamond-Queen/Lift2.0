@@ -44,9 +44,11 @@ export default function SchoolCodeOnboarding() {
       // Refresh NextAuth session to get updated user data with schoolId
       console.log('[onboarding/school] Refreshing session...');
       await update();
-      // Give a moment for session to update before redirecting
-      await new Promise(r => setTimeout(r, 500));
-      router.push('/dashboard');
+      // Give a moment for session to update and database to persist before redirecting
+      await new Promise(r => setTimeout(r, 1000));
+      // Force a hard refresh to ensure dashboard gets fresh data
+      console.log('[onboarding/school] Redirecting to dashboard...');
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error('[onboarding/school] Network error:', err.message);
       setError('Network error. Please try again.');

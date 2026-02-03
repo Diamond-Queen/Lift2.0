@@ -112,6 +112,8 @@ export default function Dashboard() {
             fetch('/api/beta/status')
           ]);
           
+          console.log('[dashboard] API responses:', { userStatus: userRes.status, trialStatus: trialRes.status });
+          
           let userSchoolId = null;
           let hasPaidSub = false;
           
@@ -122,9 +124,9 @@ export default function Dashboard() {
             setUser(u);
             const p = u?.preferences?.subscriptionPlan || null;
             setPlan(p);
-            userSchoolId = u?.schoolId;
+            userSchoolId = u?.schoolId || null;
             hasPaidSub = !!p;
-            console.log('[dashboard] User fetched:', { id: u?.id, onboarded: u?.onboarded, schoolId: userSchoolId, hasPaidSub });
+            console.log('[dashboard] User fetched:', { id: u?.id, onboarded: u?.onboarded, schoolId: userSchoolId, schoolIdRaw: u?.schoolId, hasPaidSub, fullUser: u });
             
             // Check if user is onboarded - if not, redirect to onboarding
             if (!u?.onboarded) {
