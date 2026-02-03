@@ -127,15 +127,15 @@ async function handleCheckoutCompleted(session) {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          onboarded: true,
-          betaTesterPaymentCompleted: true,
-          betaTesterPaymentDate: new Date()
+          onboarded: true
         }
       });
       logger.info('beta_checkout_completed', { userId, trialType, sessionId: session.id });
+      auditLog('beta_checkout_completed', userId, { trialType, sessionId: session.id }, 'info');
       return;
     } catch (err) {
       logger.error('beta_checkout_completed_error', { userId, trialType, error: err.message });
+      auditLog('beta_checkout_completed_error', userId, { trialType, error: err.message }, 'error');
       return;
     }
   }
