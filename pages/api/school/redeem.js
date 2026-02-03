@@ -85,6 +85,10 @@ async function handler(req, res) {
         auditLog('school_redeem_failed_already_member', user.id, { code, schoolId: schoolCode.schoolId }, 'warning');
         return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
       }
+      
+      // Small delay to ensure transaction is committed and visible to subsequent reads
+      await new Promise(r => setTimeout(r, 100));
+      
       auditLog('school_redeem_success', user.id, { code, schoolId: schoolCode.schoolId, schoolName: result.school?.name }, 'info');
       return res.json({ ok: true, data: { school: result.school } });
     } else {

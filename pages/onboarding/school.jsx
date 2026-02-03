@@ -41,14 +41,11 @@ export default function SchoolCodeOnboarding() {
         return;
       }
       console.log('[onboarding/school] Redeem success! School:', data.data?.school?.name);
-      // Refresh NextAuth session to get updated user data with schoolId
-      console.log('[onboarding/school] Refreshing session...');
-      await update();
-      // Give a moment for session to update and database to persist before redirecting
-      await new Promise(r => setTimeout(r, 1000));
-      // Force a hard refresh to ensure dashboard gets fresh data
-      console.log('[onboarding/school] Redirecting to dashboard...');
-      window.location.href = '/dashboard';
+      // Force complete refresh to bypass all caches - don't rely on session refresh
+      console.log('[onboarding/school] Redirecting to dashboard with cache bust...');
+      await new Promise(r => setTimeout(r, 800));
+      // Use hard redirect with cache bust param to ensure fresh data
+      window.location.href = '/dashboard?_cb=' + Date.now();
     } catch (err) {
       console.error('[onboarding/school] Network error:', err.message);
       setError('Network error. Please try again.');

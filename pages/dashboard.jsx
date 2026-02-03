@@ -107,9 +107,11 @@ export default function Dashboard() {
       (async () => {
         try {
           // OPTIMIZATION: Fetch user and trial data in parallel instead of sequentially
+          // Add cache-bust if coming from school code redemption
+          const cacheBust = router.query._cb ? '?_cb=' + router.query._cb : '';
           const [userRes, trialRes] = await Promise.all([
-            fetch('/api/user'),
-            fetch('/api/beta/status')
+            fetch('/api/user' + cacheBust),
+            fetch('/api/beta/status' + cacheBust)
           ]);
           
           console.log('[dashboard] API responses:', { userStatus: userRes.status, trialStatus: trialRes.status });
@@ -152,13 +154,20 @@ export default function Dashboard() {
             // Not in beta program - check if user has school access or paid subscription
             // Use the user data we already fetched above
             console.log('[dashboard] Not in beta (401), checking school/paid access:', { userSchoolId, hasPaidSub });
-            if (!userSchoolId && !hasPaidSub) {
+            
+            // School members get instant access - no payment needed
+            if (userSchoolId) {
+              console.log('[dashboard] User has schoolId, allowing entry');
+              // Fall through to render dashboard
+            } else if (hasPaidSub) {
+              console.log('[dashboard] User has paid subscription, allowing entry');
+              // Fall through to render dashboard
+            } else {
               console.log('[dashboard] No school or paid access, denying access');
               setAccessDenied(true);
               setDenyReason('not-enrolled');
               return;
             }
-            console.log('[dashboard] User has school or paid access, allowing entry');
           }
         } catch (err) {
           console.error('Failed to fetch dashboard data:', err);
