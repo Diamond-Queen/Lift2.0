@@ -86,8 +86,26 @@ async function handler(req, res) {
         return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
       }
       
-      // Small delay to ensure transaction is committed and visible to subsequent reads
-      await new Promise(r => setTimeout(r, 100));
+      // Verify the update actually persisted by reading it back from the database
+      // This ensures the transaction is fully committed before responding
+      let verifyCount = 0;
+      let userUpdated = false;
+      while (verifyCount < 5) {
+        const updatedUser = await prisma.user.findUnique({ 
+          where: { id: user.id },
+          select: { schoolId: true }
+        });
+        if (updatedUser?.schoolId === schoolCode.schoolId) {
+          userUpdated = true;
+          break;
+        }
+        verifyCount++;
+        if (verifyCount < 5) await new Promise(r => setTimeout(r, 50));
+      }
+      
+      if (!userUpdated) {
+        logger.error('[school_redeem] Update verification failed', { userId: user.id, schoolId: schoolCode.schoolId });
+      }
       
       auditLog('school_redeem_success', user.id, { code, schoolId: schoolCode.schoolId, schoolName: result.school?.name }, 'info');
       return res.json({ ok: true, data: { school: result.school } });
