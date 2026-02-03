@@ -140,12 +140,15 @@ export default function Dashboard() {
               return;
             }
           } else if (trialRes.status === 401) {
-            // Not in beta program
+            // Not in beta program - check if user has school access instead
             const subRes = await fetch('/api/user');
             if (subRes.ok) {
               const userData = await subRes.json();
+              const userSchoolId = userData?.data?.user?.schoolId;
               const hasPaidSub = userData?.data?.user?.preferences?.subscriptionPlan;
-              if (!hasPaidSub) {
+              
+              // User has access if they have schoolId OR a paid subscription
+              if (!userSchoolId && !hasPaidSub) {
                 setAccessDenied(true);
                 setDenyReason('not-enrolled');
                 return;

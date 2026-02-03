@@ -23,6 +23,7 @@ export default function SchoolCodeOnboarding() {
     if (!code.trim()) return setError("Please enter a school code.");
     setError("");
     setLoading(true);
+    console.log('[onboarding/school] Submitting code:', code);
 
     try {
       const res = await fetch('/api/school/redeem', {
@@ -31,17 +32,21 @@ export default function SchoolCodeOnboarding() {
         body: JSON.stringify({ code: code.trim() }),
       });
       const data = await res.json();
+      console.log('[onboarding/school] Response:', { status: res.status, ok: data.ok, error: data.error });
       if (!res.ok || !data.ok) {
+        console.error('[onboarding/school] Redeem failed:', data.error);
         setError(data.error || 'Invalid school code.');
         setLoading(false);
         return;
       }
+      console.log('[onboarding/school] Redeem success! School:', data.data?.school?.name);
       // Success - refresh user data and redirect to dashboard so school access is recognized immediately
       try {
         await fetch('/api/user');
       } catch (e) {}
       router.push('/dashboard');
     } catch (err) {
+      console.error('[onboarding/school] Network error:', err.message);
       setError('Network error. Please try again.');
       setLoading(false);
     }

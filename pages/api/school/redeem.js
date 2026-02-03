@@ -38,29 +38,54 @@ async function handler(req, res) {
   }
 
   const { code } = req.body || {};
-  if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
+  if (!code) {
+    auditLog('school_redeem_missing_code', null, { ip }, 'warning');
+    return res.status(400).json({ ok: false, error: 'Missing code' });
+  }
+
+  const userEmail = session.user.email;
+  auditLog('school_redeem_attempt', null, { ip, email: userEmail, code }, 'info');
 
   try {
     if (prisma) {
+      logger.info(`[school_redeem] Looking up code: ${code}`);
       const schoolCode = await prisma.schoolCode.findUnique({ where: { code } });
-      if (!schoolCode) return res.status(404).json({ ok: false, error: 'Code not found' });
+      if (!schoolCode) {
+        logger.warn(`[school_redeem] Code not found: ${code}`);
+        auditLog('school_redeem_code_not_found', null, { code }, 'warning');
+        return res.status(404).json({ ok: false, error: 'Code not found' });
+      }
+      logger.info(`[school_redeem] Code found: ${code}, schoolId: ${schoolCode.schoolId}`);
 
-      const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-      if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+      logger.info(`[school_redeem] Looking up user: ${userEmail}`);
+      const user = await prisma.user.findUnique({ where: { email: userEmail } });
+      if (!user) {
+        logger.warn(`[school_redeem] User not found: ${userEmail}`);
+        auditLog('school_redeem_user_not_found', null, { email: userEmail }, 'warning');
+        return res.status(404).json({ ok: false, error: 'User not found' });
+      }
+      logger.info(`[school_redeem] User found: ${user.id}`);
 
       const result = await prisma.$transaction(async (tx) => {
         // Check if this user already redeemed this specific code
         const existingUser = await tx.user.findUnique({ where: { id: user.id } });
         if (existingUser.schoolId === schoolCode.schoolId) {
+          logger.warn(`[school_redeem] User already a member of school ${schoolCode.schoolId}`);
           return { ok: false, reason: 'already_member' };
         }
         // Multiple students can use the same code - don't mark as redeemed
+        logger.info(`[school_redeem] Assigning schoolId ${schoolCode.schoolId} to user ${user.id}`);
         await tx.user.update({ where: { id: user.id }, data: { schoolId: schoolCode.schoolId, onboarded: true } });
         const school = await tx.school.findUnique({ where: { id: schoolCode.schoolId } });
+        logger.info(`[school_redeem] Success! School: ${school?.name || school?.id}`);
         return { ok: true, school };
       });
 
-      if (!result.ok) return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
+      if (!result.ok) {
+        auditLog('school_redeem_failed_already_member', user.id, { code, schoolId: schoolCode.schoolId }, 'warning');
+        return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
+      }
+      auditLog('school_redeem_success', user.id, { code, schoolId: schoolCode.schoolId, schoolName: result.school?.name }, 'info');
       return res.json({ ok: true, data: { school: result.school } });
     } else {
       // pg fallback using conditional update inside a transaction
@@ -96,7 +121,8 @@ async function handler(req, res) {
       }
     }
   } catch (err) {
-    logger.error('redeem_error', { message: err.message });
+    logger.error('school_redeem_error', { message: err.message, stack: err.stack });
+    auditLog('school_redeem_error', null, { code, email: userEmail, message: err.message }, 'error');
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }

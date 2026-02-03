@@ -43,12 +43,17 @@ async function handler(req, res) {
     if (session?.user?.id) {
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { subscriptions: { where: { status: { in: ['active', 'trialing'] } } } }
+        select: { 
+          schoolId: true,
+          subscriptions: { where: { status: { in: ['active', 'trialing'] } } }
+        }
       });
       
+      // School members and 'full' plan subscribers can use career tools
+      const hasSchoolAccess = !!user?.schoolId;
       const activeSub = user?.subscriptions?.[0];
-      // Career feature requires 'career' or 'full' plan
-      if (activeSub && activeSub.plan === 'notes') {
+      
+      if (!hasSchoolAccess && activeSub && activeSub.plan === 'notes') {
         return res.status(403).json({ 
           ok: false, 
           error: 'Career tools are not included in your Notes Only plan. Upgrade to Full Access to use career features.' 
