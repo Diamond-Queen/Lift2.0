@@ -112,6 +112,9 @@ export default function Dashboard() {
             fetch('/api/beta/status')
           ]);
           
+          let userSchoolId = null;
+          let hasPaidSub = false;
+          
           // Process user data
           if (userRes.ok) {
             const data = await userRes.json();
@@ -119,9 +122,13 @@ export default function Dashboard() {
             setUser(u);
             const p = u?.preferences?.subscriptionPlan || null;
             setPlan(p);
+            userSchoolId = u?.schoolId;
+            hasPaidSub = !!p;
+            console.log('[dashboard] User fetched:', { id: u?.id, onboarded: u?.onboarded, schoolId: userSchoolId, hasPaidSub });
             
             // Check if user is onboarded - if not, redirect to onboarding
             if (!u?.onboarded) {
+              console.log('[dashboard] User not onboarded, redirecting to /onboarding');
               router.push('/onboarding');
               return;
             }
@@ -140,20 +147,16 @@ export default function Dashboard() {
               return;
             }
           } else if (trialRes.status === 401) {
-            // Not in beta program - check if user has school access instead
-            const subRes = await fetch('/api/user');
-            if (subRes.ok) {
-              const userData = await subRes.json();
-              const userSchoolId = userData?.data?.user?.schoolId;
-              const hasPaidSub = userData?.data?.user?.preferences?.subscriptionPlan;
-              
-              // User has access if they have schoolId OR a paid subscription
-              if (!userSchoolId && !hasPaidSub) {
-                setAccessDenied(true);
-                setDenyReason('not-enrolled');
-                return;
-              }
+            // Not in beta program - check if user has school access or paid subscription
+            // Use the user data we already fetched above
+            console.log('[dashboard] Not in beta (401), checking school/paid access:', { userSchoolId, hasPaidSub });
+            if (!userSchoolId && !hasPaidSub) {
+              console.log('[dashboard] No school or paid access, denying access');
+              setAccessDenied(true);
+              setDenyReason('not-enrolled');
+              return;
             }
+            console.log('[dashboard] User has school or paid access, allowing entry');
           }
         } catch (err) {
           console.error('Failed to fetch dashboard data:', err);

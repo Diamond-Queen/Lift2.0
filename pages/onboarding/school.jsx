@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import styles from "../../styles/SignUp.module.css";
 
 export default function SchoolCodeOnboarding() {
-  const { status } = useSession();
+  const { status, update } = useSession();
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -40,10 +41,11 @@ export default function SchoolCodeOnboarding() {
         return;
       }
       console.log('[onboarding/school] Redeem success! School:', data.data?.school?.name);
-      // Success - refresh user data and redirect to dashboard so school access is recognized immediately
-      try {
-        await fetch('/api/user');
-      } catch (e) {}
+      // Refresh NextAuth session to get updated user data with schoolId
+      console.log('[onboarding/school] Refreshing session...');
+      await update();
+      // Give a moment for session to update before redirecting
+      await new Promise(r => setTimeout(r, 500));
       router.push('/dashboard');
     } catch (err) {
       console.error('[onboarding/school] Network error:', err.message);
