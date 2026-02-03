@@ -84,18 +84,9 @@ async function handler(req, res) {
           where: { id: subscription.id },
           data: { status: 'canceled' }
         });
-        // Delete user account
-        try {
-          await prisma.user.delete({
-            where: { id: user.id }
-          });
-          logger.info('dev_user_account_deleted_after_cancellation', { userId: user.id });
-        } catch (deleteErr) {
-          logger.error('error_deleting_user_in_dev_cancel', { userId: user.id, message: deleteErr.message });
-        }
       }
       logger.info('dev_subscription_canceled', { userId: user.id, subscriptionId: subscription.id });
-      return res.json({ ok: true, message: 'Subscription canceled and account deleted', shouldLogout: true });
+      return res.json({ ok: true, message: 'Subscription canceled', shouldLogout: false });
     }
 
     // Cancel the Stripe subscription
@@ -118,28 +109,22 @@ async function handler(req, res) {
     });
     auditLog('subscription_canceled', user.id, { subscriptionId: subscription.id, ip });
 
-    // Delete the user account after subscription cancellation
+    // Remove subscription plan from user preferences but keep the user account active
     if (prisma) {
       try {
-        // First delete all related records to avoid foreign key issues
-        await prisma.subscription.deleteMany({
-          where: { userId: user.id }
-        });
-        
-        // Then delete the user
-        await prisma.user.delete({
-          where: { id: user.id }
-        });
-        logger.info('user_account_deleted_after_cancellation', { userId: user.id });
-        auditLog('user_account_deleted_after_cancellation', user.id, { ip });
-      } catch (deleteErr) {
-        logger.error('error_deleting_user_after_cancellation', { userId: user.id, message: deleteErr.message });
-        auditLog('error_deleting_user_after_cancellation', user.id, { message: deleteErr.message }, 'error');
-        // Still return success for subscription cancellation even if delete fails
+        const u = await prisma.user.findUnique({ where: { id: user.id }, select: { preferences: true } });
+        const prefs = u?.preferences || {};
+        if (prefs && prefs.subscriptionPlan) {
+          delete prefs.subscriptionPlan;
+          delete prefs.subscriptionPrice;
+          await prisma.user.update({ where: { id: user.id }, data: { preferences: prefs } });
+        }
+      } catch (prefErr) {
+        logger.warn('failed_to_remove_subscription_pref', { userId: user.id, message: prefErr.message });
       }
     }
 
-    return res.json({ ok: true, message: 'Subscription canceled and account deleted', shouldLogout: true });
+    return res.json({ ok: true, message: 'Subscription canceled. Your account remains active.', shouldLogout: false });
   } catch (err) {
     if (err.type === 'StripeInvalidRequestError' && err.statusCode === 404) {
       // Stripe subscription not found, update local record
@@ -152,22 +137,10 @@ async function handler(req, res) {
             where: { id: sub.id },
             data: { status: 'canceled' }
           });
-        }
-        // Delete related records and user account
-        try {
-          await prisma.subscription.deleteMany({
-            where: { userId: session.user.id }
-          });
-          
-          await prisma.user.delete({
-            where: { id: session.user.id }
-          });
-          logger.info('user_account_deleted_stripe_404', { userId: session.user.id });
-        } catch (deleteErr) {
-          logger.error('error_deleting_user_in_stripe_404', { userId: session.user.id, message: deleteErr.message });
+          logger.info('subscription_marked_canceled_stripe_404', { userId: session.user.id });
         }
       }
-      return res.json({ ok: true, message: 'Subscription canceled and account deleted', shouldLogout: true });
+      return res.json({ ok: true, message: 'Subscription canceled. Your account remains active.', shouldLogout: false });
     }
 
     logger.error('cancel_subscription_error', { message: err.message, stack: err.stack });

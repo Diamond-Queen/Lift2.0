@@ -123,6 +123,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
   const [cancelMessage, setCancelMessage] = useState('');
@@ -145,22 +146,28 @@ export default function Settings() {
       router.push('/login');
     }
     if (status === 'authenticated') {
-      fetchPreferences();
-      fetchSubscription();
+      Promise.all([
+        fetchPreferences(),
+        fetchUserAndSubscription()
+      ]).finally(() => setLoading(false));
     }
   }, [status, router]);
 
-  async function fetchSubscription() {
+  async function fetchUserAndSubscription() {
     try {
-      const res = await fetch('/api/user/subscription');
+      const res = await fetch('/api/user');
       if (res.ok) {
         const data = await res.json();
-        if (data.data) {
-          setSubscription(data.data);
+        const userData = data.data?.user;
+        setUser(userData);
+        
+        // Extract subscription info
+        if (userData?.subscriptions && userData.subscriptions.length > 0) {
+          setSubscription(userData.subscriptions[0]);
         }
       }
     } catch (err) {
-      console.error('Failed to load subscription:', err);
+      console.error('Failed to load user/subscription:', err);
     }
   }
 
@@ -175,8 +182,6 @@ export default function Settings() {
       }
     } catch (err) {
       console.error('Failed to load preferences:', err);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -297,7 +302,34 @@ export default function Settings() {
           <div style={settingsStyles.section}>
             <h2 style={settingsStyles.sectionTitle}>Subscription</h2>
             
-            {subscription ? (
+            {user?.schoolId ? (
+              <div>
+                <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #22c55e' }}>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#000' }}>
+                    School Member 🏫
+                  </p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#666' }}>
+                    You have access through your school membership.
+                  </p>
+                </div>
+              </div>
+            ) : user?.betaTester ? (
+              <div>
+                <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #22c55e' }}>
+                  <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#000' }}>
+                    Beta Trial 🚀
+                  </p>
+                  <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#666' }}>
+                    Trial type: <span style={{ fontWeight: '600', color: '#000' }}>{user.betaTester.trialType}</span>
+                  </p>
+                  {user.betaTester.trialEndsAt && (
+                    <p style={{ margin: '0.25rem 0', fontSize: '0.9rem', color: '#666' }}>
+                      Trial ends: <span style={{ fontWeight: '600', color: '#000' }}>{new Date(user.betaTester.trialEndsAt).toLocaleDateString()}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : subscription ? (
               <div>
                 <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f0f4ff', borderRadius: '6px', border: '1px solid #9333EA' }}>
                   <p style={{ margin: '0 0 0.5rem 0', fontWeight: '600', color: '#000' }}>
