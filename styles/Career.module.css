@@ -676,7 +676,7 @@
   max-width: 700px;
   margin: 2rem auto;
   font-family: 'Inter', sans-serif;
-  color: #222;
+  color: #000;
 }
 
 /* Letterhead Section */
@@ -715,7 +715,7 @@
 
 .date {
   text-align: right;
-  color: #666;
+  color: #000;
   font-size: 0.95rem;
   margin-bottom: 1.5rem;
 }
@@ -723,7 +723,7 @@
 .recipient {
   margin-bottom: 1.5rem;
   font-weight: 500;
-  color: #333;
+  color: #000;
 }
 
 .letterBody p {
@@ -732,7 +732,7 @@
 
 .letterBody strong {
   font-weight: 700;
-  color: #111;
+  color: #000;
 }
 
 /* Footer Contact (bottom of letter) */
