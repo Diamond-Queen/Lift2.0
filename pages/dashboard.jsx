@@ -539,8 +539,11 @@ export async function getServerSideProps(context) {
 
     const beta = user.betaTester;
     const betaActive = Boolean(beta && beta.status === 'active' && new Date(beta.trialEndsAt) > new Date());
+    
+    // School code members get instant access
+    const hasSchoolAccess = Boolean(user.schoolId);
 
-    if (!hasSubscription && !betaActive) {
+    if (!hasSubscription && !betaActive && !hasSchoolAccess) {
       return { redirect: { destination: '/subscription/plans', permanent: false } };
     }
 
