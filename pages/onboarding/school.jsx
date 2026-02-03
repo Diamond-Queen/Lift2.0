@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import styles from "../../styles/SignUp.module.css";
@@ -9,6 +9,14 @@ export default function SchoolCodeOnboarding() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Prefill code from query string if present, but do not auto-submit
+  useEffect(() => {
+    const q = router.query?.code;
+    if (q && typeof q === 'string' && !code) {
+      setCode(q);
+    }
+  }, [router.query]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
