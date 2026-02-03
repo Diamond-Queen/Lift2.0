@@ -26,6 +26,8 @@ export default function Account() {
   const [subscription, setSubscription] = useState(null);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
   const [cancelingBeta, setCancelingBeta] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   // Auto-hide sensitive email after 10s when revealed
   useEffect(() => {
@@ -249,6 +251,30 @@ export default function Account() {
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      const res = await fetch('/api/user/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUiStatus({ type: 'success', text: '✅ Account deleted. Signing out...' });
+        setTimeout(() => signOut({ callbackUrl: '/login' }), 1500);
+      } else {
+        setUiStatus({ type: 'error', text: `❌ ${data.error || 'Failed to delete account'}` });
+        setDeletingAccount(false);
+        setDeleteConfirm(false);
+      }
+    } catch (err) {
+      console.error('Delete account error:', err);
+      setUiStatus({ type: 'error', text: '❌ Error deleting account' });
+      setDeletingAccount(false);
+      setDeleteConfirm(false);
+    }
   };
 
   if (!user) {
@@ -759,6 +785,81 @@ export default function Account() {
                 boxSizing: 'border-box'
               }}
             />
+          </div>
+
+          {/* Danger Zone - Delete Account */}
+          <div style={{ marginBottom: '1rem', paddingBottom: '1rem', borderTop: '2px solid #dc2626', paddingTop: '1rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.6rem', color: '#dc2626' }}>⚠️ Danger Zone</h2>
+            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>Permanently delete your account and all associated data. This action cannot be undone.</p>
+            
+            {!deleteConfirm ? (
+              <button 
+                onClick={() => setDeleteConfirm(true)}
+                style={{
+                  padding: '0.6rem 1rem',
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete Account Permanently
+              </button>
+            ) : (
+              <div style={{
+                padding: '1rem',
+                background: 'rgba(220, 38, 38, 0.15)',
+                border: '2px solid #dc2626',
+                borderRadius: '8px',
+                marginTop: '1rem'
+              }}>
+                <p style={{ color: '#ff6b6b', fontWeight: '600', marginBottom: '0.75rem' }}>
+                  ⚠️ Are you absolutely sure?
+                </p>
+                <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                  This will permanently delete your account, all your notes, career documents, classes, and jobs. This cannot be recovered.
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
+                    style={{
+                      padding: '0.6rem 1rem',
+                      background: '#dc2626',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: deletingAccount ? 'not-allowed' : 'pointer',
+                      opacity: deletingAccount ? 0.6 : 1
+                    }}
+                  >
+                    {deletingAccount ? 'Deleting...' : 'Yes, Delete My Account'}
+                  </button>
+                  <button 
+                    onClick={() => setDeleteConfirm(false)}
+                    disabled={deletingAccount}
+                    style={{
+                      padding: '0.6rem 1rem',
+                      background: '#1a1a1a',
+                      color: '#8b7500',
+                      border: '1px solid #8b7500',
+                      borderRadius: '6px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: deletingAccount ? 'not-allowed' : 'pointer',
+                      opacity: deletingAccount ? 0.6 : 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
