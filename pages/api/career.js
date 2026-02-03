@@ -278,10 +278,10 @@ async function handler(req, res) {
       phone: out.phone || '',
       address: out.address || '',
       linkedin: out.linkedin || '',
-      objective: objective || '', // Use original objective
+      objective: objective || '', // Pass original for analysis, function will regenerate
       experience: out.experience || [],
       education: out.education || [],
-      skills: skills || out.skills || [], // Use original skills input
+      skills: skills || '', // Pass original for analysis, function will regenerate
       certifications: out.certifications || []
     });
     
