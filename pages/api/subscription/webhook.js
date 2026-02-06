@@ -97,8 +97,8 @@ async function handler(req, res) {
   }
 }
 
-module.exports = handler;
-module.exports.config = config;
+export { config };
+export default handler;
 
 async function handleCheckoutCompleted(session) {
   const userId = session.metadata?.userId;
