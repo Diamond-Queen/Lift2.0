@@ -428,25 +428,12 @@ export default function NotesUI() {
     // Prefer a blob URL created from the public worker file so `workerSrc` is a string.
     try {
       const resp = await fetch('/pdf.worker.min.mjs');
-      if (resp.ok) {
-        const buf = await resp.arrayBuffer();
-        const blob = new Blob([buf], { type: 'application/javascript' });
-        const blobUrl = URL.createObjectURL(blob);
-        pdfjsLib.GlobalWorkerOptions.workerSrc = blobUrl;
-      } else {
-        // Fallback: attempt direct imports (may return a URL string in some bundlers)
-        try {
-          const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
-          pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
-        } catch (err) {
-          try {
-            const workerModule = await import('pdfjs-dist/build/pdf.worker.min.js');
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
-          } catch (err2) {
-            // Last resort: use public path string
-            pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-          }
-        }
+      try {
+        // Try to use the standard entry point
+        pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.entry');
+      } catch (err) {
+        // Fallback to the CDN if the local resolve fails
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
       }
     } catch (err) {
       try {
