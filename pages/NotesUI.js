@@ -425,28 +425,10 @@ export default function NotesUI() {
 
   const extractTextFromPdf = async (file) => {
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
-    // Prefer a blob URL created from the public worker file so `workerSrc` is a string.
     try {
-      const resp = await fetch('/pdf.worker.min.mjs');
-      try {
-        // Try to use the standard entry point
-        pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.entry');
-      } catch (err) {
-        // Fallback to the CDN if the local resolve fails
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
-      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.entry');
     } catch (err) {
-      try {
-        const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
-      } catch (err2) {
-        try {
-          const workerModule = await import('pdfjs-dist/build/pdf.worker.min.js');
-          pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule?.default || workerModule;
-        } catch (err3) {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-        }
-      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.449/pdf.worker.min.mjs";
     }
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

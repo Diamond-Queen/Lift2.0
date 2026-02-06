@@ -4,13 +4,6 @@ const logger = require('../../../lib/logger');
 const { buffer } = require('micro');
 const { setSecureHeaders, auditLog } = require('../../../lib/security');
 
-// Disable body parsing, need raw body for webhook verification
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 async function handler(req, res) {
   setSecureHeaders(res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -97,7 +90,11 @@ async function handler(req, res) {
   }
 }
 
-export { config };
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 export default handler;
 
 async function handleCheckoutCompleted(session) {
