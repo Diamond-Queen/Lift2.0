@@ -159,15 +159,16 @@ async function handler(req, res) {
         logger.info('class_created', { userId, name: trimmedName, type: classType });
         return res.json({ ok: true, data: newClass });
       } catch (e) {
-        if (e.code === 'P2002' || e.code === '23505') {
+        if (e && (e.code === 'P2002' || e.code === '23505')) {
           // P2002 is Prisma unique constraint, 23505 is PostgreSQL unique constraint
           return res.status(409).json({ 
             ok: false, 
             error: 'A ' + classType + ' with this name already exists' 
           });
         }
-        logger.error('class_creation_failed', { error: e.message, code: e.code });
-        throw e;
+        logger.error('class_creation_failed', { error: e?.message, code: e?.code });
+        // Return a 500 instead of re-throwing to avoid unhandled server errors
+        return res.status(500).json({ ok: false, error: 'Server error' });
       }
     }
 
