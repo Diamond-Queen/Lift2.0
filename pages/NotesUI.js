@@ -45,6 +45,18 @@ export default function NotesUI() {
   // Per-class generation results
   const [classGenerations, setClassGenerations] = useState({});
 
+  // Normalize flashcard objects from server/locals (handles variations in keys)
+  const normalizeFlashcards = (cards) => {
+    if (!Array.isArray(cards)) return [];
+    return cards.map((c) => {
+      if (!c) return null;
+      const q = (c.question ?? c.q ?? c.Q ?? c.prompt ?? c.questionText ?? c.front ?? '').toString().trim();
+      const a = (c.answer ?? c.a ?? c.A ?? c.response ?? c.answerText ?? c.back ?? '').toString().trim();
+      const flipped = typeof c.flipped === 'boolean' ? c.flipped : false;
+      return { question: q, answer: a, flipped };
+    }).filter(Boolean);
+  };
+
   // Fetch user preferences on mount only (removed slow polling)
   useEffect(() => {
     const fetchPreferences = async () => {
@@ -140,7 +152,7 @@ export default function NotesUI() {
       // Load summaries/flashcards for this specific class from classGenerations (in-memory) first
       if (classGenerations[selectedClassId]) {
         setSummaries(classGenerations[selectedClassId].summaries || []);
-        setFlashcards(classGenerations[selectedClassId].flashcards || []);
+        setFlashcards(normalizeFlashcards(classGenerations[selectedClassId].flashcards || []));
         setQuiz(classGenerations[selectedClassId].quiz || []);
         setQuizDifficulty(classGenerations[selectedClassId].quizDifficulty || 'medium');
       } else {
@@ -152,7 +164,7 @@ export default function NotesUI() {
             const data = JSON.parse(stored);
             setInput(data.input || "");
             setSummaries(data.summaries || []);
-            setFlashcards(data.flashcards || []);
+            setFlashcards(normalizeFlashcards(data.flashcards || []));
             setQuiz(data.quiz || []);
             setQuizDifficulty(data.quizDifficulty || 'medium');
             // Also update classGenerations so it persists in memory
@@ -160,7 +172,7 @@ export default function NotesUI() {
               ...prev,
               [selectedClassId]: {
                 summaries: data.summaries || [],
-                flashcards: data.flashcards || [],
+                flashcards: normalizeFlashcards(data.flashcards || []),
                 quiz: data.quiz || [],
                 quizDifficulty: data.quizDifficulty || 'medium'
               }
@@ -260,7 +272,7 @@ export default function NotesUI() {
     setInput(item.originalInput || "");
     // if summaries/flashcards were saved, restore them
     if (item.summaries) setSummaries(item.summaries || []);
-    if (item.metadata && item.metadata.flashcards) setFlashcards(item.metadata.flashcards || []);
+    if (item.metadata && item.metadata.flashcards) setFlashcards(normalizeFlashcards(item.metadata.flashcards || []));
     if (item.metadata && item.metadata.quiz) setQuiz(item.metadata.quiz || []);
     if (item.metadata && item.metadata.quizDifficulty) setQuizDifficulty(item.metadata.quizDifficulty || 'medium');
   };

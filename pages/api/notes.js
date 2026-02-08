@@ -202,10 +202,45 @@ Notes:\n\n${notes}`,
       // Parse and validate
       const parsed = JSON.parse(jsonContent);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure all items have question and answer
-        flashcards = parsed.filter(card => 
-          card.question && card.answer && typeof card.question === 'string' && typeof card.answer === 'string'
-        ).slice(0, 12);
+        // Normalize a variety of possible keys and attempt to fix common issues
+        const cleanStr = (s) => String(s || '').replace(/^\s+|\s+$/g, '').replace(/^Q:\s*/i, '').replace(/^A:\s*/i, '').trim();
+        const isQuestionLike = (s) => /\?$/.test(s) || /^(what|who|why|how|when|where|explain)\b/i.test(s);
+
+        const normalizeCard = (c) => {
+          if (!c) return null;
+          const qRaw = c.question ?? c.q ?? c.Q ?? c.prompt ?? c.questionText ?? c.front ?? '';
+          let aRaw = c.answer ?? c.a ?? c.A ?? c.response ?? c.answerText ?? c.back ?? c.explanation ?? c.definition ?? '';
+          let q = cleanStr(qRaw);
+          let a = cleanStr(aRaw);
+
+          // If answer looks like a question and question does not, swap them
+          if (!q && a && isQuestionLike(a)) {
+            q = a;
+            a = cleanStr(c.answer ?? c.a ?? c.A ?? c.response ?? c.answerText ?? c.back ?? c.explanation ?? c.definition ?? '');
+          } else if (isQuestionLike(a) && !isQuestionLike(q)) {
+            const tmp = q; q = a; a = tmp;
+          }
+
+          // Fallback: use explanation/definition/back fields if answer is empty
+          if ((!a || a.length < 3) && (c.definition || c.explanation || c.back)) {
+            a = cleanStr(c.definition || c.explanation || c.back);
+          }
+
+          // Reject if either side is missing after normalization
+          if (!q || !a) return null;
+
+          // Avoid trivial identical Q/A; try to salvage by stripping leading 'Explain:' or similar
+          if (q === a) {
+            const alt = a.replace(/^Explain:\s*/i, '').trim();
+            if (alt && alt !== q) a = alt;
+            else return null;
+          }
+
+          return { question: q, answer: a };
+        };
+
+        const normalized = parsed.map(normalizeCard).filter(Boolean);
+        flashcards = normalized.slice(0, 12);
       }
     } catch (parseError) {
       logger.error('notes_json_parse_error', { raw: rawContent.slice(0, 200), message: parseError.message });
