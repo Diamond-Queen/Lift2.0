@@ -161,12 +161,12 @@ export default function Home() {
               <h1 className={styles.title}>Lift</h1>
               <div className={styles.titleFlourish} aria-hidden="true" />
             </div>
-            <p className={styles.subtitle}>Study smarter. Prepare faster.</p>
+            <p className={styles.subtitle}>From stressed to prepared in minutes.</p>
 
             <nav className={styles.actions} aria-label="Primary">
                 {/* Keep landing simple: only Login before account creation */}
                 <Link href="/login" className={`btn ${styles.primary}`}>
-                  Login
+                  Get Started
                 </Link>
             </nav>
           </div>
