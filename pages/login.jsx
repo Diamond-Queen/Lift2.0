@@ -45,6 +45,7 @@ export default function Login() {
     <div className={styles.signupContainer}>
       <div className={styles.signupCard}>
         <h1 className={styles.pageTitle}>Sign in</h1>
+        <p className={styles.subtitle}>Sign in or create an account to save progress and access your dashboard.</p>
         <form onSubmit={handleSubmit} aria-describedby={error ? 'login-error' : undefined} noValidate>
           <div className={styles.formGroup}>
             <label htmlFor="login-email">Email</label>

@@ -160,6 +160,19 @@
   text-align: center;
 }
 
+/* Subtitle: secondary explanatory text under the main title */
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0 auto 1.25rem auto;
+  line-height: 1.45;
+  max-width: 38ch;
+  font-weight: 500;
+  transition: color 180ms var(--easing), opacity 180ms var(--easing);
+  opacity: 0.95;
+}
+
 /* Study Mode Active State - Overrides theme */
 .studyModeActive {
   background: linear-gradient(to bottom, #0a0a1a 0%, #1a1a2e 100%) !important;
