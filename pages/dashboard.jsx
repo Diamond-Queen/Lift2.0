@@ -266,18 +266,7 @@ export default function Dashboard() {
   if (loadingUser) {
     return (
       <>
-        {/* Music Player - Hidden audio element */}
-        {studyMusic && studyMusic !== 'none' && (
-          <audio
-            ref={audioRef}
-            autoPlay
-            loop
-            style={{ display: 'none' }}
-            onError={() => {
-              setError(`⚠ Failed to load audio. Try another track.`);
-            }}
-          />
-        )}
+        {/* Loading state (audio element is rendered in main UI below) */}
         <div className={styles.signupContainer}>
           <div className={styles.signupCard}>
             <h1 className={styles.pageTitle}>Dashboard</h1>
@@ -309,6 +298,17 @@ export default function Dashboard() {
 
   return (
     <>
+      {studyMusic && studyMusic !== 'none' && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          loop
+          style={{ display: 'none' }}
+          onError={() => {
+            setError(`⚠ Failed to load audio. Try another track.`);
+          }}
+        />
+      )}
 
       <div className={`${styles.signupContainer} ${studyMode ? styles.studyModeActive : ''}`}>
         {/* Shooting-stars overlay (pure CSS animation) */}
