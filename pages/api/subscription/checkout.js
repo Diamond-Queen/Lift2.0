@@ -55,6 +55,7 @@ async function handler(req, res) {
   const devMode = String(process.env.STRIPE_DEV_MODE).toLowerCase() === 'true' || !stripe;
 
   const { plan } = req.body || {};
+  logger.info('checkout_incoming_plan', { receivedPlan: plan, body: req.body });
   
   // Validate plan exists
   if (!plan) {
