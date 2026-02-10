@@ -25,7 +25,7 @@ export default function CheckoutPage() {
       try {
         setLoading(true);
         
-        if (!['career', 'notes', 'full'].includes(plan)) {
+        if (!['career', 'notes', 'full', 'full_yearly'].includes(plan)) {
           setError(`Invalid plan: ${plan}`);
           return;
         }
