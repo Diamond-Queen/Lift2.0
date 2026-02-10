@@ -59,16 +59,17 @@ async function handler(req, res) {
   }
 
   // Validate plan is one of the allowed types
-  const validPlans = ['career', 'notes', 'full'];
+  const validPlans = ['career', 'notes', 'full', 'full_yearly'];
   if (!validPlans.includes(plan)) {
     return res.status(400).json({ ok: false, error: 'Invalid plan selected' });
   }
 
   // Price configuration: prefer Stripe Price IDs from env, fallback to amounts
   const PLAN_CONFIG = {
-    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 700 }, // $7.00
-    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 700 }, // $7.00
-    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1000 } // $10.00
+    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 900 },
+    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 900 },
+    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1200 },
+    full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 3500 }
   };
 
   // Normalize amount to cents: if someone provides dollars (e.g. 7), convert to 700
@@ -155,16 +156,18 @@ async function handler(req, res) {
       lineItem = { price: planConfig.price, quantity: 1 };
       logger.info('creating_checkout_session_with_priceid', { customerId: customer.id, plan, priceId: planConfig.price });
     } else {
+      const interval = plan === 'full_yearly' ? 'year' : 'month';
+      const suffix = interval === 'year' ? '/yr' : '/mo';
       lineItem = {
         price_data: {
           currency: 'usd',
           product_data: {
             name: planConfig.name,
-            description: `${planConfig.name} - $${(unitAmount / 100).toFixed(2)}/month`
+            description: `${planConfig.name} - $${(unitAmount / 100).toFixed(2)}${suffix}`
           },
           unit_amount: unitAmount,
           recurring: {
-            interval: 'month',
+            interval: interval,
             interval_count: 1
           }
         },

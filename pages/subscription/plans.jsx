@@ -48,9 +48,10 @@ export default function SubscriptionPlans() {
   }
 
   const plans = [
-    { id: 'notes', name: 'Notes Only', price: 700, features: ['AI study notes', 'Up to 4 classes', 'PDF export', 'Cloud sync'] },
-    { id: 'career', name: 'Career Only', price: 700, features: ['Resume builder', 'Cover letter generator', 'Up to 4 saved jobs', 'Interview prep'] },
-    { id: 'full', name: 'Full Access', price: 1000, features: ['Unlimited classes & jobs', 'All Notes features', 'All Career features', 'Priority support'] }
+    { id: 'notes', name: 'Notes Only', price: 900, interval: 'month', features: ['AI study notes', 'Up to 4 classes', 'PDF export', 'Cloud sync'] },
+    { id: 'career', name: 'Career Only', price: 900, interval: 'month', features: ['Resume builder', 'Cover letter generator', 'Up to 4 saved jobs', 'Interview prep'] },
+    { id: 'full', name: 'Full Access', price: 1200, interval: 'month', features: ['Unlimited classes & jobs', 'All Notes features', 'All Career features', 'Priority support'] },
+    { id: 'full_yearly', name: 'Full Access (Yearly)', price: 3500, interval: 'year', features: ['All Full Access features', 'Billed yearly (saves money)', 'Priority support'] }
   ];
 
   const handleCheckout = async (planId) => {
@@ -116,7 +117,10 @@ export default function SubscriptionPlans() {
             <div key={p.id} style={{ padding: '1.5rem', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>{p.name}</h3>
-                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--accent)', marginBottom: '1rem' }}>${(p.price / 100).toFixed(2)}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>/mo</span></p>
+                <p style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--accent)', marginBottom: '1rem' }}>
+                  ${(p.price / 100).toFixed(2)}
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.interval === 'year' ? '/yr' : '/mo'}</span>
+                </p>
                 <ul style={{ margin: '1rem 0', paddingLeft: '1.25rem', listStyle: 'disc' }}>
                   {p.features.map((f, i) => <li key={i} style={{ marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{f}</li>)}
                 </ul>

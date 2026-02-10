@@ -59,16 +59,17 @@ async function handler(req, res) {
   }
 
   // Validate plan is one of the allowed types
-  const validPlans = ['career', 'notes', 'full'];
+  const validPlans = ['career', 'notes', 'full', 'full_yearly'];
   if (!validPlans.includes(newPlan)) {
     return res.status(400).json({ ok: false, error: 'Invalid plan selected' });
   }
 
   // Price configuration: prefer Stripe Price IDs from env, fallback to amounts
   const PLAN_CONFIG = {
-    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 700 }, // $7.00
-    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 700 }, // $7.00
-    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1000 } // $10.00
+    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 900 },
+    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 900 },
+    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1200 },
+    full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 3500 }
   };
 
   const toCents = (amt) => {
@@ -148,16 +149,18 @@ async function handler(req, res) {
       lineItem = { price: newPlanConfig.price, quantity: 1 };
       logger.info('creating_upgrade_checkout_with_priceid', { userId: user.id, currentPlan: existingSub.plan, newPlan, priceId: newPlanConfig.price });
     } else {
+      const interval = newPlan === 'full_yearly' ? 'year' : 'month';
+      const suffix = interval === 'year' ? '/yr' : '/mo';
       lineItem = {
         price_data: {
           currency: 'usd',
           product_data: {
             name: newPlanConfig.name,
-            description: `${newPlanConfig.name} - $${(unitAmount / 100).toFixed(2)}/month`
+            description: `${newPlanConfig.name} - $${(unitAmount / 100).toFixed(2)}${suffix}`
           },
           unit_amount: unitAmount,
           recurring: {
-            interval: 'month',
+            interval: interval,
             interval_count: 1
           }
         },

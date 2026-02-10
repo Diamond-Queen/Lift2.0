@@ -111,13 +111,32 @@ async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Customer not found' });
     }
 
-    // Create subscription with trial
+    // Create subscription with trial. Prefer configured Price ID; fallback to price_data when missing.
+    const PLAN_CONFIG = {
+      career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 900 },
+      notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 900 },
+      full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1200 },
+      full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 3500 }
+    };
+
+    const priceId = getPriceIdForPlan(plan);
+    const planCfg = PLAN_CONFIG[plan] || {};
+    const unitAmount = planCfg.amount || null;
+    const interval = plan === 'full_yearly' ? 'year' : 'month';
+
     const subscription = await stripe.subscriptions.create({
       customer: customer,
       items: [
-        {
-          price: getPriceIdForPlan(plan)
-        }
+        priceId
+          ? { price: priceId }
+          : {
+              price_data: {
+                currency: 'usd',
+                product_data: { name: planCfg.name || 'Subscription' },
+                unit_amount: unitAmount,
+                recurring: { interval: interval, interval_count: 1 }
+              }
+            }
       ],
       trial_period_days: 3,
       metadata: {
@@ -160,7 +179,8 @@ function getPriceIdForPlan(plan) {
   const prices = {
     career: process.env.STRIPE_PRICE_CAREER,
     notes: process.env.STRIPE_PRICE_NOTES,
-    full: process.env.STRIPE_PRICE_FULL
+    full: process.env.STRIPE_PRICE_FULL,
+    full_yearly: process.env.STRIPE_PRICE_YEARLY
   };
   return prices[plan] || null;
 }

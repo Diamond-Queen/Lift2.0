@@ -72,9 +72,10 @@ async function handler(req, res) {
   
   // Validate plan
   const validPlans = {
-    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 700, name: 'Career Only' },
-    notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 700, name: 'Notes Only' },
-    full: { price: process.env.STRIPE_PRICE_FULL, amount: 1000, name: 'Full Access' }
+    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 900, name: 'Career Only' },
+    notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 900, name: 'Notes Only' },
+    full: { price: process.env.STRIPE_PRICE_FULL, amount: 1200, name: 'Full Access' },
+    full_yearly: { price: process.env.STRIPE_PRICE_YEARLY, amount: 3500, name: 'Full Access (Yearly)' }
   };
   
   if (!validPlans[plan]) {
@@ -111,12 +112,8 @@ async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'You already have an active subscription' });
     }
 
-    // If missing price IDs but in dev, or explicitly in dev: simulate checkout
-    if (devMode || !planConfig.price) {
-      if (!devMode && !planConfig.price) {
-        // Not in dev and no price configured — block
-        return res.status(503).json({ ok: false, error: 'Plan price not configured on server' });
-      }
+    // If in dev: simulate checkout
+    if (devMode) {
       const trialEnds = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       try {
         if (prisma) {
@@ -161,7 +158,8 @@ async function handler(req, res) {
       return res.json({ ok: true, data: { sessionId: devSessionId, url: devUrl } });
     }
 
-    // Real Stripe flow below
+    // Real Stripe flow below. Prefer configured Stripe Price IDs; if missing,
+    // fall back to inline price_data with unit_amount (in cents) and correct interval.
     if (!stripe) {
       return res.status(503).json({ ok: false, error: 'Stripe not configured. Contact support.' });
     }
@@ -183,17 +181,38 @@ async function handler(req, res) {
       });
     }
 
+    // Build line item preferring price ID
+    const unitAmount = planConfig.amount;
+    const interval = plan === 'full_yearly' ? 'year' : 'month';
+    const suffix = interval === 'year' ? '/yr' : '/mo';
+
+    let lineItem;
+    if (planConfig.price) {
+      lineItem = { price: planConfig.price, quantity: 1 };
+    } else {
+      lineItem = {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: planConfig.name,
+            description: `${planConfig.name} - $${(unitAmount / 100).toFixed(2)}${suffix}`
+          },
+          unit_amount: unitAmount,
+          recurring: {
+            interval: interval,
+            interval_count: 1
+          }
+        },
+        quantity: 1
+      };
+    }
+
     // Create Checkout Session with 3-day trial
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customer.id,
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: planConfig.price,
-          quantity: 1,
-        },
-      ],
+      line_items: [lineItem],
       subscription_data: {
         trial_period_days: 3,
         metadata: {

@@ -242,6 +242,8 @@ async function handleSubscriptionUpdate(subscription) {
     plan = 'notes';
   } else if (lineItem?.price?.id === process.env.STRIPE_PRICE_FULL) {
     plan = 'full';
+  } else if (lineItem?.price?.id === process.env.STRIPE_PRICE_YEARLY) {
+    plan = 'full_yearly';
   }
 
   try {

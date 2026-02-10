@@ -65,7 +65,7 @@ node scripts/sync_school_codes.js ./path/to/my-codes.json
 The script uses `DATABASE_URL` from `.env` (override=true) and performs transactional upserts.
 
 ### Stripe Subscriptions
-For individual subscription payments (Career Only $9/mo, Full Access $10/mo):
+For individual subscription payments (Notes $9/mo, Career $9/mo, Full Access $12/mo, Full Access Yearly $35/yr):
 1. Create Stripe account at https://dashboard.stripe.com
 2. Create products and get Price IDs
 3. Add keys to `.env`:
@@ -75,6 +75,7 @@ STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRICE_CAREER=price_...
 STRIPE_PRICE_FULL=price_...
+STRIPE_PRICE_YEARLY=price_...
 ```
 4. Run migration: `npx prisma migrate dev --name add_subscription_user_link`
 5. For local testing: `stripe listen --forward-to localhost:3000/api/subscription/webhook`
