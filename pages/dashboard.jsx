@@ -425,7 +425,7 @@ export default function Dashboard() {
               Notes is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($10/month) or Notes Only ($7/month)
+              Upgrade to Full Access ($10/month) or Notes Only ($9/month)
             </Link>
           </div>
         )}
@@ -442,7 +442,7 @@ export default function Dashboard() {
               Career is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($10/month) or Career Only ($7/month)
+              Upgrade to Full Access ($10/month) or Career Only ($9/month)
             </Link>
           </div>
         )}

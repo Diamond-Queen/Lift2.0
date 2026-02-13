@@ -12,7 +12,7 @@ Tip: You can use a free managed Postgres from Neon or Supabase. See "Database Se
 - Tailwind / PostCSS for styling
 - **AI Providers** (resilient tiered fallback):
   - Primary: Template-based generation (never fails)
-  - Fallback: OpenAI (gpt-4o-mini)
+  - Fallback: Groq API
   - Last resort: Anthropic (Claude 3.5 Sonnet)
 
 ## Prerequisites
@@ -149,6 +149,30 @@ Structured JSON logs via `lib/logger.js`. Adjust verbosity with `LOG_LEVEL`.
 - Test coverage for auth & AI endpoints
 - CI workflow (GitHub Actions)
 - Extended validation via Zod
+
+## Dashboard & Access Control
+
+- The Dashboard implements a Dual-Layer Gate to manage access for Beta testers, School Code users, and Paid Subscribers:
+
+- Server-Side (SSR): getServerSideProps validates the session and database record before the page renders. Unauthorized users are redirected to /subscription/plans.
+
+- Client-Side (Hydration): A secondary useEffect check manages state for trialInfo and preferences.
+
+- Note: There is a known "flicker" where the dashboard may briefly show "Loading..." before the client-side redirect triggers if SSR is bypassed or during session transitions.
+
+## Logic Flow for Access
+- Access is granted if ANY of the following conditions are met:
+
+1. user.schoolId is present (Validated School Code).
+
+2. user.betaTester status is active and trialEndsAt > now.
+
+3. user.subscriptions contains a status of active or trialing.
+
+## Audio & Study Mode
+- Study Mode: Uses the Browser Fullscreen API. Note that many browsers require a user gesture (click) to trigger fullscreen; automatic entry via useEffect may be blocked.
+
+- Background Audio: Independent of Study Mode. Supports Lofi, Classical, Ambient, and Rain tracks with a primary/fallback stream logic.
 
 ---
 This README will evolve as testing/CI and additional features are added.
