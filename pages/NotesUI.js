@@ -619,79 +619,6 @@ export default function NotesUI() {
     }, 50);
   };
 
-  // Compress image for faster upload to server OCR
-  const compressImage = async (file) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const reader = new FileReader();
-
-        reader.onload = (event) => {
-          try {
-            const result = event?.target?.result;
-            if (!result) {
-              reject(new Error('Failed to read file - no data returned'));
-              return;
-            }
-
-            const img = new Image();
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            img.onload = () => {
-              try {
-                // Scale down to max 1920px width while maintaining aspect ratio
-                let width = img.width;
-                let height = img.height;
-                const maxWidth = 1920;
-
-                if (width > maxWidth) {
-                  height = (height * maxWidth) / width;
-                  width = maxWidth;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                
-                ctx.drawImage(img, 0, 0, width, height);
-
-                canvas.toBlob(
-                  (blob) => {
-                    if (blob) {
-                      // If original was very large, let user know it was optimized
-                      if (file.size > 5000000) { // > 5MB
-                        console.log(` Photo optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
-                      }
-                      resolve(blob);
-                    } else {
-                      reject(new Error('Failed to compress image'));
-                    }
-                  },
-                  'image/jpeg', // Always use JPEG for better compatibility
-                  0.85 // 85% quality - good balance between size and quality
-                );
-              } catch (err) {
-                const msg = err && err.message ? err.message : String(err);
-                reject(new Error('Failed to process image: ' + msg));
-              }
-            };
-
-            img.onerror = () => reject(new Error('Failed to load image data'));
-            img.src = result;
-          } catch (err) {
-            const msg = err && err.message ? err.message : String(err);
-            reject(new Error('Failed to read file: ' + msg));
-          }
-        };
-
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-      } catch (err) {
-        const msg = err && err.message ? err.message : String(err);
-        reject(new Error('Compression failed: ' + msg));
-      }
-    });
-  };
-
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -706,24 +633,14 @@ export default function NotesUI() {
     setError('');
 
     try {
-      // Show file size for large photos
-      if (file.size > 5000000) { // > 5MB
-        setError(` Large photo detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Optimizing...`);
-      } else {
-        setError(' Preparing image...');
-      }
-      
-      // Compress image first for faster processing
-      const compressedBlob = await compressImage(file);
+      setError(' Extracting text... This may take 20-60 seconds.');
       
       let extractedText = '';
       let usedMethod = '';
 
       try {
         // Try Tesseract.js first (client-side, free)
-        setError(' Extracting text (Tesseract)... This may take 20-60 seconds.');
-        
-        const result = await Tesseract.recognize(compressedBlob, 'eng', {
+        const result = await Tesseract.recognize(file, 'eng', {
           logger: (m) => {
             if (m.status === 'recognizing') {
               const progress = Math.round(m.progress * 100);
@@ -749,7 +666,7 @@ export default function NotesUI() {
           formData.append('isOverlayRequired', false);
           formData.append('apikey', 'K87899142372222'); // OCR.Space free tier key
           formData.append('language', 'eng');
-          formData.append('base64Image', `data:image/jpeg;base64,${await blobToBase64(compressedBlob)}`);
+          formData.append('base64Image', `data:image/jpeg;base64,${await blobToBase64(file)}`);
 
           const ocrRes = await fetch('https://api.ocr.space/parse', {
             method: 'POST',
@@ -811,13 +728,7 @@ export default function NotesUI() {
       setLoading(false);
     } catch (err) {
       console.error('Upload Error:', err);
-      let errorMsg = 'Unknown error';
-      if (err && typeof err === 'object') {
-        errorMsg = err.message || String(err) || 'Unknown error';
-      } else if (typeof err === 'string') {
-        errorMsg = err;
-      }
-      setError('Failed to prepare image: ' + errorMsg);
+      setError('Image upload failed. Try a different photo.');
       setLoading(false);
     }
   };
