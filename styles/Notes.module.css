@@ -602,6 +602,22 @@
     flex-direction: column;
     padding: 0;
     gap: 0;
+    position: relative;
+  }
+
+  /* Add backdrop overlay when sidebar is visible */
+  .container::before {
+    content: '';
+    position: fixed;
+    top: 116px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease;
   }
 
   .sidebar {
@@ -614,9 +630,9 @@
     max-height: calc(100vh - 116px);
     overflow-y: auto;
     border-radius: 0;
-    border-right: 1px solid var(--card-border);
-    background: var(--background);
-    box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+    border-right: 2px solid rgba(139, 117, 0, 0.4);
+    background: #0a0a0a;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.5);
     padding: 1rem;
     box-sizing: border-box;
   }

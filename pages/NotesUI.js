@@ -592,34 +592,62 @@ export default function NotesUI() {
   // Compress image for faster OCR processing
   const compressImage = async (file) => {
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
+      try {
+        const reader = new FileReader();
 
-      img.onload = () => {
-        // Scale down to max 1920px width while maintaining aspect ratio
-        let width = img.width;
-        let height = img.height;
-        const maxWidth = 1920;
+        reader.onload = (event) => {
+          const img = new Image();
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
 
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
+          img.onload = () => {
+            try {
+              // Scale down to max 1920px width while maintaining aspect ratio
+              let width = img.width;
+              let height = img.height;
+              const maxWidth = 1920;
 
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
 
-        canvas.toBlob(
-          (blob) => resolve(blob),
-          file.type || 'image/jpeg',
-          0.85 // 85% quality
-        );
-      };
+              canvas.width = width;
+              canvas.height = height;
+              
+              // Handle image orientation for phone photos
+              // Most phones store rotation in EXIF, but canvas handles the visual correctly
+              ctx.drawImage(img, 0, 0, width, height);
 
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
+              canvas.toBlob(
+                (blob) => {
+                  if (blob) {
+                    // If original was very large, let user know it was optimized
+                    if (file.size > 5000000) { // > 5MB
+                      console.log(`📸 Photo optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+                    }
+                    resolve(blob);
+                  } else {
+                    reject(new Error('Failed to compress image'));
+                  }
+                },
+                'image/jpeg', // Always use JPEG for better compatibility
+                0.85 // 85% quality - good balance between size and quality
+              );
+            } catch (err) {
+              reject(new Error('Failed to process image: ' + err.message));
+            }
+          };
+
+          img.onerror = () => reject(new Error('Failed to load image data'));
+          img.src = event.target.result;
+        };
+
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      } catch (err) {
+        reject(new Error('Compression failed: ' + err.message));
+      }
     });
   };
 
@@ -637,7 +665,12 @@ export default function NotesUI() {
     setError('');
 
     try {
-      setError('📸 Preparing image...');
+      // Show file size for large photos
+      if (file.size > 5000000) { // > 5MB
+        setError(`📸 Large photo detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Optimizing...`);
+      } else {
+        setError('📸 Preparing image...');
+      }
       
       // Compress image first for faster processing
       const compressedBlob = await compressImage(file);

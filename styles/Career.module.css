@@ -1206,6 +1206,22 @@
     padding: 0;
     flex-direction: column;
     gap: 0;
+    position: relative;
+  }
+
+  /* Add backdrop overlay when sidebar is visible */
+  .container::before {
+    content: '';
+    position: fixed;
+    top: 116px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9990;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease;
   }
 
   /* Sidebar becomes an overlay drawer on mobile */
@@ -1219,9 +1235,9 @@
     max-height: calc(100vh - 116px);
     overflow-y: auto;
     background: #000000;
-    border-right: 1px solid rgba(139, 117, 0, 0.2);
+    border-right: 2px solid rgba(139, 117, 0, 0.4);
     z-index: 9991;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.5);
     padding: 1rem;
     box-sizing: border-box;
   }
