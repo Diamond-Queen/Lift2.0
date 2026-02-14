@@ -652,7 +652,7 @@ export default function NotesUI() {
                   if (blob) {
                     // If original was very large, let user know it was optimized
                     if (file.size > 5000000) { // > 5MB
-                      console.log(`📸 Photo optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+                      console.log(` Photo optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
                     }
                     resolve(blob);
                   } else {
@@ -695,74 +695,107 @@ export default function NotesUI() {
     try {
       // Show file size for large photos
       if (file.size > 5000000) { // > 5MB
-        setError(`📸 Large photo detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Uploading...`);
+        setError(` Large photo detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Optimizing...`);
       } else {
-        setError('📸 Preparing image...');
+        setError(' Preparing image...');
       }
       
-      // Compress image first for faster upload
+      // Compress image first for faster processing
       const compressedBlob = await compressImage(file);
       
-      // Convert to base64 for upload
-      const reader = new FileReader();
-      reader.onload = async () => {
+      let extractedText = '';
+      let usedMethod = '';
+
+      try {
+        // Try Tesseract.js first (client-side, free)
+        setError(' Extracting text (Tesseract)... This may take 20-60 seconds.');
+        
+        const result = await Tesseract.recognize(compressedBlob, 'eng', {
+          logger: (m) => {
+            if (m.status === 'recognizing') {
+              const progress = Math.round(m.progress * 100);
+              setError(` Processing... ${progress}%`);
+            }
+          },
+        });
+
+        extractedText = result.data.text.trim();
+        usedMethod = 'Tesseract';
+        
+        if (!extractedText) {
+          throw new Error('Tesseract returned no text, trying fallback...');
+        }
+      } catch (tesseractErr) {
+        // Fallback to OCR.Space API (free, no auth required)
+        console.warn('[OCR] Tesseract failed, trying OCR.Space:', tesseractErr.message);
+        setError(' Tesseract slow, using OCR.Space fallback... (10-20 seconds)');
+        
         try {
-          setError('🔄 Extracting text from image... This may take 10-20 seconds.');
-          
-          // Send to server-side OCR (much faster)
-          const ocrRes = await fetch('/api/notes/ocr', {
+          const formData = new FormData();
+          formData.append('filename', 'image.jpg');
+          formData.append('isOverlayRequired', false);
+          formData.append('apikey', 'K87899142372222'); // OCR.Space free tier key
+          formData.append('language', 'eng');
+          formData.append('base64Image', `data:image/jpeg;base64,${await blobToBase64(compressedBlob)}`);
+
+          const ocrRes = await fetch('https://api.ocr.space/parse', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              buffer: reader.result.split(',')[1], // base64 without data URI prefix
-              filename: file.name,
-            }),
+            body: formData,
           });
 
           if (!ocrRes.ok) {
-            const errData = await ocrRes.json();
-            throw new Error(errData.error || errData.message || 'OCR failed');
+            throw new Error('OCR.Space API error: ' + ocrRes.statusText);
           }
 
           const ocrData = await ocrRes.json();
-          const extractedText = ocrData.text.trim();
-
-          if (!extractedText) {
-            setError('❌ No text could be extracted from the image. Try a clearer photo.');
-            setLoading(false);
-            return;
+          
+          if (ocrData.IsErroredOnProcessing) {
+            throw new Error(ocrData.ErrorMessage || 'OCR.Space processing failed');
           }
 
-          // Format extracted text
-          const formattedText = extractedText
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => line.trim())
-            .join('\n');
-
-          // Set the extracted text as input, truncating if necessary
-          setInput((prev) => {
-            const base = prev ? prev.trim() + "\n\n" : "";
-            const candidate = base + formattedText;
-            if (candidate.length > MAX_NOTES) {
-              const allowed = MAX_NOTES - base.length;
-              const truncated = allowed > 0 ? formattedText.slice(0, allowed) : '';
-              setError('⚠ Extracted text truncated to fit 1,000,000 character limit.');
-              setTimeout(() => setError(''), 4000);
-              return base + truncated;
-            }
-            setError('✓ Text extracted from image!');
-            setTimeout(() => setError(''), 2000);
-            return candidate;
-          });
+          extractedText = (ocrData.ParsedText || '').trim();
+          usedMethod = 'OCR.Space';
+          
+          if (!extractedText) {
+            throw new Error('OCR.Space returned no text');
+          }
+        } catch (ocrsErr) {
+          console.error('[OCR] Both methods failed:', ocrsErr);
+          setError(' Both OCR methods failed. Try a clearer photo.');
           setLoading(false);
-        } catch (err) {
-          console.error('OCR Error:', err);
-          setError('Failed to extract text: ' + (err.message || 'Unknown error'));
-          setLoading(false);
+          return;
         }
-      };
-      reader.readAsDataURL(compressedBlob);
+      }
+
+      if (!extractedText) {
+        setError(' No text could be extracted from the image. Try a clearer photo.');
+        setLoading(false);
+        return;
+      }
+
+      // Format extracted text
+      const formattedText = extractedText
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => line.trim())
+        .join('\n');
+
+      // Set the extracted text as input, truncating if necessary
+      setInput((prev) => {
+        const base = prev ? prev.trim() + "\n\n" : "";
+        const candidate = base + formattedText;
+        if (candidate.length > MAX_NOTES) {
+          const allowed = MAX_NOTES - base.length;
+          const truncated = allowed > 0 ? formattedText.slice(0, allowed) : '';
+          setError('Extracted text truncated to fit 1,000,000 character limit.');
+          setTimeout(() => setError(''), 4000);
+          return base + truncated;
+        }
+        setError(`Text extracted (${usedMethod})!`);
+        setTimeout(() => setError(''), 2000);
+        return candidate;
+      });
+      setLoading(false);
     } catch (err) {
       console.error('Upload Error:', err);
       setError('Failed to prepare image: ' + (err.message || 'Unknown error'));
@@ -770,10 +803,23 @@ export default function NotesUI() {
     }
   };
 
+  // Helper function to convert blob to base64
+  const blobToBase64 = (blob) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const copySummary = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      setError("✓ Copied!");
+      setError("Copied!");
       setTimeout(() => setError(""), 1500);
     } catch (err) {
       setError("Failed to copy");
