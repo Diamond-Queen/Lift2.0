@@ -589,7 +589,7 @@ export default function NotesUI() {
     }, 50);
   };
 
-  // Compress image for faster OCR processing
+  // Compress image for faster upload to server OCR
   const compressImage = async (file) => {
     return new Promise((resolve, reject) => {
       try {
@@ -615,8 +615,6 @@ export default function NotesUI() {
               canvas.width = width;
               canvas.height = height;
               
-              // Handle image orientation for phone photos
-              // Most phones store rotation in EXIF, but canvas handles the visual correctly
               ctx.drawImage(img, 0, 0, width, height);
 
               canvas.toBlob(
@@ -667,60 +665,77 @@ export default function NotesUI() {
     try {
       // Show file size for large photos
       if (file.size > 5000000) { // > 5MB
-        setError(`📸 Large photo detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Optimizing...`);
+        setError(`📸 Large photo detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Uploading...`);
       } else {
         setError('📸 Preparing image...');
       }
       
-      // Compress image first for faster processing
+      // Compress image first for faster upload
       const compressedBlob = await compressImage(file);
-      setError('🔄 Extracting text from image... This may take 10-30 seconds.');
       
-      // Use Tesseract.js to extract text from compressed image (client-side OCR)
-      const result = await Tesseract.recognize(compressedBlob, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing') {
-            const progress = Math.round(m.progress * 100);
-            setError(`🔄 Processing... ${progress}%`);
+      // Convert to base64 for upload
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          setError('🔄 Extracting text from image... This may take 10-20 seconds.');
+          
+          // Send to server-side OCR (much faster)
+          const ocrRes = await fetch('/api/notes/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              buffer: reader.result.split(',')[1], // base64 without data URI prefix
+              filename: file.name,
+            }),
+          });
+
+          if (!ocrRes.ok) {
+            const errData = await ocrRes.json();
+            throw new Error(errData.error || errData.message || 'OCR failed');
           }
-        },
-      });
 
-      const extractedText = result.data.text.trim();
+          const ocrData = await ocrRes.json();
+          const extractedText = ocrData.text.trim();
 
-      if (!extractedText) {
-        setError('❌ No text could be extracted from the image. Try a clearer photo.');
-        setLoading(false);
-        return;
-      }
+          if (!extractedText) {
+            setError('❌ No text could be extracted from the image. Try a clearer photo.');
+            setLoading(false);
+            return;
+          }
 
-      // Format extracted text into markdown with basic structure
-      const formattedText = extractedText
-        .split('\n')
-        .filter(line => line.trim()) // Remove empty lines
-        .map(line => line.trim())
-        .join('\n');
+          // Format extracted text
+          const formattedText = extractedText
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => line.trim())
+            .join('\n');
 
-      // Set the extracted text as input, truncating if necessary to respect MAX_NOTES
-      setInput((prev) => {
-        const base = prev ? prev.trim() + "\n\n" : "";
-        const candidate = base + formattedText;
-        if (candidate.length > MAX_NOTES) {
-          const allowed = MAX_NOTES - base.length;
-          const truncated = allowed > 0 ? formattedText.slice(0, allowed) : '';
-          setError('⚠ Extracted text truncated to fit 1,000,000 character limit.');
-          setTimeout(() => setError(''), 4000);
-          return base + truncated;
+          // Set the extracted text as input, truncating if necessary
+          setInput((prev) => {
+            const base = prev ? prev.trim() + "\n\n" : "";
+            const candidate = base + formattedText;
+            if (candidate.length > MAX_NOTES) {
+              const allowed = MAX_NOTES - base.length;
+              const truncated = allowed > 0 ? formattedText.slice(0, allowed) : '';
+              setError('⚠ Extracted text truncated to fit 1,000,000 character limit.');
+              setTimeout(() => setError(''), 4000);
+              return base + truncated;
+            }
+            setError('✓ Text extracted from image!');
+            setTimeout(() => setError(''), 2000);
+            return candidate;
+          });
+          setLoading(false);
+        } catch (err) {
+          console.error('OCR Error:', err);
+          setError('Failed to extract text: ' + (err.message || 'Unknown error'));
+          setLoading(false);
         }
-        setError('✓ Text extracted from image!');
-        setTimeout(() => setError(''), 2000);
-        return candidate;
-      });
-      setTimeout(() => setError(''), 2000);
-      setLoading(false);
+      };
+      reader.readAsDataURL(compressedBlob);
     } catch (err) {
-      console.error('OCR Error:', err);
-      setError('Failed to extract text: ' + (err.message || 'Unknown error'));
+      console.error('Upload Error:', err);
+      setError('Failed to prepare image: ' + (err.message || 'Unknown error'));
       setLoading(false);
     }
   };
