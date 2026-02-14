@@ -600,30 +600,34 @@
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
-    padding: 1rem;
-    gap: 1rem;
+    padding: 0;
+    gap: 0;
   }
 
   .sidebar {
     position: fixed;
-    top: 0;
+    top: 116px;
     left: 0;
     z-index: 1000;
-    width: 280px;
-    max-height: 100vh;
+    width: 85vw;
+    max-width: 320px;
+    max-height: calc(100vh - 116px);
+    overflow-y: auto;
     border-radius: 0;
     border-right: 1px solid var(--card-border);
     background: var(--background);
-    box-shadow: 2px 0 8px rgba(0,0,0,0.1);
-    padding-top: 4rem; /* Space for the toggle button */
+    box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+    padding: 1rem;
+    box-sizing: border-box;
   }
 
   .mainContent {
     width: 100%;
     margin-left: 0;
-    padding-top: 1rem;
+    padding: 1rem;
     height: auto;
     min-height: fit-content;
+    box-sizing: border-box;
   }
 
   .pageTitle {
@@ -659,6 +663,17 @@
 
 @media (max-width: 480px) {
   .container {
+    padding: 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    padding: 0.75rem;
+    top: 116px;
+  }
+
+  .mainContent {
     padding: 0.75rem;
   }
 

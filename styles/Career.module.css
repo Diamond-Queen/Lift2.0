@@ -1183,18 +1183,59 @@
   }
 }
 
+/* Sidebar Toggle Button Styles */
+.sidebarToggle {
+  position: fixed !important;
+  z-index: 9998 !important;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .sidebarToggle {
+    /* Ensure button is accessible on mobile, positioned in safe area */
+    top: 72px !important;
+    left: 16px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .container {
-    padding: 1rem;
+    padding: 0;
+    flex-direction: column;
+    gap: 0;
   }
-  /* On small screens the sidebar should flow normally */
+
+  /* Sidebar becomes an overlay drawer on mobile */
   .sidebar {
-    position: static;
-    width: auto;
+    position: fixed;
+    top: 116px;
+    left: 0;
+    width: 85vw;
+    max-width: 320px;
+    height: calc(100vh - 116px);
+    max-height: calc(100vh - 116px);
+    overflow-y: auto;
+    background: #000000;
+    border-right: 1px solid rgba(139, 117, 0, 0.2);
+    z-index: 9991;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    box-sizing: border-box;
   }
+
   .mainContent {
     margin-left: 0;
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .pageTitle {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
   }
   
   .input, .textarea, .select {
@@ -1215,7 +1256,22 @@
 
 @media (max-width: 480px) {
   .container {
+    padding: 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
     padding: 0.75rem;
+  }
+
+  .mainContent {
+    padding: 0.75rem;
+  }
+
+  .pageTitle {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
   }
   
   .printableResume h1, .printableCover h1 {

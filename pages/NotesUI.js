@@ -589,6 +589,40 @@ export default function NotesUI() {
     }, 50);
   };
 
+  // Compress image for faster OCR processing
+  const compressImage = async (file) => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Scale down to max 1920px width while maintaining aspect ratio
+        let width = img.width;
+        let height = img.height;
+        const maxWidth = 1920;
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => resolve(blob),
+          file.type || 'image/jpeg',
+          0.85 // 85% quality
+        );
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -603,10 +637,14 @@ export default function NotesUI() {
     setError('');
 
     try {
-      setError('🔄 Extracting text from image... This may take a moment.');
+      setError('📸 Preparing image...');
       
-      // Use Tesseract.js to extract text from image (client-side OCR)
-      const result = await Tesseract.recognize(file, 'eng', {
+      // Compress image first for faster processing
+      const compressedBlob = await compressImage(file);
+      setError('🔄 Extracting text from image... This may take 10-30 seconds.');
+      
+      // Use Tesseract.js to extract text from compressed image (client-side OCR)
+      const result = await Tesseract.recognize(compressedBlob, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing') {
             const progress = Math.round(m.progress * 100);
