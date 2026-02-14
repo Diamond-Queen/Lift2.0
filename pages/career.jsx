@@ -606,6 +606,29 @@ export default function Career() {
           ...prev,
           [selectedJobId]: { result: newResult }
         }));
+
+        // Auto-save to database so it syncs across devices
+        try {
+          const autoSaveRes = await fetch('/api/content/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: type === "resume" ? "resume" : "cover_letter",
+              title: `${type === "resume" ? "Resume" : "Cover Letter"} - ${new Date().toLocaleDateString()} (Generated)`,
+              originalInput: JSON.stringify(bodyData),
+              classId: selectedJobId,
+              metadata: { ...bodyData, result: newResult }
+            })
+          });
+          if (autoSaveRes.ok) {
+            await fetchSavedItems(selectedJobId);
+          } else {
+            console.warn('Auto-save to database failed, but generation succeeded');
+          }
+        } catch (saveErr) {
+          console.warn('Auto-save error:', saveErr);
+          // Don't block the user - generation succeeded even if auto-save failed
+        }
       }
     } catch (err) {
       console.error(err);

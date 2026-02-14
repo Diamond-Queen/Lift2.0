@@ -28,6 +28,11 @@ node_modules/
 # Private keys / certs
 *.pem
 *.key
+
+# Google Cloud credentials (NEVER commit!)
+google-cloud-vision-key.json
+*-key.json
+service-account*.json
 *.crt
 *.p12
 *.keystore

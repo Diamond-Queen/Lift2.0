@@ -1,9 +1,8 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/authOptions';
-import Tesseract from 'tesseract.js';
-import { writeFileSync, unlinkSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import vision from '@google-cloud/vision';
+import path from 'path';
+import fs from 'fs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -17,39 +16,64 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Parse multipart form data
-    const { buffer, filename } = req.body;
+    const { buffer } = req.body;
     
     if (!buffer) {
       return res.status(400).json({ error: 'No image data provided' });
     }
 
-    // Convert base64 to buffer if needed
-    let imageBuffer = buffer;
-    if (typeof buffer === 'string') {
-      imageBuffer = Buffer.from(buffer, 'base64');
-    }
-
-    // Write to temporary file (Tesseract works better with files on disk)
-    const tempFile = join(tmpdir(), `ocr-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`);
-    writeFileSync(tempFile, imageBuffer);
-
     try {
-      // Run OCR on the server (much faster than client-side)
-      const result = await Tesseract.recognize(tempFile, 'eng', {
-        logger: (m) => {
-          console.log(`[OCR] ${m.status}: ${Math.round(m.progress * 100)}%`);
-        },
-      });
+      let client;
 
-      const extractedText = result.data.text.trim();
+      // Try to use environment variable first (Vercel production)
+      if (process.env.GOOGLE_CLOUD_VISION_KEY) {
+        try {
+          const credentials = JSON.parse(process.env.GOOGLE_CLOUD_VISION_KEY);
+          client = new vision.ImageAnnotatorClient({ credentials });
+        } catch (err) {
+          console.error('[Vision] Failed to parse GOOGLE_CLOUD_VISION_KEY:', err.message);
+          throw err;
+        }
+      } else {
+        // Fall back to file-based credentials (local development)
+        const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 'google-cloud-vision-key.json';
+        const fullPath = path.resolve(credentialsPath);
 
-      // Clean up temp file
-      try {
-        unlinkSync(tempFile);
-      } catch (e) {
-        console.warn('Failed to clean up temp file:', e);
+        if (!fs.existsSync(fullPath)) {
+          throw new Error(`Credentials file not found: ${fullPath}. Set GOOGLE_CLOUD_VISION_KEY environment variable or ensure google-cloud-vision-key.json exists.`);
+        }
+
+        client = new vision.ImageAnnotatorClient({ keyFilename: fullPath });
       }
+
+      // Convert base64 string to Buffer if needed
+      let imageBuffer = buffer;
+      if (typeof buffer === 'string') {
+        imageBuffer = Buffer.from(buffer, 'base64');
+      }
+
+      // Prepare request for Google Cloud Vision
+      const request = {
+        image: {
+          content: imageBuffer,
+        },
+        features: [
+          {
+            type: 'TEXT_DETECTION', // Detect all text in image
+          },
+        ],
+      };
+
+      // Call Google Cloud Vision API
+      const [result] = await client.annotateImage(request);
+      const textAnnotations = result.textAnnotations || [];
+
+      if (textAnnotations.length === 0) {
+        return res.status(400).json({ error: 'No text could be extracted from the image' });
+      }
+
+      // The first text annotation contains all text from the image
+      const extractedText = textAnnotations[0].description.trim();
 
       if (!extractedText) {
         return res.status(400).json({ error: 'No text could be extracted from the image' });
@@ -58,16 +82,11 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         text: extractedText,
-        confidence: result.data.confidence,
+        confidence: textAnnotations[0].confidence || 0.9,
       });
-    } catch (ocrErr) {
-      // Clean up temp file on error
-      try {
-        unlinkSync(tempFile);
-      } catch (e) {
-        // ignore
-      }
-      throw ocrErr;
+    } catch (err) {
+      console.error('[Vision API] Error:', err);
+      throw err;
     }
   } catch (err) {
     console.error('[OCR API] Error:', err);

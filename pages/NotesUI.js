@@ -564,6 +564,36 @@ export default function NotesUI() {
           ...prev,
           [selectedClassId]: { summaries: newSummaries, flashcards: newFlashcards, quiz: newQuiz, quizDifficulty }
         }));
+
+        // Auto-save to database so it syncs across devices
+        try {
+          const title = (input || '').split('\n')[0].slice(0, 80) || `Note ${new Date().toLocaleString()}`;
+          const saveRes = await fetch('/api/content/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              classId: selectedClassId,
+              title,
+              originalInput: input,
+              type: 'note',
+              summaries: newSummaries.length > 0 ? newSummaries : null,
+              metadata: {
+                flashcards: newFlashcards.length > 0 ? newFlashcards : null,
+                quiz: newQuiz.length > 0 ? newQuiz : null,
+                quizDifficulty: quizDifficulty || null
+              }
+            })
+          });
+          if (saveRes.ok) {
+            const savedData = await saveRes.json();
+            setSavedItems([savedData.data, ...savedItems]);
+          } else {
+            console.warn('Auto-save to database failed, but generation succeeded');
+          }
+        } catch (saveErr) {
+          console.warn('Auto-save error:', saveErr);
+          // Don't block the user - generation succeeded even if auto-save failed
+        }
       }
     } catch (err) {
       setError("Failed to generate. Please try again.");
