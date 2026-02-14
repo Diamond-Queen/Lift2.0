@@ -90,7 +90,6 @@ export default function Account() {
         // Determine account type and check subscription status
         if (userData?.betaTester) {
           setAccountType('Beta Tester');
-          setSubscriptionWarning('Upgrade to a paid plan to keep access after your trial ends.');
         } else if (userData?.subscriptions && userData.subscriptions.length > 0) {
           const sub = userData.subscriptions[0];
           // Determine plan type
@@ -98,25 +97,12 @@ export default function Account() {
                           sub.plan === 'notes' ? 'Notes Only' : 
                           sub.plan === 'full' ? 'Full Access' : 'Individual';
           
-          if (sub.status === 'trialing') {
-            // For paid subscriptions on trial, show the plan type with trial indicator
-            setAccountType(`${planType} (Trial)`);
-            // Check if trial has ended
-            if (sub.trialEndsAt) {
-              const trialEndTime = new Date(sub.trialEndsAt).getTime();
-              const nowTime = new Date().getTime();
-              if (nowTime > trialEndTime) {
-                setShowTrialExpiredModal(true);
-                return;
-              }
-              // Check if trial ends soon (within 3 days)
-              const daysUntilEnd = (trialEndTime - nowTime) / (1000 * 60 * 60 * 24);
-              if (daysUntilEnd <= 3 && daysUntilEnd > 0) {
-                setSubscriptionWarning(`Your ${planType} trial ends in ${Math.ceil(daysUntilEnd)} day${Math.ceil(daysUntilEnd) > 1 ? 's' : ''}. Your payment method will be charged after the trial.`);
-              }
-            }
-          } else if (sub.status === 'active') {
+          if (sub.status === 'active' || sub.status === 'past_due') {
+            // Active or overdue subscription - user has paid and has access
             setAccountType(userData.schoolId ? 'School' : planType);
+            if (sub.status === 'past_due') {
+              setSubscriptionWarning('Your payment is overdue. Please update your payment method.');
+            }
           } else {
             setAccountType('Individual');
             setSubscriptionWarning('No active subscription. Upgrade to continue using Lift.');
@@ -511,12 +497,9 @@ export default function Account() {
               <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>Subscription</h2>
               {(() => {
                 const sub = user.subscriptions[0];
-                const planName = sub.plan === 'career' ? 'Career Only' : sub.plan === 'full' ? 'Full Access' : sub.plan;
+                const planName = sub.plan === 'career' ? 'Career Only' : sub.plan === 'notes' ? 'Notes Only' : sub.plan === 'full' ? 'Full Access' : sub.plan;
                 const price = sub.priceMonthly ? `$${sub.priceMonthly}/month` : '';
-                const statusText = sub.status === 'trialing' ? 'Free Trial' : sub.status === 'active' ? 'Active' : sub.status;
-                const trialEnd = sub.trialEndsAt ? new Date(sub.trialEndsAt) : null;
-                const now = new Date();
-                const isTrialing = sub.status === 'trialing' && trialEnd && trialEnd > now;
+                const statusText = sub.status === 'active' ? 'Active' : sub.status === 'past_due' ? 'Payment Overdue' : sub.status;
                 
                 return (
                   <div style={{ padding: '1rem', background: 'rgba(139, 117, 0, 0.1)', border: '1px solid #8b7500', borderRadius: '6px' }}>
@@ -524,19 +507,14 @@ export default function Account() {
                       {planName} {price && `• ${price}`}
                     </div>
                     <div style={{ fontSize: '0.9rem', color: '#aaa', marginBottom: '0.5rem' }}>
-                      Status: <strong style={{ color: '#8b7500' }}>{statusText}</strong>
+                      Status: <strong style={{ color: sub.status === 'active' ? '#22c55e' : sub.status === 'past_due' ? '#f97316' : '#8b7500' }}>{statusText}</strong>
                     </div>
-                    {isTrialing && trialEnd && (
-                      <div style={{ fontSize: '0.85rem', color: '#aaa' }}>
-                        Trial ends: {trialEnd.toLocaleDateString()}
-                      </div>
-                    )}
-                    {sub.plan === 'career' && (
+                    {(sub.plan === 'career' || sub.plan === 'notes') && (
                       <Link href="/subscription/plans" style={{ display: 'inline-block', marginTop: '0.75rem', padding: '0.5rem 1rem', background: '#8b7500', color: 'white', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '600', textDecoration: 'none' }}>
-                        Upgrade
+                        Upgrade Plan
                       </Link>
                     )}
-                    {(sub.status === 'active' || sub.status === 'trialing') && (
+                    {sub.status === 'active' && (
                       <div style={{ marginTop: '0.75rem' }}>
                         <button
                           onClick={handleCancelSubscription}
@@ -948,4 +926,49 @@ export default function Account() {
       <audio id="musicPreviewAudio" style={{ display: 'none' }} />
     </div>
   );
+}
+
+export async function getServerSideProps(context) {
+  const { req, res } = context;
+  try {
+    const { getServerSession } = await import('next-auth/next');
+    const { authOptions } = require('../lib/authOptions');
+    const session = await getServerSession(req, res, authOptions);
+
+    if (!session || !session.user?.email) {
+      return { redirect: { destination: '/login', permanent: false } };
+    }
+
+    const prisma = require('../lib/prisma');
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 }, betaTester: true }
+    });
+
+    if (!user) return { redirect: { destination: '/signup', permanent: false } };
+    if (!user.onboarded) return { redirect: { destination: '/onboarding', permanent: false } };
+
+    const hasSubscription = Boolean(
+      (user.subscriptions && user.subscriptions.length > 0 && ['active', 'trialing'].includes(user.subscriptions[0].status)) ||
+      (user.preferences && user.preferences.subscriptionPlan)
+    );
+
+    const beta = user.betaTester;
+    const betaActive = Boolean(
+      beta &&
+      beta.status === 'active' &&
+      new Date(beta.trialEndsAt) > new Date() &&
+      beta.id
+    );
+    
+    const hasSchoolAccess = Boolean(user.schoolId);
+
+    if (!hasSubscription && !betaActive && !hasSchoolAccess) {
+      return { redirect: { destination: '/subscription/plans', permanent: false } };
+    }
+
+    return { props: {} };
+  } catch (err) {
+    return { props: {} };
+  }
 }

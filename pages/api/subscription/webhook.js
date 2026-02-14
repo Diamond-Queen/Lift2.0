@@ -82,11 +82,15 @@ async function handler(req, res) {
         logger.info('webhook_unhandled_event', { type: event.type });
     }
 
-    res.json({ received: true });
+    // IMPORTANT: Always return 200 for successful processing, even on errors, to prevent Stripe retries.
+    // Stripe interprets 200 as "we got it" and won't retry. On error, log but return 200.
+    res.status(200).json({ received: true });
   } catch (err) {
     logger.error('webhook_handler_error', { type: event.type, message: err.message, stack: err.stack });
     auditLog('webhook_handler_error', null, { type: event.type, message: err.message }, 'error');
-    res.status(500).json({ error: 'Webhook handler failed' });
+    // CRITICAL: Return 200 to acknowledge receipt even on error. Stripe will retry on 5xx.
+    // Returning 5xx could cause duplicate processing if error is transient.
+    res.status(200).json({ received: true, error: 'processed with error' });
   }
 }
 
@@ -163,44 +167,69 @@ async function handleCheckoutCompleted(session) {
   });
 
   // Create or update subscription record
-  // For upgrades, update the existing subscription. For new subscriptions, create or upsert.
+  // For upgrades, mark old subscription as inactive and create new one
+  // This ensures the newest active subscription is always the current plan
   if (isUpgrade && previousPlan) {
-    // Find the existing subscription and update it
-    const existingSub = await prisma.subscription.findFirst({
-      where: { userId: userId }
+    // Find the old subscription and mark it as inactive
+    const oldSub = await prisma.subscription.findFirst({
+      where: { 
+        userId: userId,
+        plan: previousPlan,
+        status: { in: ['active'] }
+      }
     });
 
-    if (existingSub) {
+    let newSubData = {
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscriptionId,
+      status: subscription.status,
+      plan: plan,
+      trialEndsAt: trialEnd,
+      userId: userId,
+      upgradedAt: new Date()
+    };
+
+    if (oldSub) {
+      // Link new subscription to old one
+      newSubData.upgradedFromId = oldSub.id;
+      
+      // Mark old subscription as upgraded
       await prisma.subscription.update({
-        where: { id: existingSub.id },
+        where: { id: oldSub.id },
         data: {
-          stripeSubscriptionId: subscriptionId,
-          status: subscription.status,
-          plan: plan,
-          trialEndsAt: trialEnd,
-          stripeCustomerId: customerId
+          status: 'upgraded', // Mark old plan as upgraded, not active
+          updatedAt: new Date()
         }
       });
-      logger.info('subscription_upgraded', { 
+      logger.info('old_subscription_marked_upgraded', { 
         userId, 
-        previousPlan, 
-        newPlan: plan, 
-        subscriptionId, 
-        trialEnd 
-      });
-    } else {
-      // Create new if not found (shouldn't happen in normal flow)
-      await prisma.subscription.create({
-        data: {
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
-          status: subscription.status,
-          plan: plan,
-          trialEndsAt: trialEnd,
-          userId: userId
-        }
+        oldSubId: oldSub.id,
+        oldPlan: previousPlan,
+        newPlan: plan
       });
     }
+
+    // Create new subscription for upgraded plan with reference to old one
+    await prisma.subscription.upsert({
+      where: { stripeSubscriptionId: subscriptionId },
+      update: {
+        status: subscription.status,
+        plan: plan,
+        trialEndsAt: trialEnd,
+        userId: userId,
+        upgradedAt: new Date(),
+        upgradedFromId: oldSub?.id
+      },
+      create: newSubData
+    });
+    logger.info('subscription_upgraded', { 
+      userId, 
+      previousPlan, 
+      newPlan: plan, 
+      subscriptionId, 
+      upgradedFromId: oldSub?.id,
+      trialEnd 
+    });
   } else {
     // New subscription
     await prisma.subscription.upsert({
@@ -210,7 +239,8 @@ async function handleCheckoutCompleted(session) {
         status: subscription.status,
         plan: plan,
         trialEndsAt: trialEnd,
-        userId: userId
+        userId: userId,
+        updatedAt: new Date()
       },
       create: {
         stripeCustomerId: customerId,

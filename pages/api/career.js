@@ -77,14 +77,14 @@ async function handler(req, res) {
       let userPrefs = cache.get(cacheKey);
       
       if (!userPrefs) {
-        // Cache miss - fetch from DB
+        // Cache miss - fetch from DB (Prisma primary, pool fallback)
         if (prisma) {
           const user = await prisma.user.findUnique({ 
             where: { id: session.user.id }, 
             select: { preferences: true } 
           });
           userPrefs = user?.preferences;
-        } else {
+        } else if (pool) {
           const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
           userPrefs = rows[0]?.preferences;
         }

@@ -1,6 +1,6 @@
 const prisma = require('../../../lib/prisma');
-const { getServerSession } = require('next-auth/next');
 const { pool, findUserByEmail } = require('../../../lib/db');
+const { getServerSession } = require('next-auth/next');
 const logger = require('../../../lib/logger');
 const {
   setSecureHeaders,
@@ -109,38 +109,6 @@ async function handler(req, res) {
       
       auditLog('school_redeem_success', user.id, { code, schoolId: schoolCode.schoolId, schoolName: result.school?.name }, 'info');
       return res.json({ ok: true, data: { school: result.school } });
-    } else {
-      // pg fallback using conditional update inside a transaction
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        const { rows: codeRows } = await client.query('SELECT * FROM "SchoolCode" WHERE code = $1 LIMIT 1', [code]);
-        const sc = codeRows[0];
-        if (!sc) {
-          await client.query('ROLLBACK');
-          return res.status(404).json({ ok: false, error: 'Code not found' });
-        }
-        const user = await findUserByEmail(session.user.email);
-        if (!user) {
-          await client.query('ROLLBACK');
-          return res.status(404).json({ ok: false, error: 'User not found' });
-        }
-        // Check if this user already has this school
-        if (user.schoolId === sc.schoolId) {
-          await client.query('ROLLBACK');
-          return res.status(400).json({ ok: false, error: 'You are already a member of this school' });
-        }
-        // Multiple students can use the same code - just assign school to user
-        await client.query('UPDATE "User" SET "schoolId" = $1, onboarded = true WHERE id = $2', [sc.schoolId, user.id]);
-        const { rows: schoolRows } = await client.query('SELECT id, name, "createdAt" FROM "School" WHERE id = $1', [sc.schoolId]);
-        await client.query('COMMIT');
-        return res.json({ ok: true, data: { school: schoolRows[0] } });
-      } catch (e) {
-        try { await client.query('ROLLBACK'); } catch(_){}
-        throw e;
-      } finally {
-        client.release();
-      }
     }
   } catch (err) {
     logger.error('school_redeem_error', { message: err.message, stack: err.stack });

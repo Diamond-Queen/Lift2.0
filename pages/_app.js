@@ -99,8 +99,8 @@ export default function App({ Component, pageProps }) {
           <SiteHeader />
           {/* Global Home button (fixed) - route based on auth state */}
           <HomeFab />
-          {/* Trial expiration check */}
-          <TrialExpirationCheck />
+          {/* Beta trial expiration check */}
+          <BetaTrialExpirationCheck />
           <Component {...pageProps} />
         </SessionProvider>
       </>
@@ -126,7 +126,7 @@ function HomeFab() {
   );
 }
 
-function TrialExpirationCheck() {
+function BetaTrialExpirationCheck() {
   const { status } = useSession();
   const router = useRouter();
   const [showExpiredModal, setShowExpiredModal] = useState(false);
@@ -135,41 +135,16 @@ function TrialExpirationCheck() {
   useEffect(() => {
     if (status !== 'authenticated') return;
 
-    const checkTrialStatus = async () => {
+    const checkBetaTrialStatus = async () => {
       try {
-        // Check user subscriptions for trial timing
-        const [userRes, betaRes] = await Promise.allSettled([
-          fetch('/api/user'),
-          fetch('/api/beta/status')
-        ]);
+        // Only check beta trial status - subscriptions are NOT trial-based
+        const betaRes = await fetch('/api/beta/status');
 
         let dismissed = false;
-        try { dismissed = localStorage.getItem('trialBannerDismissed') === 'true'; } catch(e) {}
+        try { dismissed = localStorage.getItem('betaTrialBannerDismissed') === 'true'; } catch(e) {}
 
-        if (userRes.status === 'fulfilled' && userRes.value.ok) {
-          const data = await userRes.value.json();
-          const user = data?.data?.user;
-          if (user?.subscriptions && user.subscriptions.length > 0) {
-            const sub = user.subscriptions[0];
-            if (sub.trialEndsAt) {
-              const trialEndTime = new Date(sub.trialEndsAt).getTime();
-              const nowTime = Date.now();
-              const msLeft = trialEndTime - nowTime;
-              const hoursLeft = Math.round(msLeft / (1000 * 60 * 60));
-              if (msLeft <= 0) {
-                setShowExpiredModal(true);
-                if (!dismissed) setBanner({ type: 'expired', text: 'Your free trial has ended.' });
-                return;
-              } else if (msLeft <= 48 * 60 * 60 * 1000) {
-                if (!dismissed) setBanner({ type: 'ending', text: `Your trial ends in ~${hoursLeft} hours.` });
-              }
-            }
-          }
-        }
-
-        // Check beta status separately
-        if (betaRes.status === 'fulfilled' && betaRes.value.ok) {
-          const data = await betaRes.value.json();
+        if (betaRes.ok) {
+          const data = await betaRes.json();
           const trial = data?.data?.trial;
           if (trial) {
             if (trial.status === 'trial-expired') {
@@ -188,11 +163,11 @@ function TrialExpirationCheck() {
           }
         }
       } catch (err) {
-        console.error('Error checking trial status:', err);
+        console.error('Error checking beta trial status:', err);
       }
     };
 
-    checkTrialStatus();
+    checkBetaTrialStatus();
   }, [status]);
 
   if (banner) {
@@ -200,13 +175,12 @@ function TrialExpirationCheck() {
       <div style={{ position: 'fixed', top: 64, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }}>
         <div style={{ width: '100%', maxWidth: '960px', margin: '0.5rem', background: '#fff6f0', border: '1px solid #ffd8b5', padding: '0.75rem 1rem', borderRadius: '8px', display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <div style={{ flex: 1, color: '#5b3b00' }}>
-            <strong style={{ display: 'block', fontSize: '0.98rem' }}>{banner.type === 'ending' ? 'Trial Ending Soon' : 'Trial Expired'}</strong>
-            <div style={{ fontSize: '0.9rem', color: '#6b4a00' }}>{banner.text} We recommend upgrading or choosing another access option.</div>
+            <strong style={{ display: 'block', fontSize: '0.98rem' }}>{banner.type === 'ending' ? 'Beta Trial Ending Soon' : 'Beta Trial Expired'}</strong>
+            <div style={{ fontSize: '0.9rem', color: '#6b4a00' }}>{banner.text} Upgrade to a paid plan to continue using Lift.</div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button onClick={() => router.push('/subscription/plans')} style={{ padding: '0.5rem 0.9rem', background: '#8b7500', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>View Plans</button>
-            <button onClick={() => router.push('/onboarding')} style={{ padding: '0.5rem 0.9rem', background: '#fff', color: '#8b7500', border: '1px solid #8b7500', borderRadius: '6px', cursor: 'pointer' }}>Choose Another Option</button>
-            <button onClick={() => { try { localStorage.setItem('trialBannerDismissed', 'true'); } catch(e){} setBanner(null); }} style={{ padding: '0.4rem 0.6rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b4a00' }}>✕</button>
+            <button onClick={() => { try { localStorage.setItem('betaTrialBannerDismissed', 'true'); } catch(e){} setBanner(null); }} style={{ padding: '0.4rem 0.6rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b4a00' }}>✕</button>
           </div>
         </div>
       </div>
@@ -218,20 +192,14 @@ function TrialExpirationCheck() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 99999 }}>
       <div style={{ background: '#fff', padding: '2rem', borderRadius: '12px', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#000' }}>Trial Expired</h2>
-        <p style={{ color: '#666', marginBottom: '2rem', lineHeight: '1.6' }}>Your trial period has ended. Upgrade your account to continue using Lift.</p>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1rem', color: '#000' }}>Beta Trial Expired</h2>
+        <p style={{ color: '#666', marginBottom: '2rem', lineHeight: '1.6' }}>Your beta trial period has ended. Upgrade to a paid plan to continue using Lift.</p>
         <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
           <button
             onClick={() => router.push('/subscription/plans')}
             style={{ padding: '0.8rem 1.5rem', background: '#8b7500', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
           >
             Upgrade Plan
-          </button>
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            style={{ padding: '0.8rem 1.5rem', background: '#fff', color: '#8b7500', border: '2px solid #8b7500', borderRadius: '6px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer' }}
-          >
-            Sign Out
           </button>
         </div>
       </div>

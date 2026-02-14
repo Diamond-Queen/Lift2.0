@@ -1,5 +1,4 @@
 const prisma = require('../../../lib/prisma');
-const { pool, findUserByEmail } = require('../../../lib/db');
 const { getServerSession } = require('next-auth/next');
 const logger = require('../../../lib/logger');
 const {
@@ -30,9 +29,14 @@ async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
-  const user = prisma
-    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
-    : await findUserByEmail(session.user.email);
+  if (!prisma) {
+    return res.status(503).json({ ok: false, error: 'Database unavailable' });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true }
+  });
   if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
 
   const userId = user.id;
@@ -50,18 +54,10 @@ async function handler(req, res) {
       if (type) where.type = type;
       if (classId) where.classId = classId;
 
-      const items = prisma
-        ? await prisma.contentItem.findMany({
+      const items = await prisma.contentItem.findMany({
             where,
             orderBy: { createdAt: 'desc' }
-          })
-        : (await pool.query(
-            `SELECT id, title, type, "classId", "createdAt", "updatedAt" 
-             FROM "ContentItem" 
-             WHERE "userId" = $1 ${type ? 'AND type = $2' : ''} ${classId ? `AND "classId" = $${type ? 3 : 2}` : ''}
-             ORDER BY "createdAt" DESC`,
-            [userId, ...(type ? [type] : []), ...(classId ? [classId] : [])]
-          )).rows;
+          });
 
       return res.json({ ok: true, data: items });
     }

@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
-import { authOptions } from '../../../lib/authOptions';
+const NextAuth = require('next-auth');
+const { authOptions } = require('../../../lib/authOptions');
 
-export default NextAuth(authOptions);
+module.exports = NextAuth.default(authOptions);

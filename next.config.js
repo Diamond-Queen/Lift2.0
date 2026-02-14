@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+
+// Validate environment variables before starting
+require('./lib/validate-env');
+
 const nextConfig = {
   reactStrictMode: true,
   // Optimize for serverless environments (Vercel)

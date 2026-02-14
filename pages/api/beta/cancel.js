@@ -81,9 +81,25 @@ async function handler(req, res) {
       }
 
       // Also cancel any active subscriptions for this user (Stripe + DB).
+      // IMPORTANT: Only cancel subscriptions that were NOT upgraded to another subscription.
+      // This prevents canceling paid subscriptions when a user cancels their beta trial.
       try {
-        const subs = await prisma.subscription.findMany({ where: { userId: user.id } });
+        const subs = await prisma.subscription.findMany({ 
+          where: { userId: user.id },
+          include: { upgradedTo: { select: { id: true } } } // Check if this subscription was upgraded
+        });
+
         for (const s of subs || []) {
+          // Skip if this subscription was upgraded to another one
+          if (s.upgradedTo && s.upgradedTo.length > 0) {
+            logger.info('skipping_canceled_subscription_already_upgraded', {
+              userId: user.id,
+              subscriptionId: s.id,
+              upgradedToCount: s.upgradedTo.length
+            });
+            continue;
+          }
+
           // Try to cancel on Stripe if possible
           if (s?.stripeSubscriptionId && stripe) {
             try {
@@ -96,6 +112,11 @@ async function handler(req, res) {
           // Mark subscription canceled in our DB
           try {
             await prisma.subscription.update({ where: { id: s.id }, data: { status: 'canceled' } });
+            logger.info('subscription_marked_canceled_on_beta_cancel', {
+              userId: user.id,
+              subscriptionId: s.id,
+              plan: s.plan
+            });
           } catch (dbErr) {
             logger.warn('db_mark_subscription_canceled_failed', { userId: user.id, subscriptionId: s.id, message: dbErr.message });
           }
@@ -106,9 +127,18 @@ async function handler(req, res) {
           const u = await prisma.user.findUnique({ where: { id: user.id }, select: { preferences: true } });
           const prefs = u?.preferences || {};
           if (prefs && prefs.subscriptionPlan) {
-            delete prefs.subscriptionPlan;
-            delete prefs.subscriptionPrice;
-            await prisma.user.update({ where: { id: user.id }, data: { preferences: prefs } });
+            // Only remove prefs if there are no active subscriptions
+            const activeSubs = await prisma.subscription.findMany({
+              where: { 
+                userId: user.id,
+                status: { in: ['active', 'trialing'] }
+              }
+            });
+            if (activeSubs.length === 0) {
+              delete prefs.subscriptionPlan;
+              delete prefs.subscriptionPrice;
+              await prisma.user.update({ where: { id: user.id }, data: { preferences: prefs } });
+            }
           }
         } catch (prefErr) {
           logger.warn('failed_to_remove_subscription_pref', { userId: user.id, message: prefErr.message });

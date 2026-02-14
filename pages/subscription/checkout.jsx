@@ -9,45 +9,61 @@ export default function CheckoutPage() {
   const { status } = useSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const CHECKOUT_TIMEOUT = 30000; // 30 seconds
 
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login?redirect=/subscription/checkout');
+      router.push(`/login?redirect=/subscription/checkout?plan=${plan}`);
     }
-  }, [status, router]);
+  }, [status, plan, router]);
 
   // Fetch checkout URL and redirect
   useEffect(() => {
-    if (!plan || status !== 'authenticated') return;
+    // Don't proceed until plan is available from router query
+    if (!plan || status !== 'authenticated') {
+      if (status === 'authenticated' && !plan) {
+        // Router is ready but plan is missing
+        setError('Invalid plan parameter');
+        setLoading(false);
+      }
+      return;
+    }
 
     const startCheckout = async () => {
       try {
         setLoading(true);
-        
+        setError(null);
+
         if (!['career', 'notes', 'full', 'full_yearly'].includes(plan)) {
           setError(`Invalid plan: ${plan}`);
+          setLoading(false);
           return;
         }
 
-        const res = await fetch('/api/subscription/payment-intent', {
+        // Create timeout promise
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Checkout request timed out')), CHECKOUT_TIMEOUT)
+        );
+
+        const fetchPromise = fetch('/api/subscription/payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ plan })
-        });
+        }).then(res => res.json());
 
-        const data = await res.json();
-        console.log('Checkout response:', data);
-        
-        if (res.ok && data.data?.redirectUrl) {
+        const data = await Promise.race([fetchPromise, timeoutPromise]);
+
+        if (data?.ok && data.data?.redirectUrl) {
           // Redirect to Stripe checkout
           window.location.href = data.data.redirectUrl;
+          return;
         } else {
-          setError(data.error || 'Failed to start checkout');
+          setError(data?.error || 'Failed to start checkout');
         }
       } catch (err) {
         console.error('Error starting checkout:', err);
-        setError('Failed to start checkout');
+        setError(err.message || 'Failed to start checkout');
       } finally {
         setLoading(false);
       }
@@ -55,6 +71,20 @@ export default function CheckoutPage() {
 
     startCheckout();
   }, [plan, status]);
+
+  if (!plan) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#000', padding: '2rem' }}>
+        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ color: '#ff6b6b', marginBottom: '1rem' }}>Error</h2>
+          <p style={{ color: '#aaa', marginBottom: '2rem' }}>Invalid plan selected</p>
+          <Link href="/subscription/plans" style={{ color: '#8b7500', textDecoration: 'underline', fontWeight: '600' }}>
+            Back to Plans
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#000' }}>

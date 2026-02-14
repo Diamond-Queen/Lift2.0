@@ -1,5 +1,6 @@
 const stripe = require('../../../lib/stripe');
 const prisma = require('../../../lib/prisma');
+const { pool, findUserByEmail } = require('../../../lib/db');
 const { getServerSession } = require('next-auth/next');
 const logger = require('../../../lib/logger');
 const {
@@ -65,16 +66,72 @@ async function handler(req, res) {
       return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
     }
 
-    // Find the active subscription (accept active, trialing, or incomplete statuses)
+    // Find the most recent active subscription (accept active, trialing, or incomplete statuses)
+    // Order by creation date descending to get the newest one
     const subscription = prisma ? await prisma.subscription.findFirst({
       where: {
         userId: user.id,
         status: { in: ['active', 'trialing', 'incomplete', 'incomplete_expired', 'past_due'] }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     }) : null;
 
     if (!subscription) {
       return res.status(400).json({ ok: false, error: 'No active subscription found' });
+    }
+
+    // Check if there's a newer subscription (upgrade) - don't cancel if user has an upgrade
+    const newerSubscription = prisma ? await prisma.subscription.findFirst({
+      where: {
+        userId: user.id,
+        status: { in: ['active', 'trialing', 'incomplete', 'incomplete_expired', 'past_due'] },
+        createdAt: { gt: subscription.createdAt }
+      },
+      orderBy: { createdAt: 'desc' }
+    }) : null;
+
+    if (newerSubscription) {
+      // User has an upgraded subscription, don't remove their access
+      // Just mark the old subscription as canceled
+      logger.info('subscription_cancel_with_upgrade_exists', {
+        userId: user.id,
+        cancelingSubId: subscription.id,
+        keepingSubId: newerSubscription.id,
+        oldPlan: subscription.plan,
+        newPlan: newerSubscription.plan
+      });
+      auditLog('subscription_cancel_with_upgrade_exists', user.id, {
+        cancelingPlan: subscription.plan,
+        keepingPlan: newerSubscription.plan,
+        ip
+      });
+
+      // Just mark this old subscription as canceled
+      if (!subscription.stripeSubscriptionId || !stripe) {
+        if (prisma) {
+          await prisma.subscription.update({
+            where: { id: subscription.id },
+            data: { status: 'canceled' }
+          });
+        }
+      } else {
+        try {
+          await stripe.subscriptions.del(subscription.stripeSubscriptionId);
+        } catch (err) {
+          logger.warn('stripe_cancel_failed_on_old_plan', {
+            subscriptionId: subscription.stripeSubscriptionId,
+            message: err.message
+          });
+        }
+        if (prisma) {
+          await prisma.subscription.update({
+            where: { id: subscription.id },
+            data: { status: 'canceled' }
+          });
+        }
+      }
+
+      return res.json({ ok: true, message: 'Subscription canceled. Your upgraded plan remains active.', shouldLogout: false });
     }
 
     // If in dev mode or no Stripe customer ID, just mark as canceled

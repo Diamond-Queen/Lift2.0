@@ -234,9 +234,15 @@ export default function NotesUI() {
         setSelectedClassId(data.data.id);
         setNewClassName("");
         setNewClassColor("#8b7500");
+      } else {
+        const errorData = await res.json();
+        setUnlockFeature(errorData.error || 'Failed to create class');
+        setShowUnlockModal(true);
       }
     } catch (err) {
       console.error('Failed to create class:', err);
+      setUnlockFeature('Failed to create class');
+      setShowUnlockModal(true);
     } finally {
       setLoadingClasses(false);
     }
@@ -437,22 +443,46 @@ export default function NotesUI() {
 
   const extractTextFromPdf = async (file) => {
     const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
+    
+    // Worker setup with fallback chain:
+    // 1. Local worker (/public/pdf.worker.min.mjs) - copied during build
+    // 2. CDN fallback - if local fails
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    
     try {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = require('pdfjs-dist/build/pdf.worker.entry');
-    } catch (err) {
-      // Fallback to local worker copied into /public to avoid CDN 404/version mismatch
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let text = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item) => item.str).join(" ");
+        text += pageText + "\n\n";
+      }
+      return text.trim();
+    } catch (localErr) {
+      // If local worker fails, try CDN fallback
+      console.warn('Local PDF worker failed, trying CDN:', localErr.message);
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        let text = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items.map((item) => item.str).join(" ");
+          text += pageText + "\n\n";
+        }
+        return text.trim();
+      } catch (cdnErr) {
+        console.error('PDF processing failed (both local and CDN):', cdnErr);
+        throw new Error('PDF processing unavailable. Please try again later.');
+      }
     }
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item) => item.str).join(" ");
-      text += pageText + "\n\n";
-    }
-    return text.trim();
   };
 
   const handleFileChange = async (e) => {

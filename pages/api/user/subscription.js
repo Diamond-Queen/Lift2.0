@@ -50,11 +50,14 @@ async function handler(req, res) {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
 
+    // Accept any subscription status except 'canceled' or 'incomplete_expired'
+    // This includes: active, trialing, past_due, incomplete
     const subscription = await prisma.subscription.findFirst({
       where: {
         userId: user.id,
-        status: { in: ['active', 'trialing'] }
-      }
+        status: { notIn: ['canceled', 'incomplete_expired'] }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     if (!subscription) {

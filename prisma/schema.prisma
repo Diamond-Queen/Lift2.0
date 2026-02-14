@@ -94,10 +94,15 @@ model Subscription {
   plan                 String?
   schoolId             String?
   createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
   trialEndsAt          DateTime?
   userId               String?
+  upgradedFromId       String?   // Reference to previous subscription if this is an upgrade
+  upgradedAt           DateTime? // Timestamp of when upgrade occurred
   school               School?   @relation(fields: [schoolId], references: [id])
   user                 User?     @relation("UserSubscriptions", fields: [userId], references: [id])
+  upgradedFrom         Subscription? @relation("SubscriptionUpgrades", fields: [upgradedFromId], references: [id])
+  upgradedTo           Subscription[] @relation("SubscriptionUpgrades")
 }
 
 model Class {

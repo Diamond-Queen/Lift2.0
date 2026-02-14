@@ -1,18 +1,18 @@
-import prisma from '../../lib/prisma.js';
-import { getServerSession } from 'next-auth/next';
-import { findUserByEmail } from '../../lib/db.js';
-import logger from '../../lib/logger.js';
-import {
+const prisma = require('../../lib/prisma');
+const { getServerSession } = require('next-auth/next');
+const { findUserByEmail } = require('../../lib/db');
+const logger = require('../../lib/logger');
+const {
   setSecureHeaders,
   validateRequest,
   trackIpRateLimit,
   trackUserRateLimit,
   auditLog,
-} from '../../lib/security.js';
-import { extractClientIp } from '../../lib/ip.js';
+} = require('../../lib/security');
+const { extractClientIp } = require('../../lib/ip');
 const { authOptions } = require('../../lib/authOptions');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   setSecureHeaders(res);
   const ip = extractClientIp(req);
   const validation = validateRequest(req);
@@ -37,9 +37,18 @@ export default async function handler(req, res) {
 
   try {
     const user = prisma
-      ? await prisma.user.findUnique({ 
-          where: { email: session.user.email }, 
-          include: { school: true, subscriptions: { orderBy: { createdAt: 'desc' }, take: 1 }, betaTester: true } 
+      ? await prisma.user.findUnique({
+          where: { email: session.user.email },
+          include: {
+            school: true,
+            // Get active subscriptions only, ordered by most recent first
+            subscriptions: {
+              where: { status: { in: ['active', 'trialing'] } },
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            },
+            betaTester: true
+          }
         })
       : await findUserByEmail(session.user.email);
     if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
@@ -52,3 +61,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: 'Server error' });
   }
 }
+
+module.exports = handler;

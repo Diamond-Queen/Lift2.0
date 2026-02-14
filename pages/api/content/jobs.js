@@ -45,15 +45,10 @@ async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       // List all jobs for user
-      const jobs = prisma
-        ? await prisma.job.findMany({
+      const jobs = await prisma.job.findMany({
             where: { userId },
             orderBy: { createdAt: 'desc' }
-          })
-        : (await pool.query(
-            'SELECT id, title, company, "createdAt", "updatedAt" FROM "Job" WHERE "userId" = $1 ORDER BY "createdAt" DESC',
-            [userId]
-          )).rows;
+          });
 
       return res.json({ ok: true, data: jobs });
     }

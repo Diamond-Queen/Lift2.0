@@ -62,39 +62,95 @@ export default function Career() {
   // Reset template when type changes
   useEffect(() => {
     if (type === "resume") {
-      setSelectedTemplateId("professional");
-      setFormatTemplate(`Professional Resume Format:
-- Contact info at top (Name, Email, Phone, Address)
+      const templates = {
+        professional: `Professional Resume:
+- Traditional, corporate-friendly formatting
+- Clear structure and professional language
+- Contact info at top, clear sections, numbered experience
 - Professional Summary: 2-3 sentences
-- Experience: Job Title | Company | Dates on one line, bullet points for details
+- Experience: Job Title | Company | Dates
 - Education: Degree, School (Year)
-- Skills: Comma-separated list
-- Certifications: List format`);
+- Skills: Organized by category`,
+        modern: `Modern Resume:
+- Contemporary design elements
+- Creative achievements and impact highlighted
+- Brief, punchy professional profile
+- Mix of traditional and visual elements
+- Emphasis on results and innovation
+- Eye-catching formatting while staying professional`,
+        technical: `Technical Resume:
+- Technical skills prominently displayed
+- Technologies, frameworks, tools listed clearly
+- Focus on quantifiable technical achievements
+- Project highlights with tech stack
+- Relevant certifications and continuous learning
+- Performance metrics and system improvements`,
+        minimalist: `Minimalist Resume:
+- Simple and focused design
+- Ample white space throughout
+- Only most relevant information included
+- Avoid unnecessary details and fluff
+- Clean typography and minimal formatting
+- Emphasis on clarity over decoration`,
+        executive: `Executive Resume:
+- Leadership and strategic impact highlighted
+- Business metrics and quantifiable results
+- Senior-level achievements emphasized
+- Concise executive profile/summary
+- Board involvement and strategic initiatives
+- High-level business outcomes`,
+        creative: `Creative Resume:
+- Creative flair and unique presentation
+- Awards, exhibitions, or portfolio work featured
+- Engaging and compelling language
+- Design-forward presentation
+- Personality and voice shine through
+- Showcase of creative accomplishments`
+      };
+      setSelectedTemplateId(resumeTemplate);
+      setFormatTemplate(templates[resumeTemplate] || templates.professional);
     } else {
-      setSelectedTemplateId("formal");
-      setFormatTemplate(`Formal Cover Letter:
-[Your Name]
-[Address]
-[City, State ZIP]
-[Email] | [Phone]
-
-[Date]
-
-[Recipient Name]
-[Title]
-[Company]
-[Address]
-
-Dear [Recipient],
-
-[Opening paragraph: Express interest, mention position]
-[Body paragraph: Highlight relevant skills and experience]
-[Closing: Express enthusiasm, call to action]
-
-Sincerely,
-[Your Name]`);
+      const templates = {
+        formal: `Formal Cover Letter:
+- Traditional business letter format
+- Proper letterhead and structure
+- Formal, respectful tone throughout
+- Clear opening, body, closing structure
+- Dates and recipient address included
+- Professional salutation and sign-off`,
+        modern: `Modern Cover Letter:
+- Contemporary formatting approach
+- Concise, punchy paragraphs
+- Professional while showing personality
+- Fresh, engaging language
+- Clear but creative structure
+- Balance of professionalism and authenticity`,
+        creative: `Creative Cover Letter:
+- Show personality and unique voice
+- Compelling storytelling and narrative
+- Creative risks appropriate for creative roles
+- Engaging reader from the start
+- Memorable and distinctive approach
+- Authentic personal brand expression`,
+        brief: `Brief Cover Letter:
+- Short and to the point
+- Limit to 3-4 short paragraphs
+- Focus on why you're a perfect fit
+- Quick, scannable format
+- Essential information only
+- Respect reader's time`,
+        narrative: `Narrative Cover Letter:
+- Tell your career story
+- Use narrative structure and flow
+- Connect past experiences to future opportunity
+- Show career progression and growth
+- Compelling personal journey
+- Demonstrate how past leads to this role`
+      };
+      setSelectedTemplateId(coverLetterTemplate);
+      setFormatTemplate(templates[coverLetterTemplate] || templates.formal);
     }
-  }, [type]);
+  }, [type, resumeTemplate, coverLetterTemplate]);
 
   // Fetch user preferences on mount only (removed slow polling)
   useEffect(() => {
@@ -264,6 +320,9 @@ Sincerely,
         setShowJobForm(false);
         setError("✓ Job created!");
         setTimeout(() => setError(""), 2000);
+      } else {
+        const errorData = await res.json();
+        setError(errorData.error || 'Failed to create job');
       }
     } catch (err) {
       setError('Failed to create job');
@@ -1067,7 +1126,54 @@ export async function getServerSideProps(context) {
     );
 
     const beta = user.betaTester;
-    const betaActive = Boolean(beta && beta.status === 'active' && new Date(beta.trialEndsAt) > new Date());
+    
+    // RECOVERY: If beta is marked 'pending' but user has actually paid, auto-fix status
+    if (beta && beta.status === 'pending') {
+      const stripe = require('../lib/stripe');
+      let shouldAutoActivate = false;
+      
+      if (stripe) {
+        try {
+          const paymentIntents = await stripe.paymentIntents.list({
+            limit: 100,
+            metadata: {
+              userId: user.id,
+              betaTesterId: beta.id
+            }
+          });
+          
+          shouldAutoActivate = paymentIntents.data.some(pi => 
+            pi.status === 'succeeded' || pi.status === 'processing'
+          );
+        } catch (e) {
+          console.warn('Failed to check Stripe for beta recovery:', e.message);
+        }
+      }
+      
+      if (shouldAutoActivate) {
+        await prisma.betaTester.update({
+          where: { id: beta.id },
+          data: { status: 'active' }
+        }).catch(e => console.warn('Failed to auto-recover beta status:', e.message));
+        
+        // Fetch updated beta data
+        const updatedBeta = await prisma.betaTester.findUnique({
+          where: { id: beta.id }
+        });
+        
+        if (updatedBeta) {
+          Object.assign(beta, updatedBeta);
+        }
+      }
+    }
+    
+    // Beta access requires: active status, valid trial period, and confirmed payment
+    const betaActive = Boolean(
+      beta &&
+      beta.status === 'active' &&
+      new Date(beta.trialEndsAt) > new Date() &&
+      beta.id // ID exists only if payment was successfully processed via webhook
+    );
     
     // School code members get instant access
     const hasSchoolAccess = Boolean(user.schoolId);

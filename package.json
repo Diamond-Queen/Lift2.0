@@ -7,6 +7,12 @@
     "postinstall": "prisma generate && node ./scripts/patch_prisma_dev.js && node ./scripts/copy_pdf_worker.js || true",
     "sync:codes": "node ./scripts/sync_school_codes.js",
     "test": "jest",
+    "test:unit": "jest tests/unit --coverage",
+    "test:integration": "jest tests/integration",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --collectCoverageFrom=\"lib/**/*.{ts,js}\" --collectCoverageFrom=\"pages/**/*.{ts,tsx,js,jsx}\"",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "test:full": "npm run build && npm run test:coverage",
     "test:browsers": "playwright test",
     "test:cross-platform": "npm run build && npm run test:browsers",
     "test:e2e": "playwright test --ui"
@@ -14,6 +20,7 @@
   "devDependencies": {
     "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "4.1.18",
+    "@types/jest": "^30.0.0",
     "@types/node": "25.0.3",
     "autoprefixer": "10.4.23",
     "browserslist": "^4.28.1",

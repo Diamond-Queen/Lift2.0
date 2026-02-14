@@ -30,8 +30,15 @@ async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user?.email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
 
+  if (!prisma) {
+    return res.status(503).json({ ok: false, error: 'Database unavailable' });
+  }
+
   const user = prisma
-    ? await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
+    ? await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true }
+    })
     : await findUserByEmail(session.user.email);
   if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
 
@@ -46,15 +53,10 @@ async function handler(req, res) {
     if (req.method === 'GET') {
       // List all classes for user - filter by type if specified in query
       const classType = req.query.type || 'class'; // Default to 'class' unless specified as 'job'
-      const classes = prisma
-        ? await prisma.class.findMany({
+      const classes = await prisma.class.findMany({
             where: { userId, type: classType },
             orderBy: { createdAt: 'desc' }
-          })
-        : (await pool.query(
-            'SELECT id, name, color, type, "createdAt", "updatedAt" FROM "Class" WHERE "userId" = $1 AND type = $2 ORDER BY "createdAt" DESC',
-            [userId, classType]
-          )).rows;
+          });
 
       return res.json({ ok: true, data: classes });
     }
@@ -103,7 +105,7 @@ async function handler(req, res) {
             if (classCount >= 4) {
               return res.status(403).json({ 
                 ok: false, 
-                error: 'You have reached the 4 class limit on your current plan. Upgrade to Full Access for unlimited classes.' 
+                error: 'Upgrade for unlimited classes' 
               });
             }
           }
@@ -114,7 +116,7 @@ async function handler(req, res) {
             if (jobCount >= 4) {
               return res.status(403).json({ 
                 ok: false, 
-                error: 'You have reached the 4 job limit on your current plan. Upgrade to Full Access for unlimited jobs.' 
+                error: 'Upgrade for unlimited jobs' 
               });
             }
           }

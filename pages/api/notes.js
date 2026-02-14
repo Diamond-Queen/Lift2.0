@@ -46,7 +46,7 @@ async function handler(req, res) {
           where: { id: session.user.id },
           select: { 
             schoolId: true,
-            subscriptions: { where: { status: { in: ['active', 'trialing'] } } }
+            subscriptions: { where: { status: { in: ['active'] } } }
           }
         });
         
@@ -70,6 +70,7 @@ async function handler(req, res) {
     // Load user preferences for AI tone and note preferences (if authenticated) - USE CACHE FIRST
     let summaryLength = 'medium'; // short, medium, long
     let flashcardDifficulty = 'medium'; // easy, medium, hard
+    let quizDifficulty = 'medium'; // easy, medium, hard
     try {
       const { authOptions } = require('../../lib/authOptions');
       const session = await getServerSession(req, res, authOptions);
@@ -79,14 +80,14 @@ async function handler(req, res) {
         let userPrefs = cache.get(cacheKey);
         
         if (!userPrefs) {
-          // Cache miss - fetch from DB
+          // Cache miss - fetch from DB (Prisma primary, pool fallback)
           if (prisma) {
             const user = await prisma.user.findUnique({ 
               where: { id: session.user.id }, 
               select: { preferences: true } 
             });
             userPrefs = user?.preferences;
-          } else {
+          } else if (pool) {
             const { rows } = await pool.query('SELECT preferences FROM "User" WHERE id = $1', [session.user.id]);
             userPrefs = rows[0]?.preferences;
           }
@@ -96,13 +97,14 @@ async function handler(req, res) {
         
         summaryLength = userPrefs?.summaryLength || 'medium';
         flashcardDifficulty = userPrefs?.flashcardDifficulty || 'medium';
+        quizDifficulty = userPrefs?.quizDifficulty || 'medium';
       }
     } catch (err) {
       // If preference load fails, continue with defaults
       logger.error('Failed to load notes preferences', { error: err.message });
     }
 
-    const { notes, includeQuiz, quizDifficulty = 'medium' } = req.body;
+    const { notes, includeQuiz } = req.body;
     if (!notes || !notes.trim()) return res.status(400).json({ error: "Notes required" });
     if (notes.length > 1000000) return res.status(413).json({ error: 'Notes too long (max 1,000,000 characters)' });
 
@@ -111,36 +113,52 @@ async function handler(req, res) {
       setTimeout(() => reject(new Error('Generation timed out. Try shorter notes.')), 10000)
     );
 
-    // Adjust summary prompt based on user preference
+    // Adjust summary prompt based on user preference (difficulty + length)
     const summaryLengthMap = {
-      'short': 'in 1-2 concise sentences',
-      'medium': 'in 1 paragraph',
-      'long': 'in 2-3 paragraphs'
+      'short': 'in 1-2 concise sentences focusing on the most critical concepts',
+      'medium': 'in 1 paragraph covering main ideas and key relationships',
+      'long': 'in 2-3 paragraphs with supporting details and examples'
     };
     const summaryInstruction = summaryLengthMap[summaryLength] || summaryLengthMap['medium'];
 
     const summaryPromise = generateCompletion({
-      prompt: `You are an expert educator. Take the following notes and ELABORATE on them ${summaryInstruction}. Do not just repeat or condense - EXPAND with detailed explanations, real-world examples, context, and deeper insights. Add valuable information that helps truly understand the concepts:\n\n${notes}`,
-      temperature: 0.8,
+      prompt: `You are an expert educator. Analyze the following notes and create a focused study summary ${summaryInstruction}.
+
+IMPORTANT: 
+1. FIRST identify the core concepts and main ideas - these are your priority.
+2. Filter out unnecessary details, tangents, or redundant information.
+3. Include relevant examples ONLY if they directly support understanding key concepts.
+4. Organize by importance: fundamental concepts first, then supporting details.
+5. If there is fluff or off-topic content in the notes, deprioritize or skip it.
+
+Notes to summarize:
+${notes}`,
+      temperature: 0.7,
       type: 'text',
       context: { type: 'summary', notes, summaryLength }
     });
 
     // Adjust flashcard prompt based on difficulty preference
     const flashcardDifficultyMap = {
-      'easy': 'Create straightforward flashcards covering basic concepts and definitions.',
-      'medium': 'Create flashcards with balanced complexity covering key concepts.',
-      'hard': 'Create challenging flashcards that test deep understanding and application.'
+      'easy': 'Create straightforward flashcards covering fundamental definitions and basic concepts. Each answer should be 1-2 sentences. Focus on foundational knowledge that must be memorized.',
+      'medium': 'Create balanced flashcards testing understanding of concepts and their relationships. Include some application questions. Answers can be 2-3 sentences with brief explanations.',
+      'hard': 'Create challenging flashcards that test deep understanding, application, and synthesis. Include multi-part questions and scenario-based problems. Answers should explain reasoning and consequences.'
     };
     const flashcardInstruction = flashcardDifficultyMap[flashcardDifficulty] || flashcardDifficultyMap['medium'];
 
     const flashcardsPromise = generateCompletion({
-      prompt: `TASK: Generate study flashcards in JSON format. ${flashcardInstruction} Generate between 8-16 flashcards: aim for 10-14 cards for most content, minimum 8 and maximum 16. CRITICAL: Return ONLY this JSON structure, nothing else - no explanation, no markdown, just pure JSON:
+      prompt: `TASK: Generate study flashcards in JSON format. ${flashcardInstruction}
+
+CRITICAL REQUIREMENTS:
+1. Focus on essential concepts - filter out unnecessary or tangential information.
+2. Generate between 8-16 flashcards (aim for 10-14 cards for most content).
+3. Order cards from most important to least important concepts.
+4. Each question should be clear and specific.
+5. Return ONLY this JSON structure, nothing else - no explanation, no markdown:
 [{"question":"...","answer":"..."}]
 
-Generate flashcards from this content:
+Content to create flashcards from:
 ${notes}`,
-      // For short notes, be more lenient with token limits
       maxTokens: notes.length < 100 ? 500 : 1500,
       type: 'json',
       context: { type: 'flashcards', notes, flashcardDifficulty }
@@ -148,31 +166,33 @@ ${notes}`,
 
     // Optional: generate practice quiz questions (problems + answers)
     const quizDifficultyMap = {
-      easy: 'Use straightforward, single-step problems suitable for quick practice. Avoid multi-step solutions.',
-      medium: 'Include a balanced mix of single- and multi-step problems that require some reasoning.',
-      hard: 'Create challenging, multi-step problems that require deeper reasoning and show key solution steps.'
+      easy: 'Create straightforward, single-step practice problems testing basic recall and simple application. Keep answers concise.',
+      medium: 'Create balanced problems combining recall with application. Include some multi-step reasoning. Provide brief solution explanations.',
+      hard: 'Create challenging problems requiring deep analysis and multi-step reasoning. Include scenario-based questions. Show detailed solution steps.'
     };
     const difficultyInstruction = quizDifficultyMap[quizDifficulty] || quizDifficultyMap['medium'];
 
     const quizPromise = includeQuiz ? generateCompletion({
-      prompt: `TASK: Generate a set of multiple-choice practice problems based on the following notes. ${difficultyInstruction} Output MUST be a JSON array ONLY (no explanation, no titles, no markdown). Each item must be an object with these keys: 
-- "question": string (clear problem statement, include units when relevant),
-- "options": array of 3-5 distinct string choices (plausible distractors specific to the subject),
-- "correctOption": single uppercase letter ("A","B","C", etc.) pointing to the correct option,
-- optionally "solution": brief worked solution or key steps.
+      prompt: `TASK: Generate multiple-choice practice problems based on the notes. ${difficultyInstruction}
 
-Example:
-[{"question":"Compute sin(30°)","options":["0","1/2","\u221A3/2"],"correctOption":"B","solution":"sin(30)=1/2"}]
+CRITICAL REQUIREMENTS:
+1. Focus on essential concepts covered in the notes - ignore tangential information.
+2. Aim for 6-12 problems that test core understanding.
+3. Return ONLY a JSON array, no other text.
+4. Each problem must have: "question", "options" (3-5 choices), "correctOption" (letter), and optional "solution".
 
-Requirements:
-- Aim for 6-12 problems, varied difficulty levels.
-- Create plausible subject-specific distractors (avoid "None of the above" unless clearly useful).
-- For numeric problems include units, show numeric formatting (fractions, radicals, decimals) as appropriate.
-- Avoid ambiguous phrasing and avoid including multiple correct answers.
-- If the notes cover multiple topics, include a representative mix of problems across those topics.
-- Do NOT include any additional text before or after the JSON array.
+Example format:
+[{"question":"What is X?","options":["Option A","Option B","Option C"],"correctOption":"B","solution":"Explanation of why B is correct"}]
 
-Notes:\n\n${notes}`,
+Important:
+- Create plausible subject-specific distractors.
+- For numeric problems include units.
+- Avoid ambiguous questions and multiple correct answers.
+- Order by importance: most essential concepts first.
+- Do NOT add any text before or after the JSON array.
+
+Notes to create problems from:
+${notes}`,
       maxTokens: 2200,
       type: 'json',
       context: { type: 'quiz', notes, quizDifficulty }

@@ -68,18 +68,25 @@ export default function SubscriptionPlans() {
         });
         const data = await res.json();
         if (res.ok && data.data?.redirectUrl) {
+          // Redirect to Stripe checkout for upgrade
           window.location.href = data.data.redirectUrl;
         } else {
           setError(data.error || 'Failed to upgrade plan');
           setLoading(false);
           setSelectedPlan(null);
         }
-      } else {
-        // New subscription
+      } else if (!userPlan) {
+        // New subscription - redirect to checkout page
         await router.push(`/subscription/checkout?plan=${planId}`);
+      } else {
+        // User already has this plan
+        setError('You already have this plan');
+        setLoading(false);
+        setSelectedPlan(null);
       }
     } catch (err) {
-      setError(err.message || 'An error occurred');
+      console.error('Checkout error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
       setLoading(false);
       setSelectedPlan(null);
     }

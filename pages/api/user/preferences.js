@@ -34,6 +34,8 @@ async function handler(req, res) {
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
+  let userId = null;
+  
   try {
     let authOptions;
     try {
@@ -47,7 +49,7 @@ async function handler(req, res) {
     const session = await getServerSession(req, res, authOptions);
     if (!session || !session.user?.id) return res.status(401).json({ error: 'Unauthorized' });
 
-    const userId = session.user.id;
+    userId = session.user.id;
     const userLimit = trackUserRateLimit(userId, '/api/user/preferences');
     if (!userLimit.allowed) {
       auditLog('preferences_rate_limited_user', userId, { ip });
@@ -55,13 +57,10 @@ async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      if (prisma) {
-        const user = await prisma.user.findUnique({ where: { id: userId }, select: { formatTemplate: true, preferences: true } });
-        return res.json({ data: user });
-      } else {
-        const { rows } = await pool.query('SELECT "formatTemplate", preferences FROM "User" WHERE id = $1', [userId]);
-        return res.json({ data: rows[0] || {} });
-      }
+      const user = prisma
+        ? await prisma.user.findUnique({ where: { id: userId }, select: { formatTemplate: true, preferences: true } })
+        : (await pool.query('SELECT "formatTemplate", preferences FROM "User" WHERE id = $1', [userId])).rows[0];
+      return res.json({ data: user });
     }
 
     if (req.method === 'PUT' || req.method === 'POST') {
@@ -83,38 +82,15 @@ async function handler(req, res) {
       }
       if (Object.keys(data).length === 0) return res.status(400).json({ ok: false, error: 'No valid fields provided' });
       
-      if (prisma) {
-        // Merge preferences instead of overwriting to preserve subscriptionPlan
-        if ('preferences' in data) {
-          const existing = await prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } });
-          const currentPrefs = existing?.preferences || {};
-          data.preferences = { ...currentPrefs, ...data.preferences };
-        }
-        const updated = await prisma.user.update({ where: { id: userId }, data });
-        const { password, ...safe } = updated;
-        return res.json({ ok: true, data: safe });
-      } else {
-        const fields = [];
-        const values = [];
-        let i = 1;
-        if ('formatTemplate' in data) {
-          fields.push(`"formatTemplate" = $${i++}`);
-          values.push(data.formatTemplate);
-        }
-        if ('preferences' in data) {
-          // Merge JSONB in Postgres: preferences = COALESCE(preferences,'{}'::jsonb) || $jsonb
-          fields.push(`preferences = COALESCE(preferences,'{}'::jsonb) || $${i}::jsonb`);
-          values.push(JSON.stringify(data.preferences));
-          i++;
-        }
-        values.push(userId);
-        const { rows } = await pool.query(
-          `UPDATE "User" SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
-          values
-        );
-        const { password, ...safe } = rows[0];
-        return res.json({ ok: true, data: safe });
+      // Merge preferences instead of overwriting to preserve subscriptionPlan
+      if ('preferences' in data) {
+        const existing = await prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } });
+        const currentPrefs = existing?.preferences || {};
+        data.preferences = { ...currentPrefs, ...data.preferences };
       }
+      const updated = await prisma.user.update({ where: { id: userId }, data });
+      const { password, ...safe } = updated;
+      return res.json({ ok: true, data: safe });
     }
 
     res.setHeader('Allow', 'GET, PUT, POST');

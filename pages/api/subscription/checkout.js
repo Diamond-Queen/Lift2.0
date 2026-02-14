@@ -117,8 +117,7 @@ async function handler(req, res) {
     if (devMode) {
       const trialEnds = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       try {
-        if (prisma) {
-          // Use upsert to avoid duplicate subscription errors
+        // Use upsert to avoid duplicate subscription errors
           // For dev mode, we use a fake customer ID based on user ID
           const devCustomerId = `dev_cus_${user.id}`;
           
@@ -141,13 +140,6 @@ async function handler(req, res) {
               trialEndsAt: trialEnds
             }
           });
-        } else if (pool) {
-          // Fallback SQL if Prisma unavailable
-          await pool.query(
-            'INSERT INTO "Subscription" (id, "userId", plan, status, "trialEndsAt", "createdAt") VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())',
-            [user.id, plan, 'pending', trialEnds]
-          );
-        }
       } catch (e) {
         logger.error('dev_checkout_activation_failed', { message: e.message });
         return res.status(500).json({ ok: false, error: 'Failed to activate trial (dev mode)' });

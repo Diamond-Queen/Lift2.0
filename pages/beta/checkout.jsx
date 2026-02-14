@@ -9,45 +9,61 @@ export default function BetaCheckoutPage() {
   const { status } = useSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const CHECKOUT_TIMEOUT = 30000; // 30 seconds
 
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login?redirect=/beta/checkout');
+      router.push(`/login?redirect=/beta/checkout?trialType=${trialType}`);
     }
-  }, [status, router]);
+  }, [status, trialType, router]);
 
   // Fetch checkout URL and redirect
   useEffect(() => {
-    if (!trialType || status !== 'authenticated') return;
+    // Don't proceed until trialType is available from router query
+    if (!trialType || status !== 'authenticated') {
+      if (status === 'authenticated' && !trialType) {
+        // Router is ready but trialType is missing
+        setError('Invalid trial type');
+        setLoading(false);
+      }
+      return;
+    }
 
     const startCheckout = async () => {
       try {
         setLoading(true);
-        
+        setError(null);
+
         if (!['school', 'social'].includes(trialType)) {
           setError('Invalid trial type');
+          setLoading(false);
           return;
         }
 
-        const res = await fetch('/api/beta/payment-intent', {
+        // Create timeout promise
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Checkout request timed out')), CHECKOUT_TIMEOUT)
+        );
+
+        const fetchPromise = fetch('/api/beta/payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ trialType })
-        });
+        }).then(res => res.json());
 
-        const data = await res.json();
-        console.log('Checkout response:', data);
-        
-        if (res.ok && data.data?.redirectUrl) {
+        const data = await Promise.race([fetchPromise, timeoutPromise]);
+
+        if (data?.ok && data.data?.redirectUrl) {
           // Redirect to Stripe checkout
           window.location.href = data.data.redirectUrl;
+          return;
         } else {
-          setError(data.error || 'Failed to start checkout');
+          setError(data?.error || 'Failed to start checkout');
         }
       } catch (err) {
         console.error('Error starting checkout:', err);
-        setError('Failed to start checkout');
+        setError(err.message || 'Failed to start checkout');
       } finally {
         setLoading(false);
       }
@@ -55,6 +71,20 @@ export default function BetaCheckoutPage() {
 
     startCheckout();
   }, [trialType, status]);
+
+  if (!trialType) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#000', padding: '2rem' }}>
+        <div style={{ maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ color: '#ff6b6b', marginBottom: '1rem' }}>Error</h2>
+          <p style={{ color: '#aaa', marginBottom: '2rem' }}>Invalid trial type</p>
+          <Link href="/beta-signup" style={{ color: '#8b7500', textDecoration: 'underline', fontWeight: '600' }}>
+            Back to Beta Signup
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#000' }}>

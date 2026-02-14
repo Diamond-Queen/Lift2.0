@@ -18,8 +18,8 @@ export default function Subscription() {
   const [loading, setLoading] = useState(false);
 
   const planDetails = {
-    career: { name: 'Career Only', price: 7, features: ['Lift Career', 'Resume builder', 'Cover letter generator'] },
-    full: { name: 'Full Access', price: 10, features: ['Lift Career', 'Lift Notes', 'AI study notes', 'Resume & cover letters'] }
+    career: { name: 'Career Only', price: 9, features: ['Lift Career', 'Resume builder', 'Cover letter generator'] },
+    full: { name: 'Full Access', price: 12, features: ['Lift Career', 'Lift Notes', 'AI study notes', 'Resume & cover letters'] }
   };
 
   const currentPlan = planDetails[plan] || planDetails.full;
@@ -65,11 +65,11 @@ export default function Subscription() {
         return;
       }
 
-      // Success - show Done button to go to dashboard
+      // Success - subscription created
       setLoading(false);
       setError('');
       setFormData({ ...formData });
-      alert('Free trial started! You can finish setup and go to your dashboard.');
+      alert('Subscription confirmed! Your account is now active.');
       // Optional: auto-redirect after short delay
       // setTimeout(() => router.push('/dashboard'), 500);
     } catch (err) {

@@ -1,6 +1,6 @@
 const prisma = require('../../../lib/prisma');
+const { pool } = require('../../../lib/db');
 const { getServerSession } = require('next-auth/next');
-const { pool, findUserByEmail } = require('../../../lib/db');
 const logger = require('../../../lib/logger');
 const {
   setSecureHeaders,
