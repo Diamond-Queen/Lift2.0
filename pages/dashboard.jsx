@@ -442,7 +442,7 @@ export default function Dashboard() {
               Career is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($12/month) or Career Only ($9/month)
+              Upgrade to Full Access ($12/month or $35/year) or Career Only ($9/month)
             </Link>
           </div>
         )}
