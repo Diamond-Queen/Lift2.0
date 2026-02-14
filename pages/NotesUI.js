@@ -670,21 +670,24 @@ export default function NotesUI() {
                   0.85 // 85% quality - good balance between size and quality
                 );
               } catch (err) {
-                reject(new Error('Failed to process image: ' + err.message));
+                const msg = err && err.message ? err.message : String(err);
+                reject(new Error('Failed to process image: ' + msg));
               }
             };
 
             img.onerror = () => reject(new Error('Failed to load image data'));
             img.src = result;
           } catch (err) {
-            reject(new Error('Failed to read file: ' + err.message));
+            const msg = err && err.message ? err.message : String(err);
+            reject(new Error('Failed to read file: ' + msg));
           }
         };
 
         reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(file);
       } catch (err) {
-        reject(new Error('Compression failed: ' + err.message));
+        const msg = err && err.message ? err.message : String(err);
+        reject(new Error('Compression failed: ' + msg));
       }
     });
   };
@@ -808,7 +811,13 @@ export default function NotesUI() {
       setLoading(false);
     } catch (err) {
       console.error('Upload Error:', err);
-      setError('Failed to prepare image: ' + (err.message || 'Unknown error'));
+      let errorMsg = 'Unknown error';
+      if (err && typeof err === 'object') {
+        errorMsg = err.message || String(err) || 'Unknown error';
+      } else if (typeof err === 'string') {
+        errorMsg = err;
+      }
+      setError('Failed to prepare image: ' + errorMsg);
       setLoading(false);
     }
   };
