@@ -626,49 +626,59 @@ export default function NotesUI() {
         const reader = new FileReader();
 
         reader.onload = (event) => {
-          const img = new Image();
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-
-          img.onload = () => {
-            try {
-              // Scale down to max 1920px width while maintaining aspect ratio
-              let width = img.width;
-              let height = img.height;
-              const maxWidth = 1920;
-
-              if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
-              }
-
-              canvas.width = width;
-              canvas.height = height;
-              
-              ctx.drawImage(img, 0, 0, width, height);
-
-              canvas.toBlob(
-                (blob) => {
-                  if (blob) {
-                    // If original was very large, let user know it was optimized
-                    if (file.size > 5000000) { // > 5MB
-                      console.log(` Photo optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
-                    }
-                    resolve(blob);
-                  } else {
-                    reject(new Error('Failed to compress image'));
-                  }
-                },
-                'image/jpeg', // Always use JPEG for better compatibility
-                0.85 // 85% quality - good balance between size and quality
-              );
-            } catch (err) {
-              reject(new Error('Failed to process image: ' + err.message));
+          try {
+            const result = event?.target?.result;
+            if (!result) {
+              reject(new Error('Failed to read file - no data returned'));
+              return;
             }
-          };
 
-          img.onerror = () => reject(new Error('Failed to load image data'));
-          img.src = event.target.result;
+            const img = new Image();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            img.onload = () => {
+              try {
+                // Scale down to max 1920px width while maintaining aspect ratio
+                let width = img.width;
+                let height = img.height;
+                const maxWidth = 1920;
+
+                if (width > maxWidth) {
+                  height = (height * maxWidth) / width;
+                  width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(
+                  (blob) => {
+                    if (blob) {
+                      // If original was very large, let user know it was optimized
+                      if (file.size > 5000000) { // > 5MB
+                        console.log(` Photo optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(blob.size / 1024 / 1024).toFixed(1)}MB`);
+                      }
+                      resolve(blob);
+                    } else {
+                      reject(new Error('Failed to compress image'));
+                    }
+                  },
+                  'image/jpeg', // Always use JPEG for better compatibility
+                  0.85 // 85% quality - good balance between size and quality
+                );
+              } catch (err) {
+                reject(new Error('Failed to process image: ' + err.message));
+              }
+            };
+
+            img.onerror = () => reject(new Error('Failed to load image data'));
+            img.src = result;
+          } catch (err) {
+            reject(new Error('Failed to read file: ' + err.message));
+          }
         };
 
         reader.onerror = () => reject(new Error('Failed to read file'));
