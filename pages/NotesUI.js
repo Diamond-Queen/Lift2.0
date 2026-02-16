@@ -656,31 +656,29 @@ export default function NotesUI() {
           throw new Error('Tesseract returned no text, trying fallback...');
         }
       } catch (tesseractErr) {
-        // Fallback to OCR.Space API (free, no auth required)
+        // Fallback to OCR.Space API via backend proxy (no CORS issues)
         console.warn('[OCR] Tesseract failed, trying OCR.Space:', tesseractErr.message);
         setError(' Tesseract slow, using OCR.Space fallback... (10-20 seconds)');
         
         try {
-          const formData = new FormData();
-          formData.append('filename', 'image.jpg');
-          formData.append('isOverlayRequired', false);
-          formData.append('apikey', 'K87899142372222'); // OCR.Space free tier key
-          formData.append('language', 'eng');
-          formData.append('base64Image', `data:image/jpeg;base64,${await blobToBase64(file)}`);
-
-          const ocrRes = await fetch('https://api.ocr.space/parse', {
+          const base64Data = await blobToBase64(file);
+          const ocrRes = await fetch('/api/ocr', {
             method: 'POST',
-            body: formData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              base64Image: `data:image/jpeg;base64,${base64Data}`,
+              filename: 'image.jpg',
+            }),
           });
 
           if (!ocrRes.ok) {
-            throw new Error('OCR.Space API error: ' + ocrRes.statusText);
+            throw new Error('OCR API error: ' + ocrRes.statusText);
           }
 
           const ocrData = await ocrRes.json();
           
-          if (ocrData.IsErroredOnProcessing) {
-            throw new Error(ocrData.ErrorMessage || 'OCR.Space processing failed');
+          if (ocrData.error) {
+            throw new Error(ocrData.error);
           }
 
           extractedText = (ocrData.ParsedText || '').trim();
