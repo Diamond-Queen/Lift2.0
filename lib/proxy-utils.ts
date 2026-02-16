@@ -76,10 +76,10 @@ export function createSecureResponse(
     'camera=(), microphone=(), geolocation=(), magnetometer=(), gyroscope=()'
   );
   
-  // Content Security Policy (customizable per route if needed)
+  // Content Security Policy (allow Google Fonts, Tesseract worker, OCR APIs, Stripe)
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-src https://js.stripe.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: https://api.ocr.space; worker-src 'self' blob:; frame-src https://js.stripe.com;"
   );
 
   return response;

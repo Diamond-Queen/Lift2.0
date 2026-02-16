@@ -728,7 +728,8 @@ export default function NotesUI() {
       setLoading(false);
     } catch (err) {
       console.error('Upload Error:', err);
-      setError('Image upload failed. Try a different photo.');
+      const errorMsg = err?.message || String(err) || 'Unknown error';
+      setError (`Image upload failed: ${errorMsg}. Try a different photo.`);
       setLoading(false);
     }
   };
