@@ -116,7 +116,7 @@ async function handler(req, res) {
         }
       } else {
         try {
-          await stripe.subscriptions.del(subscription.stripeSubscriptionId);
+          await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
         } catch (err) {
           logger.warn('stripe_cancel_failed_on_old_plan', {
             subscriptionId: subscription.stripeSubscriptionId,
@@ -147,17 +147,17 @@ async function handler(req, res) {
     }
 
     // Verify stripe is properly initialized
-    if (typeof stripe.subscriptions?.del !== 'function') {
+    if (typeof stripe.subscriptions?.cancel !== 'function') {
       logger.error('stripe_client_invalid', {
         type: typeof stripe,
         hasSubscriptions: !!stripe.subscriptions,
-        hasDel: !!stripe.subscriptions?.del
+        hasCancel: !!stripe.subscriptions?.cancel
       });
       return res.status(503).json({ ok: false, error: 'Stripe service temporarily unavailable. Please try again.' });
     }
 
     // Cancel the Stripe subscription
-    const canceledSub = await stripe.subscriptions.del(subscription.stripeSubscriptionId);
+    const canceledSub = await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
 
     // Update subscription status in database
     if (prisma) {
