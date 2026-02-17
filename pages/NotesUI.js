@@ -819,7 +819,7 @@ export default function NotesUI() {
   };
 
   const handleExport = async (format = 'txt') => {
-    if (!input.trim() && summaries.length === 0 && flashcards.length === 0) {
+    if (summaries.length === 0 && flashcards.length === 0 && quiz.length === 0) {
       setError('No content to export');
       setTimeout(() => setError(''), 2000);
       return;
@@ -827,10 +827,6 @@ export default function NotesUI() {
     
     try {
       let content = '';
-      
-      if (input.trim()) {
-        content += 'ORIGINAL NOTES\n' + '='.repeat(50) + '\n' + input.trim() + '\n\n';
-      }
       
       if (summaries.length > 0) {
         content += 'SUMMARY\n' + '='.repeat(50) + '\n';
@@ -845,6 +841,7 @@ export default function NotesUI() {
           content += `${i + 1}. Q: ${card.question}\n   A: ${card.answer}\n\n`;
         });
       }
+      
       if (quiz.length > 0) {
         content += 'QUIZ / PRACTICE PROBLEMS\n' + '='.repeat(50) + '\n';
         quiz.forEach((item, i) => {
