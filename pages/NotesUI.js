@@ -41,6 +41,9 @@ export default function NotesUI() {
   const [unlockFeature, setUnlockFeature] = useState('');
   const [userPlan, setUserPlan] = useState('full'); // track subscription
   const [exportFormat, setExportFormat] = useState('pdf'); // Selected export format
+  const [currentContentItemId, setCurrentContentItemId] = useState(null); // Track current loaded item for regeneration
+  const [regenerationCount, setRegenerationCount] = useState(0); // Track how many times regenerated
+  const [regenerating, setRegenerating] = useState(false); // Loading state for regeneration
   
   // Per-class generation results
   const [classGenerations, setClassGenerations] = useState({});
@@ -276,11 +279,21 @@ export default function NotesUI() {
   const handleLoadNote = (item) => {
     if (!item) return;
     setInput(item.originalInput || "");
+    setCurrentContentItemId(item.id); // Track the loaded item
+    setRegenerationCount(item.metadata?.regenerationCount || 0); // Track regenerations
     // if summaries/flashcards were saved, restore them
     if (item.summaries) setSummaries(item.summaries || []);
+    else setSummaries([]);
+    
     if (item.metadata && item.metadata.flashcards) setFlashcards(normalizeFlashcards(item.metadata.flashcards || []));
+    else setFlashcards([]);
+    
+    // Always set quiz - either from metadata or empty array to avoid cross-note contamination
     if (item.metadata && item.metadata.quiz) setQuiz(item.metadata.quiz || []);
+    else setQuiz([]);
+    
     if (item.metadata && item.metadata.quizDifficulty) setQuizDifficulty(item.metadata.quizDifficulty || 'medium');
+    else setQuizDifficulty('medium');
   };
 
   const handleDeleteNote = async (itemId) => {
@@ -586,6 +599,8 @@ export default function NotesUI() {
           });
           if (saveRes.ok) {
             const savedData = await saveRes.json();
+            setCurrentContentItemId(savedData.data.id); // Set the content item ID for this note
+            setRegenerationCount(0); // Reset regeneration count for new note
             setSavedItems([savedData.data, ...savedItems]);
           } else {
             console.warn('Auto-save to database failed, but generation succeeded');
@@ -602,10 +617,57 @@ export default function NotesUI() {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!currentContentItemId) {
+      setError("No content to regenerate. Generate or load a note first.");
+      return;
+    }
+    if (flashcards.length === 0 && quiz.length === 0) {
+      setError("No flashcards or quiz to regenerate.");
+      return;
+    }
+
+    setRegenerating(true);
+    setError("");
+    try {
+      const res = await fetch('/api/notes/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentItemId: currentContentItemId })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Regeneration failed');
+      } else {
+        // Update state with newly generated content
+        if (data.flashcards && data.flashcards.length > 0) {
+          const newFlashcards = data.flashcards.map(q => ({ ...q, flipped: false }));
+          setFlashcards(newFlashcards);
+        }
+        if (data.quiz && data.quiz.length > 0) {
+          const newQuiz = data.quiz.map(q => ({ ...q, revealed: false }));
+          setQuiz(newQuiz);
+        }
+        setRegenerationCount(data.regenerationCount || 0);
+        setError('✓ Regenerated successfully!');
+        setTimeout(() => setError(''), 2000);
+      }
+    } catch (err) {
+      console.error('Regeneration error:', err);
+      setError('Failed to regenerate. Please try again.');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const clearInput = () => {
     setInput("");
     setSummaries([]);
     setFlashcards([]);
+    setQuiz([]);
+    setQuizDifficulty('medium');
+    setCurrentContentItemId(null);
+    setRegenerationCount(0);
     setError("");
   };
 
@@ -841,12 +903,43 @@ export default function NotesUI() {
     );
   };
 
+  const saveQuizProgressDebounced = useRef(null);
+
+  const saveQuizProgress = async (updatedQuiz) => {
+    if (!currentContentItemId) return;
+    try {
+      await fetch('/api/content/items', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: currentContentItemId,
+          metadata: {
+            quiz: updatedQuiz
+          }
+        })
+      });
+    } catch (err) {
+      console.warn('Failed to auto-save quiz progress:', err);
+    }
+  };
+
+  const debouncedSaveQuizProgress = (updatedQuiz) => {
+    if (saveQuizProgressDebounced.current) {
+      clearTimeout(saveQuizProgressDebounced.current);
+    }
+    saveQuizProgressDebounced.current = setTimeout(() => {
+      saveQuizProgress(updatedQuiz);
+    }, 1000); // Save 1 second after last change
+  };
+
   const toggleQuizReveal = (index) => {
-    setQuiz(prev => prev.map((q, i) => i === index ? { ...q, revealed: !q.revealed } : q));
+    const updatedQuiz = quiz.map((q, i) => i === index ? { ...q, revealed: !q.revealed } : q);
+    setQuiz(updatedQuiz);
+    debouncedSaveQuizProgress(updatedQuiz);
   };
 
   const handleSelectQuizOption = (qIndex, optIndex) => {
-    setQuiz(prev => prev.map((q, i) => {
+    const updatedQuiz = quiz.map((q, i) => {
       if (i !== qIndex) return q;
       // Determine correctness robustly:
       let correct = false;
@@ -896,7 +989,9 @@ export default function NotesUI() {
       }
 
       return { ...q, selected: optIndex, revealed: true, correct };
-    }));
+    });
+    setQuiz(updatedQuiz);
+    debouncedSaveQuizProgress(updatedQuiz);
   };
 
   return (
@@ -1163,7 +1258,25 @@ export default function NotesUI() {
 
           {flashcards.length > 0 && (
             <div className={styles.section}>
-              <h2>Flashcards ({flashcards.length})</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2>Flashcards ({flashcards.length}){regenerationCount > 0 && <span style={{ fontSize: '0.8em', marginLeft: '0.5rem', color: '#666' }}>v{regenerationCount + 1}</span>}</h2>
+                <button 
+                  onClick={handleRegenerate}
+                  disabled={regenerating}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: regenerating ? 'not-allowed' : 'pointer',
+                    opacity: regenerating ? 0.6 : 1,
+                    fontSize: '0.9em'
+                  }}
+                >
+                  {regenerating ? 'Regenerating...' : '🔄 Regenerate'}
+                </button>
+              </div>
               <div className={styles.flashcardGrid}>
                 {flashcards.map((card, index) => (
                   <div key={index} className={`${styles.flashcard} ${card.flipped ? styles.flipped : ''}`} onClick={() => toggleFlashcard(index)}>
@@ -1178,9 +1291,27 @@ export default function NotesUI() {
           )}
           {quiz.length > 0 && (
             <div className={styles.section}>
-              <div className={styles.quizHeader} style={{ display: 'flex', alignItems: 'center' }}>
-                <h2 style={{ margin: 0 }}>Practice Quiz ({quiz.length})</h2>
-                <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', gap: '0.5rem' }}>
+              <div className={styles.quizHeader} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <h2 style={{ margin: 0 }}>Practice Quiz ({quiz.length}){regenerationCount > 0 && <span style={{ fontSize: '0.8em', marginLeft: '0.5rem', color: '#666' }}>v{regenerationCount + 1}</span>}</h2>
+                  <button 
+                    onClick={handleRegenerate}
+                    disabled={regenerating}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#667eea',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: regenerating ? 'not-allowed' : 'pointer',
+                      opacity: regenerating ? 0.6 : 1,
+                      fontSize: '0.9em'
+                    }}
+                  >
+                    {regenerating ? 'Regenerating...' : '🔄 Regenerate'}
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <div className={styles.quizScore}>{quiz.filter(q => q.correct).length}/{quiz.filter(q => typeof q.selected === 'number').length || quiz.length}</div>
                   <div className={styles.quizProgress} style={{ width: 160 }}>
                     <div className={styles.fill} style={{ width: `${Math.round((quiz.filter(q => typeof q.selected === 'number').length / quiz.length) * 100)}%` }} />

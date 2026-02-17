@@ -149,20 +149,23 @@ async function handler(req, res) {
       if (!itemId) return res.status(400).json({ ok: false, error: 'itemId required' });
 
       if (prisma) {
-        const item = await prisma.contentItem.findUnique({ where: { id: itemId }, select: { userId: true } });
+        const item = await prisma.contentItem.findUnique({ where: { id: itemId }, select: { userId: true, metadata: true } });
         if (!item || item.userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
+
+        // Merge metadata instead of replacing it entirely
+        const mergedMetadata = metadata ? { ...item.metadata, ...metadata } : item.metadata;
 
         const updated = await prisma.contentItem.update({
           where: { id: itemId },
           data: {
             ...(classId !== undefined ? { classId: classId || null } : {}),
             ...(summaries !== undefined ? { summaries } : {}),
-            ...(metadata !== undefined ? { metadata } : {})
+            ...(metadata !== undefined ? { metadata: mergedMetadata } : {})
           }
         });
         return res.json({ ok: true, data: updated });
       } else {
-        const { rows } = await pool.query('SELECT "userId" FROM "ContentItem" WHERE id = $1', [itemId]);
+        const { rows } = await pool.query('SELECT "userId", metadata FROM "ContentItem" WHERE id = $1', [itemId]);
         if (!rows[0] || rows[0].userId !== userId) return res.status(403).json({ ok: false, error: 'Not authorized' });
 
         const updates = [];
@@ -177,8 +180,11 @@ async function handler(req, res) {
           values.push(JSON.stringify(summaries));
         }
         if (metadata !== undefined) {
+          // Merge metadata
+          const existingMetadata = rows[0].metadata || {};
+          const mergedMetadata = { ...existingMetadata, ...metadata };
           updates.push(`metadata = $${idx++}`);
-          values.push(JSON.stringify(metadata));
+          values.push(JSON.stringify(mergedMetadata));
         }
         if (updates.length === 0) return res.status(400).json({ ok: false, error: 'No fields to update' });
 
