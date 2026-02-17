@@ -42,9 +42,13 @@ async function handler(req, res) {
       return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    const { contentItemId } = req.body;
+    const { contentItemId, type } = req.body;
     if (!contentItemId) {
       return res.status(400).json({ error: 'contentItemId required' });
+    }
+    // type can be 'flashcards', 'quiz', or undefined (for both)
+    if (type && !['flashcards', 'quiz'].includes(type)) {
+      return res.status(400).json({ error: 'type must be "flashcards", "quiz", or undefined' });
     }
 
     // Fetch the content item to get originalInput
@@ -103,8 +107,15 @@ async function handler(req, res) {
 
     // Check what to regenerate based on current metadata
     const currentMetadata = contentItem.metadata || {};
-    const hasFlashcards = Array.isArray(currentMetadata.flashcards) && currentMetadata.flashcards.length > 0;
-    const hasQuiz = Array.isArray(currentMetadata.quiz) && currentMetadata.quiz.length > 0;
+    let hasFlashcards = Array.isArray(currentMetadata.flashcards) && currentMetadata.flashcards.length > 0;
+    let hasQuiz = Array.isArray(currentMetadata.quiz) && currentMetadata.quiz.length > 0;
+
+    // If type is specified, only regenerate that type
+    if (type === 'flashcards') {
+      hasQuiz = false;
+    } else if (type === 'quiz') {
+      hasFlashcards = false;
+    }
 
     // Ensure there's something to regenerate
     if (!hasFlashcards && !hasQuiz) {

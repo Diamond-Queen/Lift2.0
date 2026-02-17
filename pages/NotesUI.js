@@ -617,7 +617,7 @@ export default function NotesUI() {
     }
   };
 
-  const handleRegenerate = async () => {
+  const handleRegenerate = async (regenerateType) => {
     if (!currentContentItemId) {
       setError("No content to regenerate. Generate or load a note first.");
       return;
@@ -633,7 +633,10 @@ export default function NotesUI() {
       const res = await fetch('/api/notes/regenerate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentItemId: currentContentItemId })
+        body: JSON.stringify({ 
+          contentItemId: currentContentItemId,
+          ...(regenerateType && { type: regenerateType })
+        })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -1258,7 +1261,7 @@ export default function NotesUI() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2>Flashcards ({flashcards.length}){regenerationCount > 0 && <span style={{ fontSize: '0.8em', marginLeft: '0.5rem', color: '#666' }}>v{regenerationCount + 1}</span>}</h2>
                 <button 
-                  onClick={handleRegenerate}
+                  onClick={() => handleRegenerate('flashcards')}
                   disabled={regenerating}
                   style={{
                     padding: '0.5rem 1rem',
@@ -1292,7 +1295,7 @@ export default function NotesUI() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <h2 style={{ margin: 0 }}>Practice Quiz ({quiz.length}){regenerationCount > 0 && <span style={{ fontSize: '0.8em', marginLeft: '0.5rem', color: '#666' }}>v{regenerationCount + 1}</span>}</h2>
                   <button 
-                    onClick={handleRegenerate}
+                    onClick={() => handleRegenerate('quiz')}
                     disabled={regenerating}
                     style={{
                       padding: '0.5rem 1rem',
