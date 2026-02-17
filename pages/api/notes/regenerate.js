@@ -28,12 +28,12 @@ async function handler(req, res) {
     const validation = validateRequest(req);
     if (!validation.valid) {
       auditLog('regenerate_notes_blocked', null, { ip, reason: validation.reason }, 'warning');
-      return res.status(400).json({ error: 'Request rejected', reason: validation.reason });
+      return res.status(403).json({ ok: false, error: 'Blocked by firewall', reason: validation.reason, blockUntil: validation.blockUntil });
     }
     const rl = trackIpRateLimit(ip, '/api/notes/regenerate');
     if (!rl.allowed) {
       auditLog('regenerate_notes_rate_limited', null, { ip });
-      return res.status(429).json({ error: 'Too many requests. Try again later.' });
+      return res.status(429).json({ ok: false, error: 'Rate limit exceeded', reason: rl.reason, blockUntil: rl.blockUntil });
     }
 
     // Authenticate user

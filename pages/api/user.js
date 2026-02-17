@@ -18,12 +18,12 @@ async function handler(req, res) {
   const validation = validateRequest(req);
   if (!validation.valid) {
     auditLog('user_request_blocked', null, { ip, reason: validation.reason }, 'warning');
-    return res.status(400).json({ ok: false, error: 'Request rejected', reason: validation.reason });
+    return res.status(403).json({ ok: false, error: 'Blocked by firewall', reason: validation.reason, blockUntil: validation.blockUntil });
   }
   const ipLimit = trackIpRateLimit(ip, '/api/user');
   if (!ipLimit.allowed) {
     auditLog('user_rate_limited_ip', null, { ip });
-    return res.status(429).json({ ok: false, error: 'Too many requests. Try again later.' });
+    return res.status(429).json({ ok: false, error: 'Rate limit exceeded', reason: ipLimit.reason, blockUntil: ipLimit.blockUntil });
   }
 
   const session = await getServerSession(req, res, authOptions);
