@@ -146,6 +146,16 @@ async function handler(req, res) {
       return res.json({ ok: true, message: 'Subscription canceled', shouldLogout: false });
     }
 
+    // Verify stripe is properly initialized
+    if (typeof stripe.subscriptions?.del !== 'function') {
+      logger.error('stripe_client_invalid', {
+        type: typeof stripe,
+        hasSubscriptions: !!stripe.subscriptions,
+        hasDel: !!stripe.subscriptions?.del
+      });
+      return res.status(503).json({ ok: false, error: 'Stripe service temporarily unavailable. Please try again.' });
+    }
+
     // Cancel the Stripe subscription
     const canceledSub = await stripe.subscriptions.del(subscription.stripeSubscriptionId);
 
@@ -187,14 +197,14 @@ async function handler(req, res) {
       // Stripe subscription not found, update local record
       if (prisma) {
         const sub = await prisma.subscription.findFirst({
-          where: { userId: session.user.id }
+          where: { userId: user.id }
         });
         if (sub) {
           await prisma.subscription.update({
             where: { id: sub.id },
             data: { status: 'canceled' }
           });
-          logger.info('subscription_marked_canceled_stripe_404', { userId: session.user.id });
+          logger.info('subscription_marked_canceled_stripe_404', { userId: user.id });
         }
       }
       return res.json({ ok: true, message: 'Subscription canceled. Your account remains active.', shouldLogout: false });
