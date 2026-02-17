@@ -622,8 +622,13 @@ export default function NotesUI() {
       setError("No content to regenerate. Generate or load a note first.");
       return;
     }
-    if (flashcards.length === 0 && quiz.length === 0) {
-      setError("No flashcards or quiz to regenerate.");
+    // Check that the specific type being regenerated exists
+    if (regenerateType === 'flashcards' && flashcards.length === 0) {
+      setError("No flashcards to regenerate.");
+      return;
+    }
+    if (regenerateType === 'quiz' && quiz.length === 0) {
+      setError("No quiz to regenerate.");
       return;
     }
 
