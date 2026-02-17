@@ -298,7 +298,7 @@ ${notes}`,
   } catch (err) {
     logger.error('regenerate_notes_error', { message: err.message, stack: err.stack });
     auditLog('regenerate_notes_error', null, { message: err.message }, 'error');
-    res.status(500).json({ ok: false, error: 'Failed to regenerate. Please try again.' });
+    return res.status(500).json({ ok: false, error: 'Failed to regenerate. Please try again.' });
   }
 }
 
