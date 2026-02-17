@@ -107,19 +107,32 @@ async function handler(req, res) {
 
     // Check what to regenerate based on current metadata
     const currentMetadata = contentItem.metadata || {};
-    let hasFlashcards = Array.isArray(currentMetadata.flashcards) && currentMetadata.flashcards.length > 0;
-    let hasQuiz = Array.isArray(currentMetadata.quiz) && currentMetadata.quiz.length > 0;
+    const flashcardsExist = Array.isArray(currentMetadata.flashcards) && currentMetadata.flashcards.length > 0;
+    const quizExists = Array.isArray(currentMetadata.quiz) && currentMetadata.quiz.length > 0;
 
-    // If type is specified, only regenerate that type
+    // Determine what to regenerate based on type parameter
+    let hasFlashcards = false;
+    let hasQuiz = false;
+
     if (type === 'flashcards') {
-      hasQuiz = false;
+      // Only regenerate flashcards
+      if (!flashcardsExist) {
+        return res.status(400).json({ error: 'This note has no flashcards to regenerate. Generate them first.' });
+      }
+      hasFlashcards = true;
     } else if (type === 'quiz') {
-      hasFlashcards = false;
-    }
-
-    // Ensure there's something to regenerate
-    if (!hasFlashcards && !hasQuiz) {
-      return res.status(400).json({ error: 'This note has no flashcards or quiz to regenerate. Generate them first.' });
+      // Only regenerate quiz
+      if (!quizExists) {
+        return res.status(400).json({ error: 'This note has no quiz to regenerate. Generate them first.' });
+      }
+      hasQuiz = true;
+    } else {
+      // Regenerate both (if either exist)
+      if (!flashcardsExist && !quizExists) {
+        return res.status(400).json({ error: 'This note has no flashcards or quiz to regenerate. Generate them first.' });
+      }
+      hasFlashcards = flashcardsExist;
+      hasQuiz = quizExists;
     }
 
     const timeout = new Promise((_, reject) => 
