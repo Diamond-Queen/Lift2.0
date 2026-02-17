@@ -106,6 +106,11 @@ async function handler(req, res) {
     const hasFlashcards = Array.isArray(currentMetadata.flashcards) && currentMetadata.flashcards.length > 0;
     const hasQuiz = Array.isArray(currentMetadata.quiz) && currentMetadata.quiz.length > 0;
 
+    // Ensure there's something to regenerate
+    if (!hasFlashcards && !hasQuiz) {
+      return res.status(400).json({ error: 'This note has no flashcards or quiz to regenerate. Generate them first.' });
+    }
+
     const timeout = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Generation timed out. Try shorter notes.')), 10000)
     );
