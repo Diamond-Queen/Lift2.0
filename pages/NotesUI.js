@@ -1296,7 +1296,7 @@ export default function NotesUI() {
                     disabled={regenerating}
                     style={{
                       padding: '0.5rem 1rem',
-                      backgroundColor: '#667eea',
+                      backgroundColor:  '#5c17ac',
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
@@ -1305,7 +1305,7 @@ export default function NotesUI() {
                       fontSize: '0.9em'
                     }}
                   >
-                    {regenerating ? 'Regenerating...' : '🔄 Regenerate'}
+                    {regenerating ? 'Regenerating...' : ' Regenerate'}
                   </button>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
