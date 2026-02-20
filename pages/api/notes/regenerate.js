@@ -135,10 +135,6 @@ async function handler(req, res) {
       hasQuiz = quizExists;
     }
 
-    const timeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Generation timed out. Try shorter notes.')), 10000)
-    );
-
     // Build flashcard generation if needed
     const flashcardDifficultyMap = {
       'easy': 'Create straightforward flashcards covering fundamental definitions and basic concepts. Each answer should be 1-2 sentences. Focus on foundational knowledge that must be memorized.',
@@ -199,11 +195,17 @@ ${notes}`,
       context: { type: 'quiz', notes, quizDifficulty }
     }) : Promise.resolve({ content: '[]' });
 
-    // Generate in parallel
-    const [flashcardsResp, quizResp] = await Promise.race([
-      Promise.all([flashcardsPromise, quizPromise]),
-      timeout
-    ]);
+    // Generate in parallel with 15 second timeout
+    let flashcardsResp, quizResp;
+    try {
+      [flashcardsResp, quizResp] = await Promise.race([
+        Promise.all([flashcardsPromise, quizPromise]),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Generation timeout')), 15000))
+      ]);
+    } catch (timeoutErr) {
+      logger.warn('regenerate_generation_timeout', { contentItemId, message: timeoutErr.message });
+      return res.status(408).json({ ok: false, error: 'Generation took too long. Try with shorter notes.' });
+    }
 
     // Parse flashcards
     let flashcards = [];
