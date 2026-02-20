@@ -10,7 +10,8 @@
   padding: 1rem;
   /* Allow scrolling for content taller than viewport */
   width: 100%;
-  min-height: 100vh;
+  height: auto;
+  padding-top: 0;
   /* Use theme background so light mode affects whole screen */
   background: var(--background) !important;
 }
