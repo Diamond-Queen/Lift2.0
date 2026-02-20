@@ -7,7 +7,7 @@ export default function SiteHeader() {
 
   return (
     <header className="w-full z-10">
-      <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-3">
+      <div className="mx-auto max-w-6xl px-4 py-0 flex items-center gap-3">
         <Link href={href} className="flex items-center gap-3 group" style={{ minHeight: '36px' }}>
           {/* Logo will be added here when uploaded to /public/logo.svg */}
         </Link>
