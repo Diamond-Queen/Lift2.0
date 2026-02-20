@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { StudyModeProvider } from '../lib/StudyModeContext'
 import ShootingStars from '../components/ShootingStars'
 import SiteHeader from '../components/SiteHeader'
+import Footer from '../components/Footer'
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts'
 
 export default function App({ Component, pageProps }) {
@@ -101,7 +102,12 @@ export default function App({ Component, pageProps }) {
           <HomeFab />
           {/* Beta trial expiration check */}
           <BetaTrialExpirationCheck />
-          <Component {...pageProps} />
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <div style={{ flex: 1 }}>
+              <Component {...pageProps} />
+            </div>
+            <Footer />
+          </div>
         </SessionProvider>
       </>
     </StudyModeProvider>
