@@ -104,35 +104,74 @@ async function handler(req, res) {
       }
     });
 
-    if (!existingSub) {
-      return res.status(400).json({ ok: false, error: 'No active subscription found. Please create a new subscription.' });
-    }
+    // Track if this is a new subscription or an upgrade
+    const isNewSubscription = !existingSub;
+    let stripeSubscription = null;
 
-    // Check if upgrading to the same plan
-    if (existingSub.plan === newPlan) {
-      return res.status(400).json({ ok: false, error: 'You already have this plan' });
-    }
-
-    // Dev mode: return mock data
-    if (devMode) {
-      logger.info('upgrade_dev_mode', { userId: user.id, currentPlan: existingSub.plan, newPlan });
-      return res.json({
-        ok: true,
-        data: {
-          redirectUrl: `${process.env.NEXTAUTH_URL}/dashboard?upgrade=success`
+    // If no existing subscription, treat this as a new subscription (not an upgrade)
+    // This handles beta users and new subscribers
+    if (isNewSubscription) {
+      logger.info('new_subscription_from_upgrade_endpoint', { userId: user.id, newPlan });
+      
+      // Check if user is beta tester and convert beta trial if exists
+      try {
+        const betaTester = await prisma.betaTester.findUnique({
+          where: { userId: user.id },
+        });
+        
+        if (betaTester && betaTester.status === 'active') {
+          logger.info('converting_beta_trial_to_paid', { userId: user.id, plan: newPlan, trialType: betaTester.trialType });
         }
-      });
-    }
+      } catch (betaErr) {
+        logger.warn('failed_to_check_beta_status', { userId: user.id, error: betaErr.message });
+      }
+    } else {
+      // Check if upgrading to the same plan
+      if (existingSub.plan === newPlan) {
+        return res.status(400).json({ ok: false, error: 'You already have this plan' });
+      }
 
-    if (!stripe) {
-      return res.status(503).json({ ok: false, error: 'Stripe not configured. Contact support.' });
-    }
+      // Dev mode: return mock data
+      if (devMode) {
+        logger.info('upgrade_dev_mode', { userId: user.id, currentPlan: existingSub.plan, newPlan });
+        return res.json({
+          ok: true,
+          data: {
+            redirectUrl: `${process.env.NEXTAUTH_URL}/dashboard?upgrade=success`
+          }
+        });
+      }
 
-    // Retrieve the Stripe customer and subscription
-    const stripeSubscription = await stripe.subscriptions.retrieve(existingSub.stripeSubscriptionId);
-    
-    if (!stripeSubscription) {
-      return res.status(400).json({ ok: false, error: 'Stripe subscription not found' });
+      if (!stripe) {
+        return res.status(503).json({ ok: false, error: 'Stripe not configured. Contact support.' });
+      }
+
+      if (!existingSub.stripeSubscriptionId || typeof existingSub.stripeSubscriptionId !== 'string') {
+        logger.warn('upgrade_missing_stripe_subscription_id', {
+          userId: user.id,
+          subscriptionId: existingSub.id,
+          currentPlan: existingSub.plan,
+          status: existingSub.status,
+          hasStripeCustomerId: !!existingSub.stripeCustomerId
+        });
+        auditLog('upgrade_missing_stripe_subscription_id', user.id, {
+          subscriptionId: existingSub.id,
+          currentPlan: existingSub.plan,
+          status: existingSub.status,
+          hasStripeCustomerId: !!existingSub.stripeCustomerId
+        }, 'error');
+        return res.status(400).json({
+          ok: false,
+          error: 'No Stripe subscription on file. Please contact support or start a new subscription.'
+        });
+      }
+
+      // Retrieve the Stripe customer and subscription for existing subscription
+      stripeSubscription = await stripe.subscriptions.retrieve(existingSub.stripeSubscriptionId);
+      
+      if (!stripeSubscription) {
+        return res.status(400).json({ ok: false, error: 'Stripe subscription not found' });
+      }
     }
 
     // Validate plan config exists
@@ -141,13 +180,14 @@ async function handler(req, res) {
       return res.status(500).json({ ok: false, error: `Plan not configured: ${newPlan}` });
     }
 
-    // Create a new Checkout Session for the upgrade
-    // This will allow the user to confirm the plan change and handle any proration
+    // Create a new Checkout Session for the upgrade or new subscription
+    // This will allow the user to confirm the plan change and handle any proration (for upgrades)
     const unitAmount = toCents(newPlanConfig.amount);
     let lineItem;
     if (newPlanConfig.price) {
       lineItem = { price: newPlanConfig.price, quantity: 1 };
-      logger.info('creating_upgrade_checkout_with_priceid', { userId: user.id, currentPlan: existingSub.plan, newPlan, priceId: newPlanConfig.price });
+      const actionMsg = isNewSubscription ? 'new_subscription' : 'upgrade';
+      logger.info(`creating_${actionMsg}_checkout_with_priceid`, { userId: user.id, newPlan, priceId: newPlanConfig.price, ...(existingSub && { currentPlan: existingSub.plan }) });
     } else {
       const interval = newPlan === 'full_yearly' ? 'year' : 'month';
       const suffix = interval === 'year' ? '/yr' : '/mo';
@@ -168,28 +208,36 @@ async function handler(req, res) {
       };
     }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-      customer: stripeSubscription.customer,
+    const checkoutSessionParams = {
       line_items: [lineItem],
       mode: 'subscription',
-      success_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=success&upgraded=true`,
+      success_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=success&${isNewSubscription ? 'new=true' : 'upgraded=true'}`,
       cancel_url: `${process.env.NEXTAUTH_URL}/dashboard?checkout=cancelled`,
       metadata: {
         userId: user.id,
         plan: newPlan,
-        upgrade: 'true',
-        previousPlan: existingSub.plan
+        ...(isNewSubscription ? { new: 'true' } : { upgrade: 'true', previousPlan: existingSub.plan })
       }
-    });
+    };
+
+    // For upgrades, use existing customer; for new subscriptions, may need to create customer
+    if (stripeSubscription?.customer) {
+      checkoutSessionParams.customer = stripeSubscription.customer;
+    } else if (isNewSubscription) {
+      // For new subscriptions without a Stripe customer, let Stripe create one from email
+      checkoutSessionParams.customer_email = user.email;
+    }
+
+    const checkoutSession = await stripe.checkout.sessions.create(checkoutSessionParams);
 
     logger.info('upgrade_checkout_session_created', {
       userId: user.id,
       sessionId: checkoutSession.id,
-      currentPlan: existingSub.plan,
+      currentPlan: !isNewSubscription ? existingSub.plan : 'N/A',
       newPlan
     });
     auditLog('upgrade_checkout_session_created', user.id, { 
-      currentPlan: existingSub.plan, 
+      currentPlan: !isNewSubscription ? existingSub.plan : 'N/A', 
       newPlan, 
       sessionId: checkoutSession.id, 
       ip 
