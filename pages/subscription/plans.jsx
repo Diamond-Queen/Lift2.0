@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useSession } from 'next-auth/react';
 import Link from "next/link";
 import styles from "../../styles/SignUp.module.css";
+import { getErrorMessage, parseFetchError } from "../../lib/errorMessages";
 
 export default function SubscriptionPlans() {
   const { status } = useSession();
@@ -71,7 +72,8 @@ export default function SubscriptionPlans() {
           // Redirect to Stripe checkout for upgrade
           window.location.href = data.data.redirectUrl;
         } else {
-          setError(data.error || 'Failed to upgrade plan');
+          const errorMsg = getErrorMessage(data.error || 'Failed to upgrade plan', { context: 'upgrade' });
+          setError(errorMsg);
           setLoading(false);
           setSelectedPlan(null);
         }
@@ -86,7 +88,8 @@ export default function SubscriptionPlans() {
       }
     } catch (err) {
       console.error('Checkout error:', err);
-      setError(err.message || 'An error occurred. Please try again.');
+      const errorMsg = getErrorMessage(err.message || 'An error occurred. Please try again.', { context: 'checkout' });
+      setError(errorMsg);
       setLoading(false);
       setSelectedPlan(null);
     }

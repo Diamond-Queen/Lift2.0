@@ -251,8 +251,25 @@ async function handler(req, res) {
     });
   } catch (err) {
     const errorMsg = err?.message || String(err) || 'Unknown error';
+    
+    // Provide specific error messages based on error type
+    let userMessage = 'An error occurred while creating your checkout session.';
+    
+    if (errorMsg.includes('subscription_exposed_id') || errorMsg.includes('must be a string')) {
+      userMessage = 'No Stripe subscription on file. Please contact support or start a new subscription.';
+    } else if (errorMsg.includes('api_connection_error')) {
+      userMessage = 'Unable to connect to payment processor. Please try again.';
+    } else if (errorMsg.includes('customer') && errorMsg.includes('not found')) {
+      userMessage = 'Customer not found in payment system. Please contact support.';
+    } else if (errorMsg.includes('rate_limited')) {
+      userMessage = 'Request throttled. Please wait a moment and try again.';
+    } else if (errorMsg.includes('invalid_request_error')) {
+      userMessage = 'Invalid request. Please check your information and try again.';
+    }
+
     logger.error('upgrade_creation_error', { 
       message: errorMsg,
+      userMessage,
       type: err?.constructor?.name,
       code: err?.code,
       status: err?.status,
@@ -260,8 +277,8 @@ async function handler(req, res) {
       hasStripe: !!stripe
     });
     console.error('[upgrade] Error:', errorMsg, err);
-    auditLog('upgrade_creation_error', null, { message: errorMsg }, 'error');
-    return res.status(500).json({ ok: false, error: errorMsg });
+    auditLog('upgrade_creation_error', null, { message: errorMsg, userMessage }, 'error');
+    return res.status(500).json({ ok: false, error: userMessage });
   }
 }
 
