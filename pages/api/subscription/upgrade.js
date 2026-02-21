@@ -104,14 +104,21 @@ async function handler(req, res) {
       }
     });
 
-    // Track if this is a new subscription or an upgrade
-    const isNewSubscription = !existingSub;
+    // Determine if this is a true upgrade or a new subscription
+    // Beta trial users (trialing status with no stripeSubscriptionId) are treated as new subscriptions
+    const isBetaTrial = existingSub && existingSub.status === 'trialing' && !existingSub.stripeSubscriptionId;
+    const isNewSubscription = !existingSub || isBetaTrial;
     let stripeSubscription = null;
 
-    // If no existing subscription, treat this as a new subscription (not an upgrade)
+    // If no existing subscription or beta trial, treat this as a new subscription (not an upgrade)
     // This handles beta users and new subscribers
     if (isNewSubscription) {
-      logger.info('new_subscription_from_upgrade_endpoint', { userId: user.id, newPlan });
+      logger.info('new_subscription_from_upgrade_endpoint', { 
+        userId: user.id, 
+        newPlan, 
+        isBetaTrial,
+        existingStatus: existingSub?.status 
+      });
       
       // Check if user is beta tester and convert beta trial if exists
       try {
