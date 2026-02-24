@@ -646,17 +646,37 @@ export default function Career() {
       return;
     }
 
+    // Build document data for storage - ensure all are strings, convert arrays to strings
+    const stringifyIfArray = (val) => {
+      if (Array.isArray(val)) {
+        return val.join("\n");
+      }
+      return String(val || "");
+    };
+
     const documentData = {
-      type,
-      name,
-      email,
-      phone,
-      ...(type === "resume" && { address, linkedin, objective, experience, education, skills, certifications }),
-      ...(type === "cover" && { recipient, position, paragraphs })
+      type: String(type || "resume"),
+      name: String(name || ""),
+      email: String(email || ""),
+      phone: String(phone || ""),
+      ...(type === "resume" && { 
+        address: String(address || ""),
+        linkedin: String(linkedin || ""),
+        objective: String(objective || ""),
+        experience: stringifyIfArray(experience),
+        education: stringifyIfArray(education),
+        skills: stringifyIfArray(skills),
+        certifications: stringifyIfArray(certifications)
+      }),
+      ...(type === "cover" && { 
+        recipient: String(recipient || ""),
+        position: String(position || ""),
+        paragraphs: stringifyIfArray(paragraphs)
+      })
     };
 
     // Check if we have at least some data
-    const hasData = name.trim() || email.trim() || phone.trim() || (type === "resume" ? experience.trim() || education.trim() : paragraphs.trim());
+    const hasData = (name || "").trim() || (email || "").trim() || (phone || "").trim() || (type === "resume" ? (experience || "").toString().trim() || (education || "").toString().trim() : (paragraphs || "").toString().trim());
     if (!hasData) {
       setError("Please fill in at least some fields before saving.");
       return;
@@ -664,26 +684,62 @@ export default function Career() {
 
     setLoading(true);
     try {
+      const payload = {
+        type: type === "resume" ? "resume" : "cover_letter",
+        title: String(`${type === "resume" ? "Resume" : "Cover Letter"} - ${new Date().toLocaleDateString()}`),
+        originalInput: JSON.stringify(documentData),
+        classId: String(selectedJobId),
+        metadata: {
+          name: String(name || ""),
+          email: String(email || ""),
+          phone: String(phone || ""),
+          ...(type === "resume" && { address: String(address || ""), linkedin: String(linkedin || ""), objective: String(objective || ""), experience: stringifyIfArray(experience), education: stringifyIfArray(education), skills: stringifyIfArray(skills), certifications: stringifyIfArray(certifications) }),
+          ...(type === "cover" && { recipient: String(recipient || ""), position: String(position || ""), paragraphs: stringifyIfArray(paragraphs) })
+        }
+      };
+      console.log('Saving document with payload:', payload);
       const res = await fetch('/api/content/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: type === "resume" ? "resume" : "cover_letter",
-          title: `${type === "resume" ? "Resume" : "Cover Letter"} - ${new Date().toLocaleDateString()}`,
-          originalInput: JSON.stringify(documentData),
-          classId: selectedJobId,
-          metadata: documentData
-        })
+        body: JSON.stringify(payload)
       });
+      console.log('Response status:', res.status, 'ok:', res.ok);
       if (res.ok) {
         clearJobContentFromStorage(selectedJobId, type);
         setError("");
         await fetchSavedItems(selectedJobId);
+        
+        // Clear form fields after successful save
+        setName("");
+        setEmail("");
+        setPhone("");
+        if (type === "resume") {
+          setAddress("");
+          setLinkedin("");
+          setObjective("");
+          setExperience("");
+          setEducation("");
+          setSkills("");
+          setCertifications("");
+        } else {
+          setRecipient("");
+          setPosition("");
+          setParagraphs("");
+        }
+        setResult(null);
+        
         setError("✓ Document saved!");
         setTimeout(() => setError(""), 2000);
+      } else {
+        const data = await res.json();
+        console.error('Save failed:', data);
+        setError(data.error || "Save failed");
+        setTimeout(() => setError(""), 2500);
       }
     } catch (err) {
+      console.error('Save error:', err);
       setError("Error saving document");
+      setTimeout(() => setError(""), 2500);
     } finally {
       setLoading(false);
     }
