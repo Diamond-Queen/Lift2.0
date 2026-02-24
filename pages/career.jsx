@@ -564,8 +564,8 @@ export default function Career() {
         return { degree: degree || "", school: school || "", dates: dates || "" };
       }).filter(e => e.degree || e.school || e.dates);
 
-      const parsedSkills = skills.split(",").map(s => s.trim()).filter(Boolean);
-      const parsedCerts = certifications.split(",").map(s => s.trim()).filter(Boolean);
+      const parsedSkills = (String(skills || "")).split(",").map(s => s.trim()).filter(Boolean);
+      const parsedCerts = (String(certifications || "")).split(",").map(s => s.trim()).filter(Boolean);
 
       const bodyData = {
         type,

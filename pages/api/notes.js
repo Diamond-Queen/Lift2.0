@@ -283,7 +283,8 @@ ${notes}`,
     if (includeQuiz) {
       try {
         let quizContent = rawQuiz;
-        const jsonMatch = rawQuiz.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+        // Match JSON array - handles both empty [] and populated [{...}] arrays
+        const jsonMatch = rawQuiz.match(/\[[\s\S]*\]/);
         if (jsonMatch) quizContent = jsonMatch[0];
         const parsedQuiz = JSON.parse(quizContent);
         if (Array.isArray(parsedQuiz)) {
