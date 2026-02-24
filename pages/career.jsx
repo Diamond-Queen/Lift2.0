@@ -239,7 +239,8 @@ export default function Career() {
 
   const fetchSavedItems = async (jobId) => {
     try {
-      const query = jobId ? `?classId=${jobId}&type=${type}` : `?type=${type}`;
+      const apiType = type === "resume" ? "resume" : "cover_letter";
+      const query = jobId ? `?classId=${jobId}&type=${apiType}` : `?type=${apiType}`;
       const res = await fetch(`/api/content/items${query}`);
       if (res.ok) {
         const data = await res.json();
