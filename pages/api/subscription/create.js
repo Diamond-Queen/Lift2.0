@@ -93,8 +93,6 @@ async function handler(req, res) {
       return res.status(429).json({ ok: false, error: 'Too many requests for this user.' });
     }
 
-    const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-
     // Mark user as onboarded and store plan inside preferences for enforcement
     if (prisma) {
       // Merge subscription plan into preferences JSON
@@ -104,7 +102,7 @@ async function handler(req, res) {
       // Create subscription record
       const subscription = await prisma.subscription.create({
         data: {
-          status: 'trialing',
+          status: 'active',
           plan: plan, // 'career' or 'full'
           userId: user.id,
           // stripeCustomerId: customer.id, // Add when Stripe integrated

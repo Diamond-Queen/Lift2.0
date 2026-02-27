@@ -107,7 +107,6 @@ export default function SubscriptionPlans() {
     <div className={styles.signupContainer}>
       <div className={styles.signupCard} style={{ maxWidth: '900px' }}>
         <h1 className={styles.pageTitle}>Choose Your Plan</h1>
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem' }}>All plans include a 3-day free trial.</p>
         {error && <div style={{ marginBottom: '1rem', padding: '0.75rem', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: 'rgb(239,68,68)' }}>{error}</div>}
         
         <div style={{ marginBottom: '3rem', padding: '1.5rem', border: '2px solid var(--accent)', borderRadius: '8px', background: 'rgba(var(--accent-rgb, 59, 130, 246), 0.05)' }}>

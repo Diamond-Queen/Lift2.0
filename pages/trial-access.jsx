@@ -117,7 +117,7 @@ export default function TrialAccessGate() {
               color: 'inherit'
             }}>
               Beta Program
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Free trial: 3-4 days (individual) or 14 days (school)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Trial period: 3-4 days (individual) or 14 days (school)</div>
             </Link>
 
             <Link href="/subscription/plans" className={styles.submitButton} style={{ 
@@ -129,7 +129,7 @@ export default function TrialAccessGate() {
               border: '1px solid rgba(147, 51, 234, 0.3)'
             }}>
               Individual Subscription
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>3-day free trial • Flexible plans</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Flexible plans to fit your needs</div>
             </Link>
           </div>
         </div>
@@ -164,8 +164,8 @@ export default function TrialAccessGate() {
             </p>
 
             <div style={{ textAlign: 'center', fontSize: '0.85em', color: 'var(--text-muted)' }}>
-              <p style={{ margin: '10px 0' }}>💰 <strong>Career Only:</strong> $7/month</p>
-              <p style={{ margin: '10px 0' }}>🎓 <strong>Full Access:</strong> $10/month</p>
+              <p style={{ margin: '10px 0' }}>💰 <strong>Career Only:</strong> $10/month</p>
+              <p style={{ margin: '10px 0' }}>🎓 <strong>Full Access:</strong> $15/month</p>
             </div>
 
             <Link href="/onboarding" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center', marginTop: '8px' }}>

@@ -115,7 +115,6 @@ async function handler(req, res) {
 
     // If in dev: simulate checkout
     if (devMode) {
-      const trialEnds = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       try {
         // Use upsert to avoid duplicate subscription errors
           // For dev mode, we use a fake customer ID based on user ID
@@ -129,20 +128,18 @@ async function handler(req, res) {
             update: {
               plan,
               status: 'pending',
-              trialEndsAt: trialEnds,
               userId: user.id
             },
             create: {
               stripeCustomerId: devCustomerId,
               userId: user.id,
               plan,
-              status: 'pending',
-              trialEndsAt: trialEnds
+              status: 'pending'
             }
           });
       } catch (e) {
         logger.error('dev_checkout_activation_failed', { message: e.message });
-        return res.status(500).json({ ok: false, error: 'Failed to activate trial (dev mode)' });
+        return res.status(500).json({ ok: false, error: 'Failed to activate subscription (dev mode)' });
       }
 
       const devSessionId = `dev_${Date.now()}`;
@@ -200,14 +197,13 @@ async function handler(req, res) {
       };
     }
 
-    // Create Checkout Session with 3-day trial
+    // Create Checkout Session (no trial)
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customer.id,
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [lineItem],
       subscription_data: {
-        trial_period_days: 3,
         metadata: {
           userId: user.id,
           plan: plan

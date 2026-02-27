@@ -138,7 +138,6 @@ async function handler(req, res) {
               }
             }
       ],
-      trial_period_days: 3,
       metadata: {
         userId: user.id,
         plan: plan
@@ -146,15 +145,13 @@ async function handler(req, res) {
     });
 
     // Save subscription to database
-    const trialEnds = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     await prisma.subscription.create({
       data: {
         stripeCustomerId: customer,
         stripeSubscriptionId: subscription.id,
         userId: user.id,
         plan,
-        status: 'trialing',
-        trialEndsAt: trialEnds
+        status: 'active'
       }
     });
 
