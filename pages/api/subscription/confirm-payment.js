@@ -113,9 +113,9 @@ async function handler(req, res) {
 
     // Create subscription with trial. Prefer configured Price ID; fallback to price_data when missing.
     const PLAN_CONFIG = {
-      career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 900 },
-      notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 900 },
-      full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1200 },
+      career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 1000 },
+      notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 1000 },
+      full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1500 },
       full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 3500 }
     };
 

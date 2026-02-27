@@ -425,7 +425,7 @@ export default function Dashboard() {
               Notes is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($12/month or $35/year), Notes Only ($9/month)
+              Upgrade to Full Access ($15/month or $50/year), Notes Only ($10/month)
             </Link>
           </div>
         )}
@@ -442,7 +442,7 @@ export default function Dashboard() {
               Career is part of Full Access. Upgrade to unlock.
             </div>
             <Link href="/subscription/plans" className={styles.loginLink} style={{ display: 'inline-block', marginTop: '0.5rem' }}>
-              Upgrade to Full Access ($12/month or $35/year) or Career Only ($9/month)
+              Upgrade to Full Access ($15/month or $50/year) or Career Only ($10/month)
             </Link>
           </div>
         )}
@@ -452,7 +452,7 @@ export default function Dashboard() {
           {plan === 'career' ? (
             <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed' }}>
               Lift Notes
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Notes ($9/mo) or Full Access ($12/mo)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Notes ($10/mo) or Full Access ($15/mo)</div>
             </button>
           ) : (
             <Link href="/notes" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem' }}>
@@ -465,7 +465,7 @@ export default function Dashboard() {
           {plan === 'notes' ? (
             <button disabled className={styles.submitButton} style={{ display: 'block', textAlign: 'center', padding: '1.25rem', opacity: 0.6, cursor: 'not-allowed', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', border: '1px solid rgba(147, 51, 234, 0.2)' }}>
               Lift Career
-              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($9/mo) or Full Access ($12/mo)</div>
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Requires Career ($10/mo) or Full Access ($15/mo)</div>
             </button>
           ) : (
             <Link href="/career" className={styles.submitButton} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', padding: '1.25rem', background: 'linear-gradient(90deg, #000000 0%, #000000 100%)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.5)' }}>

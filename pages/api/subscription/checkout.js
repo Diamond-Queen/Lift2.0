@@ -73,10 +73,10 @@ async function handler(req, res) {
   
   // Validate plan
   const validPlans = {
-    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 900, name: 'Career Only' },
-    notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 900, name: 'Notes Only' },
-    full: { price: process.env.STRIPE_PRICE_FULL, amount: 1200, name: 'Full Access' },
-    full_yearly: { price: process.env.STRIPE_PRICE_YEARLY, amount: 3500, name: 'Full Access (Yearly)' }
+    career: { price: process.env.STRIPE_PRICE_CAREER, amount: 1000, name: 'Career Only' },
+    notes: { price: process.env.STRIPE_PRICE_NOTES, amount: 1000, name: 'Notes Only' },
+    full: { price: process.env.STRIPE_PRICE_FULL, amount: 1500, name: 'Full Access' },
+    full_yearly: { price: process.env.STRIPE_PRICE_YEARLY, amount: 5000, name: 'Full Access (Yearly)' }
   };
   
   if (!validPlans[plan]) {

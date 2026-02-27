@@ -65,7 +65,7 @@ node scripts/sync_school_codes.js ./path/to/my-codes.json
 The script uses `DATABASE_URL` from `.env` (override=true) and performs transactional upserts.
 
 ### Stripe Subscriptions
-For individual subscription payments (Notes $9/mo, Career $9/mo, Full Access $12/mo, Full Access Yearly $35/yr):
+For individual subscription payments (Notes $10/mo, Career $10/mo, Full Access $15/mo, Full Access Yearly $50/yr):
 1. Create Stripe account at https://dashboard.stripe.com
 2. Create products and get Price IDs
 3. Add keys to `.env`:

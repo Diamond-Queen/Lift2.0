@@ -66,10 +66,10 @@ async function handler(req, res) {
 
   // Price configuration: prefer Stripe Price IDs from env, fallback to amounts
   const PLAN_CONFIG = {
-    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 900 },
-    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 900 },
-    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1200 },
-    full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 3500 }
+    career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 1000 },
+    notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 1000 },
+    full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1500 },
+    full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 5000 }
   };
 
   const toCents = (amt) => {
