@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import DemoModal from '../components/DemoModal';
+import { useDemoModal } from '../hooks/useDemoModal';
 import styles from '../styles/SignUp.module.css';
 
 /**
  * Trial Access Gate - Checks if user has active trial or subscription
  * Redirects unauthenticated users to login
  * Shows trial-expired users a message to upgrade
+ * Displays demo modal for new users
  */
 export default function TrialAccessGate() {
   const { status } = useSession();
   const router = useRouter();
   const [accessStatus, setAccessStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { showDemo, closeDemo } = useDemoModal();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -209,5 +213,9 @@ export default function TrialAccessGate() {
     );
   }
 
-  return null;
+  return (
+    <>
+      <DemoModal isOpen={showDemo} onClose={closeDemo} />
+    </>
+  );
 }

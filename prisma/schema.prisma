@@ -23,6 +23,7 @@ model User {
   lockedUntil         DateTime?
   preferences         Json?
   onboarded           Boolean        @default(false)
+  demoWatched         Boolean        @default(false)
   accounts            Account[]
   classes             Class[]
   contentItems        ContentItem[]
