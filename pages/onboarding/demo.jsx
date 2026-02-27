@@ -96,11 +96,12 @@ export default function DemoPage() {
             onClick={handleContinue}
             disabled={loading}
             style={{
-              background: videoWatched ? 'var(--primary-color)' : 'var(--primary-color)',
+              background: '#FFFFFF',
+              color: '#000000',
               opacity: loading ? 0.7 : 1
             }}
           >
-            {loading ? 'Continuing...' : videoWatched ? '✓ Continue' : 'Skip to Beta'}
+            {loading ? 'Continuing...' : videoWatched ? ' Continue' : 'Skip'}
           </button>
         </div>
 
