@@ -49,10 +49,10 @@ export default function SubscriptionPlans() {
   }
 
   const plans = [
-    { id: 'notes', name: 'Notes Only', price: 900, interval: 'month', features: ['AI study notes', 'Up to 4 classes', 'PDF export', 'Cloud sync'] },
-    { id: 'career', name: 'Career Only', price: 900, interval: 'month', features: ['Resume builder', 'Cover letter generator', 'Up to 4 saved jobs', 'Interview prep'] },
-    { id: 'full', name: 'Full Access', price: 1200, interval: 'month', features: ['Unlimited classes & jobs', 'All Notes features', 'All Career features', 'Priority support'] },
-    { id: 'full_yearly', name: 'Full Access (Yearly)', price: 3500, interval: 'year', features: ['All Full Access features', 'Billed yearly (saves money)', 'Priority support'] }
+    { id: 'notes', name: 'Notes Only', price: 1000, interval: 'month', features: ['AI study notes', 'Up to 4 classes', 'PDF export', 'Cloud sync'] },
+    { id: 'career', name: 'Career Only', price: 1000, interval: 'month', features: ['Resume builder', 'Cover letter generator', 'Up to 4 saved jobs', 'Interview prep'] },
+    { id: 'full', name: 'Full Access', price: 1500, interval: 'month', features: ['Unlimited classes & jobs', 'All Notes features', 'All Career features', 'Priority support'] },
+    { id: 'full_yearly', name: 'Full Access (Yearly)', price: 5000, interval: 'year', features: ['All Full Access features', 'Billed yearly (saves money)', 'Priority support'] }
   ];
 
   const handleCheckout = async (planId) => {

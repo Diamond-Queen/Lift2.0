@@ -116,7 +116,7 @@ async function handler(req, res) {
       career: { name: 'Career Only', price: process.env.STRIPE_PRICE_CAREER, amount: 1000 },
       notes: { name: 'Notes Only', price: process.env.STRIPE_PRICE_NOTES, amount: 1000 },
       full: { name: 'Full Access', price: process.env.STRIPE_PRICE_FULL, amount: 1500 },
-      full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 3500 }
+      full_yearly: { name: 'Full Access (Yearly)', price: process.env.STRIPE_PRICE_YEARLY, amount: 5000 }
     };
 
     const priceId = getPriceIdForPlan(plan);
