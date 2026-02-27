@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import DemoModal from '../components/DemoModal';
-import { useDemoModal } from '../hooks/useDemoModal';
 import styles from '../styles/SignUp.module.css';
 
 /**
@@ -17,7 +15,6 @@ export default function TrialAccessGate() {
   const router = useRouter();
   const [accessStatus, setAccessStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { showDemo, closeDemo } = useDemoModal();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -99,48 +96,45 @@ export default function TrialAccessGate() {
 
   if (accessStatus === 'not-enrolled') {
     return (
-      <>
-        <DemoModal isOpen={showDemo} onClose={closeDemo} />
-        <div className={styles.signupContainer}>
-          <div className={styles.signupCard} style={{ maxWidth: '500px' }}>
-            <h1 className={styles.pageTitle}>Welcome to Lift</h1>
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Choose how you'd like to get started
-            </p>
+      <div className={styles.signupContainer}>
+        <div className={styles.signupCard} style={{ maxWidth: '500px' }}>
+          <h1 className={styles.pageTitle}>Welcome to Lift</h1>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '20px' }}>
+            Choose how you'd like to get started
+          </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <Link href="/onboarding/school" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
-                School Code
-                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Get full access to Lift</div>
-              </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <Link href="/onboarding/school" className={styles.submitButton} style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+              School Code
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Get full access to Lift</div>
+            </Link>
 
-              <Link href="/onboarding/beta" className={styles.submitButton} style={{ 
-                textDecoration: 'none', 
-                display: 'block', 
-                textAlign: 'center',
-                background: 'rgba(147, 51, 234, 0.08)',
-                border: '1px solid rgba(147, 51, 234, 0.25)',
-                color: 'inherit'
-              }}>
-                Beta Program
-                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Trial period: 3-4 days (individual) or 14 days (school)</div>
-              </Link>
+            <Link href="/onboarding/beta" className={styles.submitButton} style={{ 
+              textDecoration: 'none', 
+              display: 'block', 
+              textAlign: 'center',
+              background: 'rgba(147, 51, 234, 0.08)',
+              border: '1px solid rgba(147, 51, 234, 0.25)',
+              color: 'inherit'
+            }}>
+              Beta Program
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Trial period: 3-4 days (individual) or 14 days (school)</div>
+            </Link>
 
-              <Link href="/subscription/plans" className={styles.submitButton} style={{ 
-                textDecoration: 'none', 
-                display: 'block', 
-                textAlign: 'center',
-                background: 'linear-gradient(90deg, #000000 0%, #000000 100%)',
-                color: '#9333EA',
-                border: '1px solid rgba(147, 51, 234, 0.3)'
-              }}>
-                Individual Subscription
-                <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Flexible plans to fit your needs</div>
-              </Link>
-            </div>
+            <Link href="/subscription/plans" className={styles.submitButton} style={{ 
+              textDecoration: 'none', 
+              display: 'block', 
+              textAlign: 'center',
+              background: 'linear-gradient(90deg, #000000 0%, #000000 100%)',
+              color: '#9333EA',
+              border: '1px solid rgba(147, 51, 234, 0.3)'
+            }}>
+              Individual Subscription
+              <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', opacity: 0.9 }}>Flexible plans to fit your needs</div>
+            </Link>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -217,8 +211,20 @@ export default function TrialAccessGate() {
   }
 
   return (
-    <>
-      <DemoModal isOpen={showDemo} onClose={closeDemo} />
-    </>
+    <div className={styles.signupContainer}>
+      <div className={styles.signupCard}>
+        <h1 className={styles.pageTitle}>Error</h1>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          Something went wrong. Please try again or contact support.
+        </p>
+        <button 
+          className={styles.submitButton}
+          onClick={() => router.reload()}
+          style={{ marginTop: '15px' }}
+        >
+          Retry
+        </button>
+      </div>
+    </div>
   );
 }

@@ -55,8 +55,8 @@ export default function Signup() {
       // This ensures the session cookie is properly set
       await new Promise(r => setTimeout(r, 500));
       
-      // Redirect to beta signup (user is now authenticated)
-      router.push('/beta-signup');
+      // Redirect to demo page (user is now authenticated)
+      router.push('/onboarding/demo');
     } catch (err) {
       setError("Network error. Please try again.");
       setLoading(false);
