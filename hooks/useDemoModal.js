@@ -24,8 +24,9 @@ export function useDemoModal() {
           const data = await res.json();
           const user = data?.data?.user;
           
-          // Show demo if user hasn't watched it and doesn't have access yet
-          if (user && !user.demoWatched && !user.schoolId && !user.preferences?.subscriptionPlan) {
+          // Show demo only if user hasn't watched it yet
+          if (user && !user.demoWatched) {
+            console.log('Showing demo modal for user:', user.email);
             setShowDemo(true);
           }
         }
