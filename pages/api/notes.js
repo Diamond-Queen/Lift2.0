@@ -176,15 +176,17 @@ ${notes}`,
       prompt: `TASK: Generate multiple-choice practice problems based on the notes. ${difficultyInstruction}
 
 CRITICAL REQUIREMENTS:
-1. Focus on essential concepts covered in the notes - ignore tangential information.
-2. Aim for 6-12 problems that test core understanding.
-3. Return ONLY a JSON array, no other text.
-4. Each problem must have: "question", "options" (3-5 choices), "correctOption" (letter), and optional "solution".
+1. Extract and focus on ACTUAL USEFUL INFORMATION - concepts that explain relationships, mechanisms, processes, or key principles - regardless of capitalization.
+2. Ignore tangential information, examples that don't teach core concepts, and superficial details.
+3. Aim for 6-12 problems that test core understanding and meaningful application.
+4. Return ONLY a JSON array, no other text.
+5. Each problem must have: "question", "options" (3-5 choices), "correctOption" (letter), and optional "solution".
 
 Example format:
 [{"question":"What is X?","options":["Option A","Option B","Option C"],"correctOption":"B","solution":"Explanation of why B is correct"}]
 
 Important:
+- Prioritize concepts that explain WHY or HOW things work, not just WHAT things are.
 - Create plausible subject-specific distractors.
 - For numeric problems include units.
 - Avoid ambiguous questions and multiple correct answers.
