@@ -96,3 +96,5 @@ pnpm-debug.log*
 .cache/
 # Temporary local test files
 tmp_test_*
+.vercel
+.env*
